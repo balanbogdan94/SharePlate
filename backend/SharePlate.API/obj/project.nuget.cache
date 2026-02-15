@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "yLP57c36qIk=",
+  "success": true,
+  "projectFilePath": "/Users/bogdanbalan/Repos/SharePlate/backend/SharePlate.API/SharePlate.API.csproj",
+  "expectedPackageFiles": [
+    "/Users/bogdanbalan/.nuget/packages/microsoft.aspnetcore.openapi/9.0.7/microsoft.aspnetcore.openapi.9.0.7.nupkg.sha512",
+    "/Users/bogdanbalan/.nuget/packages/microsoft.openapi/1.6.17/microsoft.openapi.1.6.17.nupkg.sha512"
+  ],
+  "logs": []
+}
