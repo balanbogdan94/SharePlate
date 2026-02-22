@@ -1,8 +1,17 @@
+using Microsoft.EntityFrameworkCore;
+using SharePlate.Infrastructure.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection"), b => b.MigrationsAssembly("SharePlate.Infrastructure")));
+
 
 var app = builder.Build();
 
@@ -21,7 +30,7 @@ var summaries = new[]
 
 app.MapGet("/weatherforecast", () =>
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
+    var forecast = Enumerable.Range(1, 5).Select(index =>
         new WeatherForecast
         (
             DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
@@ -32,6 +41,13 @@ app.MapGet("/weatherforecast", () =>
     return forecast;
 })
 .WithName("GetWeatherForecast");
+
+// TODO: Remove - temporary DB health check
+app.MapGet("/db-test", async (AppDbContext db) =>
+{
+    var units = await db.Units.ToListAsync();
+    return Results.Ok(units);
+});
 
 app.Run();
 
