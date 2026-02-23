@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SharePlate.API.Endpoints;
 using SharePlate.Core.Repositories;
 using SharePlate.Infrastructure.Data;
 using SharePlate.Infrastructure.Repositories;
@@ -27,35 +28,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
-
-// TODO: Remove - temporary DB health check
-app.MapGet("/db-test", async (AppDbContext db) =>
-{
-    var units = await db.Units.ToListAsync();
-    return Results.Ok(units);
-});
+app.MapUserEndpoints();
+app.MapHouseEndpoints();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
