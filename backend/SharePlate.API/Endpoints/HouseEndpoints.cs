@@ -63,10 +63,11 @@ public static class HouseEndpoints
         // POST /api/houses
         group.MapPost("/", async (CreateHouseRequest req, IUnitOfWork uow, CancellationToken ct) =>
         {
+            var userId = Guid.CreateVersion7(); //TODO: Replace with actual user ID from auth context
             if (await uow.Houses.CodeExistsAsync(req.Code, ct))
                 return Results.Conflict($"House code '{req.Code}' is already taken.");
 
-            var house = House.Create(req.Name, req.Code);
+            var house = House.Create(req.Name, userId);
 
             await uow.Houses.AddAsync(house, ct);
             await uow.SaveChangesAsync(ct);
