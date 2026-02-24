@@ -51,21 +51,55 @@ public static class HouseEndpoints
         .WithName("GetHouseWithMembers")
         .WithSummary("Get a house including all members");
 
-        // GET /api/houses/by-code/{code}
-        group.MapGet("/by-code/{code}", async (string code, IUnitOfWork uow, CancellationToken ct) =>
+
+
+        // POST /api/houses/{id}/join
+        group.MapPost("/{id:guid}/join", async (Guid id, JoinHouseRequest req, IUnitOfWork uow, CancellationToken ct) =>
         {
-            var house = await uow.Houses.GetByCodeAsync(code, ct);
-            return house is null ? Results.NotFound() : Results.Ok(ToResponse(house));
+            var house = await uow.Houses.GetWithMembersAsync(id, ct);
+            if (house is null) return Results.NotFound();
+
+            if (!string.Equals(house.Code, req.Code, StringComparison.OrdinalIgnoreCase))
+                return Results.BadRequest("Invalid house code.");
+
+            var userId = Guid.CreateVersion7(); // TODO: Replace with actual user ID from auth context
+
+            if (await uow.HouseMembers.IsMemberAsync(id, userId, ct))
+                return Results.Conflict("User is already a member of this house.");
+
+            house.AddMember(userId);
+            await uow.SaveChangesAsync(ct);
+
+            return Results.Ok();
         })
-        .WithName("GetHouseByCode")
-        .WithSummary("Get a house by its invite code");
+        .WithName("JoinHouse")
+        .WithSummary("Join a house using its invite code");
+
+        // DELETE /api/houses/{id}/members/{userId}
+        group.MapDelete("/{id:guid}/members/{userId:guid}", async (Guid id, Guid userId, IUnitOfWork uow, CancellationToken ct) =>
+        {
+            var house = await uow.Houses.GetWithMembersAsync(id, ct);
+            if (house is null) return Results.NotFound();
+
+            try
+            {
+                house.RemoveMember(userId);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(ex.Message);
+            }
+
+            await uow.SaveChangesAsync(ct);
+            return Results.NoContent();
+        })
+        .WithName("RemoveHouseMember")
+        .WithSummary("Remove a member from a house");
 
         // POST /api/houses
         group.MapPost("/", async (CreateHouseRequest req, IUnitOfWork uow, CancellationToken ct) =>
         {
             var userId = Guid.CreateVersion7(); //TODO: Replace with actual user ID from auth context
-            if (await uow.Houses.CodeExistsAsync(req.Code, ct))
-                return Results.Conflict($"House code '{req.Code}' is already taken.");
 
             var house = House.Create(req.Name, userId);
 
@@ -98,7 +132,8 @@ public static class HouseEndpoints
 
 // ── Request / Response records ────────────────────────────────────────────────
 
-public record CreateHouseRequest(string Name, string Code);
+public record CreateHouseRequest(string Name);
+public record JoinHouseRequest(string Code);
 public record HouseResponse(Guid Id, string Name, string Code, bool IsPersonal, DateTime CreatedAt, DateTime UpdatedAt);
 public record HouseWithMembersResponse(Guid Id, string Name, string Code, bool IsPersonal, List<HouseMemberSummary> Members);
 public record HouseMemberSummary(Guid UserId, string Name, string Email, string Role);
