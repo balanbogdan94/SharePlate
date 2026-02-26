@@ -20,3 +20,15 @@ body:json {
     "userId": "{{ownerUserId}}"
   }
 }
+
+script:post-response {
+  const data = res.getBody();
+
+  if (data?.id) {
+    bru.setEnvVar("houseId", data.id, { persist: true });
+  }
+
+  if (data?.code) {
+    bru.setEnvVar("houseCode", data.code, { persist: true });
+  }
+}
