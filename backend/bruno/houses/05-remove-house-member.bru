@@ -1,0 +1,11 @@
+meta {
+  name: Remove House Member
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/api/houses/{{houseId}}/members/{{memberUserId}}
+  body: none
+  auth: none
+}

@@ -1,0 +1,22 @@
+meta {
+  name: Join House By Code
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/houses/join
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "code": "{{houseCode}}",
+    "userId": "{{joiningUserId}}"
+  }
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Create User
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/users
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "{{ownerName}}",
+    "email": "{{ownerEmail}}",
+    "password": "{{ownerPassword}}"
+  }
+}

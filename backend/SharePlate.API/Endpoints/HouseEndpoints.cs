@@ -53,27 +53,23 @@ public static class HouseEndpoints
 
 
 
-        // POST /api/houses/{id}/join
-        group.MapPost("/{id:guid}/join", async (Guid id, JoinHouseRequest req, IUnitOfWork uow, CancellationToken ct) =>
+        // POST /api/houses/join
+        group.MapPost("/join", async (JoinHouseRequest req, IUnitOfWork uow, CancellationToken ct) =>
         {
-            var house = await uow.Houses.GetWithMembersAsync(id, ct);
-            if (house is null) return Results.NotFound();
+            var house = await uow.Houses.GetByCodeAsync(req.Code, ct);
+            if (house is null) return Results.NotFound("Invalid invite code.");
 
-            if (!string.Equals(house.Code, req.Code, StringComparison.OrdinalIgnoreCase))
-                return Results.BadRequest("Invalid house code.");
+            var user = await uow.Users.GetByIdAsync(req.UserId, ct);
+            if (user is null) return Results.NotFound("User not found.");
 
-            var userId = Guid.CreateVersion7(); // TODO: Replace with actual user ID from auth context
-
-            if (await uow.HouseMembers.IsMemberAsync(id, userId, ct))
+            if (await uow.HouseMembers.IsMemberAsync(house.Id, req.UserId, ct))
                 return Results.Conflict("User is already a member of this house.");
 
-            house.AddMember(userId);
+            house.AddMember(req.UserId);
             await uow.SaveChangesAsync(ct);
 
-            return Results.Ok();
-        })
-        .WithName("JoinHouse")
-        .WithSummary("Join a house using its invite code");
+            return Results.Ok(new { house.Id, house.Name });
+        });
 
         // DELETE /api/houses/{id}/members/{userId}
         group.MapDelete("/{id:guid}/members/{userId:guid}", async (Guid id, Guid userId, IUnitOfWork uow, CancellationToken ct) =>
@@ -99,9 +95,10 @@ public static class HouseEndpoints
         // POST /api/houses
         group.MapPost("/", async (CreateHouseRequest req, IUnitOfWork uow, CancellationToken ct) =>
         {
-            var userId = Guid.CreateVersion7(); //TODO: Replace with actual user ID from auth context
+            var user = await uow.Users.GetByIdAsync(req.UserId, ct);
+            if (user is null) return Results.NotFound("User not found.");
 
-            var house = House.Create(req.Name, userId);
+            var house = House.Create(req.Name, req.UserId);
 
             await uow.Houses.AddAsync(house, ct);
             await uow.SaveChangesAsync(ct);
@@ -132,8 +129,8 @@ public static class HouseEndpoints
 
 // ── Request / Response records ────────────────────────────────────────────────
 
-public record CreateHouseRequest(string Name);
-public record JoinHouseRequest(string Code);
+public record CreateHouseRequest(string Name, Guid UserId);
+public record JoinHouseRequest(string Code, Guid UserId);
 public record HouseResponse(Guid Id, string Name, string Code, bool IsPersonal, DateTime CreatedAt, DateTime UpdatedAt);
 public record HouseWithMembersResponse(Guid Id, string Name, string Code, bool IsPersonal, List<HouseMemberSummary> Members);
 public record HouseMemberSummary(Guid UserId, string Name, string Email, string Role);
