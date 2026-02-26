@@ -1,4 +1,5 @@
 using SharePlate.Core.Entities;
+using SharePlate.Core.Enums;
 using SharePlate.Core.Repositories;
 
 namespace SharePlate.API.Endpoints;
@@ -65,11 +66,13 @@ public static class HouseEndpoints
             if (await uow.HouseMembers.IsMemberAsync(house.Id, req.UserId, ct))
                 return Results.Conflict("User is already a member of this house.");
 
-            house.AddMember(req.UserId);
+            await uow.HouseMembers.AddAsync(HouseMember.Create(house.Id, req.UserId, HouseMemberRole.Member), ct);
             await uow.SaveChangesAsync(ct);
 
             return Results.Ok(new { house.Id, house.Name });
-        });
+        })
+        .WithName("JoinHouse")
+        .WithSummary("Join a house using its invite code");
 
         // DELETE /api/houses/{id}/members/{userId}
         group.MapDelete("/{id:guid}/members/{userId:guid}", async (Guid id, Guid userId, IUnitOfWork uow, CancellationToken ct) =>
