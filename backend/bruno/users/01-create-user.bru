@@ -21,3 +21,11 @@ body:json {
     "password": "{{ownerPassword}}"
   }
 }
+
+script:post-response {
+  const data = res.getBody();
+
+  if (data?.id) {
+    bru.setEnvVar("ownerUserId", data.id, { persist: true });
+  }
+}

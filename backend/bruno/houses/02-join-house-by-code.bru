@@ -7,7 +7,11 @@ meta {
 post {
   url: {{baseUrl}}/api/houses/join
   body: json
-  auth: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
 }
 
 headers {
@@ -16,7 +20,7 @@ headers {
 
 body:json {
   {
-    "code": "5PNW-BHPF",
-    "userId": "e89ea3a4-f319-4e8f-ad62-c94dbea20596"
+    "code": "{{houseCode}}",
+    "userId": "{{joiningUserId}}"
   }
 }

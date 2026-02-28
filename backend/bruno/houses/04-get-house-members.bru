@@ -5,7 +5,11 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/api/houses/453aadad-2e8b-45e7-946d-b34c52ba7d11/members
+  url: {{baseUrl}}/api/houses/{{houseId}}/members
   body: none
-  auth: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
 }
