@@ -1,7 +1,6 @@
-using System.Security.Cryptography;
-using System.Text;
 using SharePlate.Core.Entities;
 using SharePlate.Core.Repositories;
+using SharePlate.API.Services;
 
 namespace SharePlate.API.Endpoints;
 
@@ -9,7 +8,7 @@ public static class UserEndpoints
 {
     public static void MapUserEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/users").WithTags("Users");
+        var group = app.MapGroup("/api/users").WithTags("Users").RequireAuthorization();
 
         // GET /api/users/{id}
         group.MapGet("/{id:guid}", async (Guid id, IUnitOfWork uow, CancellationToken ct) =>
@@ -39,20 +38,17 @@ public static class UserEndpoints
         .WithSummary("Get all users");
 
         // POST /api/users
-        group.MapPost("/", async (CreateUserRequest req, IUnitOfWork uow, CancellationToken ct) =>
+        group.MapPost("/", async (CreateUserRequest req, IAuthService authService, CancellationToken ct) =>
         {
-            if (await uow.Users.EmailExistsAsync(req.Email, ct))
-                return Results.Conflict($"Email '{req.Email}' is already in use.");
+            var registrationResult = await authService.RegisterAsync(req.Name, req.Email, req.Password, ct);
+            if (!registrationResult.Succeeded)
+                return Results.Conflict(registrationResult.ErrorMessage);
 
-            // NOTE: For testing only – use a proper password hasher in production.
-            var passwordHash = HashPassword(req.Password);
-            var user = User.Create(req.Name, req.Email, passwordHash);
-
-            await uow.Users.AddAsync(user, ct);
-            await uow.SaveChangesAsync(ct);
+            var user = registrationResult.User!;
 
             return Results.Created($"/api/users/{user.Id}", ToResponse(user));
         })
+        .AllowAnonymous()
         .WithName("CreateUser")
         .WithSummary("Create a new user");
 
@@ -87,12 +83,6 @@ public static class UserEndpoints
 
     private static UserResponse ToResponse(User u) =>
         new(u.Id, u.Name, u.Email, u.CreatedAt, u.UpdatedAt);
-
-    private static string HashPassword(string password)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(password));
-        return Convert.ToBase64String(bytes);
-    }
 }
 
 // ── Request / Response records ────────────────────────────────────────────────

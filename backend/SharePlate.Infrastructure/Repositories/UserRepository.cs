@@ -12,6 +12,15 @@ public class UserRepository : Repository<User>, IUserRepository
     public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
         => await DbSet.FirstOrDefaultAsync(u => u.Email == email, ct);
 
+    public async Task<User?> GetForAuthenticationByEmailAsync(string email, CancellationToken ct = default)
+        => await DbSet.FirstOrDefaultAsync(u => u.Email == email, ct);
+
     public async Task<bool> EmailExistsAsync(string email, CancellationToken ct = default)
         => await DbSet.AnyAsync(u => u.Email == email, ct);
+
+    public async Task<bool> IsPasswordResetRequiredAsync(Guid userId, CancellationToken ct = default)
+        => await DbSet
+            .Where(u => u.Id == userId)
+            .Select(u => u.IsPasswordResetRequired)
+            .FirstOrDefaultAsync(ct);
 }

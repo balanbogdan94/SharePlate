@@ -21,6 +21,7 @@ public class AppDbContext : DbContext
     public DbSet<MealPlan> MealPlans => Set<MealPlan>();
     public DbSet<MealPlanRecipe> MealPlanRecipes => Set<MealPlanRecipe>();
     public DbSet<ShoppingItem> ShoppingItems => Set<ShoppingItem>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -28,6 +29,32 @@ public class AppDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+        modelBuilder.Entity<User>(b =>
+        {
+            b.HasIndex(u => u.Email).IsUnique();
+
+            b.Property(u => u.PasswordHashAlgorithm)
+                .HasMaxLength(64)
+                .IsRequired();
+
+            b.Property(u => u.IsPasswordResetRequired)
+                .HasDefaultValue(false);
+
+            b.HasMany(u => u.RefreshTokens)
+                .WithOne(rt => rt.User)
+                .HasForeignKey(rt => rt.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<RefreshToken>(b =>
+        {
+            b.HasIndex(rt => rt.TokenHash).IsUnique();
+
+            b.Property(rt => rt.TokenHash)
+                .HasMaxLength(512)
+                .IsRequired();
+        });
 
 
         modelBuilder.Entity<Unit>().HasData(

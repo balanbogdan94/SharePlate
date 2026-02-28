@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using SharePlate.Core.Constants.Auth;
 using SharePlate.Core.Entities;
 using SharePlate.Core.Enums;
 using SharePlate.Core.Repositories;
@@ -8,7 +10,7 @@ public static class HouseEndpoints
 {
     public static void MapHouseEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/houses").WithTags("Houses");
+        var group = app.MapGroup("/api/houses").WithTags("Houses").RequireAuthorization();
 
         // GET /api/houses
         group.MapGet("/", async (IUnitOfWork uow, CancellationToken ct) =>
@@ -55,18 +57,22 @@ public static class HouseEndpoints
 
 
         // POST /api/houses/join
-        group.MapPost("/join", async (JoinHouseRequest req, IUnitOfWork uow, CancellationToken ct) =>
+        group.MapPost("/join", async (JoinHouseRequest req, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
+            var actorUserId = ResolveActorUserId(principal, req.UserId);
+            if (actorUserId is null)
+                return Results.BadRequest("User id is required in token claims or request body.");
+
             var house = await uow.Houses.GetByCodeAsync(req.Code, ct);
             if (house is null) return Results.NotFound("Invalid invite code.");
 
-            var user = await uow.Users.GetByIdAsync(req.UserId, ct);
+            var user = await uow.Users.GetByIdAsync(actorUserId.Value, ct);
             if (user is null) return Results.NotFound("User not found.");
 
-            if (await uow.HouseMembers.IsMemberAsync(house.Id, req.UserId, ct))
+            if (await uow.HouseMembers.IsMemberAsync(house.Id, actorUserId.Value, ct))
                 return Results.Conflict("User is already a member of this house.");
 
-            await uow.HouseMembers.AddAsync(HouseMember.Create(house.Id, req.UserId, HouseMemberRole.Member), ct);
+            await uow.HouseMembers.AddAsync(HouseMember.Create(house.Id, actorUserId.Value, HouseMemberRole.Member), ct);
             await uow.SaveChangesAsync(ct);
 
             return Results.Ok(new { house.Id, house.Name });
@@ -96,12 +102,16 @@ public static class HouseEndpoints
         .WithSummary("Remove a member from a house");
 
         // POST /api/houses
-        group.MapPost("/", async (CreateHouseRequest req, IUnitOfWork uow, CancellationToken ct) =>
+        group.MapPost("/", async (CreateHouseRequest req, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
-            var user = await uow.Users.GetByIdAsync(req.UserId, ct);
+            var actorUserId = ResolveActorUserId(principal, req.UserId);
+            if (actorUserId is null)
+                return Results.BadRequest("User id is required in token claims or request body.");
+
+            var user = await uow.Users.GetByIdAsync(actorUserId.Value, ct);
             if (user is null) return Results.NotFound("User not found.");
 
-            var house = House.Create(req.Name, req.UserId);
+            var house = House.Create(req.Name, actorUserId.Value);
 
             await uow.Houses.AddAsync(house, ct);
             await uow.SaveChangesAsync(ct);
@@ -128,6 +138,21 @@ public static class HouseEndpoints
 
     private static HouseResponse ToResponse(House h) =>
         new(h.Id, h.Name, h.Code, h.IsPersonal, h.CreatedAt, h.UpdatedAt);
+
+    private static Guid? ResolveActorUserId(ClaimsPrincipal principal, Guid? requestUserId)
+    {
+        var claimValue = principal.FindFirstValue(AuthClaimTypes.UserId)
+            ?? principal.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? principal.FindFirstValue("sub");
+
+        if (Guid.TryParse(claimValue, out var claimUserId))
+            return claimUserId;
+
+        if (requestUserId is { } value && value != Guid.Empty)
+            return value;
+
+        return null;
+    }
 }
 
 // ── Request / Response records ────────────────────────────────────────────────
