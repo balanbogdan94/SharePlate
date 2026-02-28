@@ -338,3 +338,33 @@ Removed   → Pending    (user restores it)
 | OQ-5 | Can a Purchased shopping item revert to Pending?           | ✅ Yes — undo support, all reverse transitions allowed                 |
 | OQ-6 | Are Recipes public or per-house?                           | ✅ Global — owned by User, usable in any house's meal plan             |
 | OQ-7 | Can a MealPlan span multiple houses?                       | ✅ No — `MealPlan.HouseId` is a required FK                            |
+
+---
+
+## 11. API Authentication Flow (JWT + Refresh)
+
+### 11.1 Endpoints
+
+- `POST /api/auth/register` — creates a user account.
+- `POST /api/auth/login` — validates credentials and issues tokens.
+- `POST /api/auth/refresh` — rotates refresh token and returns new tokens.
+- `POST /api/auth/logout` — revokes refresh token(s).
+- `POST /api/auth/reset-password/initiate` and `POST /api/auth/reset-password/complete` — password reset flow.
+
+### 11.2 Token Model
+
+- Access token: short-lived JWT, sent as `Authorization: Bearer <token>`.
+- Refresh token: long-lived opaque token, stored hashed in `RefreshTokens` and rotated on refresh.
+- Refresh token reuse (already revoked token) must be treated as invalid and denied.
+
+### 11.3 Legacy Password Policy
+
+- Accounts with legacy SHA-256 password hashes are blocked from login.
+- Login returns `password_reset_required`.
+- User must complete reset-password flow before obtaining tokens.
+
+### 11.4 Hybrid Transition Rule (Claims preferred)
+
+- During migration, endpoints that previously accepted `userId` in request body still accept it.
+- If authenticated claim user id exists (`shareplate:user_id`, then `nameidentifier`, then `sub`), claim value is authoritative.
+- Body `userId` is fallback only for compatibility during transition.
