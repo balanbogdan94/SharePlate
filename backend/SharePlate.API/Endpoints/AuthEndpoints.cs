@@ -90,17 +90,38 @@ public static class AuthEndpoints
         .WithSummary("Revoke refresh token(s) and log out");
 
         // POST /api/auth/reset-password/initiate
-        group.MapPost("/reset-password/initiate", (ResetPasswordInitiateRequest _) =>
+        group.MapPost("/reset-password/initiate", async (ResetPasswordInitiateRequest req, IAuthService authService, CancellationToken ct) =>
         {
-            return Results.StatusCode(StatusCodes.Status501NotImplemented);
+            var resetResult = await authService.InitiatePasswordResetAsync(req.Email, ct);
+            if (!resetResult.Succeeded)
+            {
+                return Results.BadRequest(new AuthErrorResponse(
+                    resetResult.ErrorCode ?? AuthErrorCodes.InvalidCredentials,
+                    resetResult.ErrorMessage ?? "Unable to initiate password reset."));
+            }
+
+            if (string.IsNullOrWhiteSpace(resetResult.ResetToken) || resetResult.ExpiresAtUtc is null)
+            {
+                return Results.NoContent();
+            }
+
+            return Results.Ok(new ResetPasswordInitiateResponse(resetResult.ResetToken, resetResult.ExpiresAtUtc.Value));
         })
         .WithName("InitiatePasswordReset")
         .WithSummary("Initiate password reset flow");
 
         // POST /api/auth/reset-password/complete
-        group.MapPost("/reset-password/complete", (ResetPasswordCompleteRequest _) =>
+        group.MapPost("/reset-password/complete", async (ResetPasswordCompleteRequest req, IAuthService authService, CancellationToken ct) =>
         {
-            return Results.StatusCode(StatusCodes.Status501NotImplemented);
+            var completionResult = await authService.CompletePasswordResetAsync(req.ResetToken, req.NewPassword, ct);
+            if (!completionResult.Succeeded)
+            {
+                return Results.BadRequest(new AuthErrorResponse(
+                    completionResult.ErrorCode ?? AuthErrorCodes.InvalidPasswordResetToken,
+                    completionResult.ErrorMessage ?? "Could not reset password."));
+            }
+
+            return Results.NoContent();
         })
         .WithName("CompletePasswordReset")
         .WithSummary("Complete password reset with reset token");
@@ -113,6 +134,7 @@ public record RefreshTokenRequest(string RefreshToken);
 public record LogoutRequest(string RefreshToken);
 public record ResetPasswordInitiateRequest(string Email);
 public record ResetPasswordCompleteRequest(string ResetToken, string NewPassword);
+public record ResetPasswordInitiateResponse(string ResetToken, DateTime ExpiresAtUtc);
 public record RegisterResponse(Guid Id, string Name, string Email);
 public record AuthErrorResponse(string Code, string Message);
 public record TokenResponse(string AccessToken, string RefreshToken, DateTime ExpiresAtUtc);
