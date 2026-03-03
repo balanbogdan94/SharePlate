@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/api/users
+  url: {{baseUrl}}/api/api/auth/register
   body: json
   auth: none
 }
@@ -16,15 +16,15 @@ headers {
 
 body:json {
   {
-    "name": "{{ownerName}}",
-    "email": "{{ownerEmail}}",
-    "password": "{{ownerPassword}}"
+    "name": "bobo2",
+    "email": "bobo2@gmail.com",
+    "password": "Test2222!"
   }
 }
 
 script:post-response {
   const data = res.getBody();
-
+  
   if (data?.id) {
     bru.setEnvVar("ownerUserId", data.id, { persist: true });
   }
