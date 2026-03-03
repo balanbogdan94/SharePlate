@@ -15,8 +15,6 @@ public static class AuthEndpoints
 
         // POST /api/auth/register
         group
-        .WithName("Register")
-        .WithSummary("Register a new account")
         .MapPost("/register", async (RegisterRequest req, IAuthService authService, CancellationToken ct) =>
         {
             var registrationResult = await authService.RegisterAsync(req.Name, req.Email, req.Password, ct);
@@ -29,7 +27,9 @@ public static class AuthEndpoints
             }
 
             return Results.Created($"/api/users/{registrationResult.UserId}", new RegisterResponse(registrationResult.UserId.Value, req.Name, req.Email));
-        });
+        })
+        .WithName("Register")
+        .WithSummary("Register a new account");
 
 
 
@@ -37,8 +37,6 @@ public static class AuthEndpoints
 
         // POST /api/auth/login
         group
-        .WithName("Login")
-        .WithSummary("Authenticate user and issue tokens")
         .MapPost("/login", async (LoginRequest req, IAuthService authService, ITokenService tokenService, CancellationToken ct) =>
         {
             var validationResult = await authService.ValidateCredentialsAsync(req.Email, req.Password, ct);
@@ -67,7 +65,9 @@ public static class AuthEndpoints
                 tokenResult.AccessToken!,
                 tokenResult.RefreshToken!,
                 tokenResult.AccessTokenExpiresAtUtc!.Value));
-        });
+        })
+        .WithName("Login")
+        .WithSummary("Authenticate user and issue tokens");
 
 
         // POST /api/auth/refresh
