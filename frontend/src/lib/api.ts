@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE = '/api';
+const DEFAULT_API_BASE = 'http://localhost:5211/api';
 
 export const apiBaseUrl =
 	import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? DEFAULT_API_BASE;
