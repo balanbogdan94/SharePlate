@@ -1,5 +1,6 @@
 using SharePlate.Core.Constants.Auth;
 using SharePlate.API.Services;
+using System.ComponentModel.DataAnnotations;
 
 namespace SharePlate.API.Endpoints;
 
@@ -7,28 +8,38 @@ public static class AuthEndpoints
 {
     public static void MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/auth").WithTags("Auth");
+        var group = app.MapGroup("/auth").WithTags("Auth");
+
+
+
 
         // POST /api/auth/register
-        group.MapPost("/register", async (RegisterRequest req, IAuthService authService, CancellationToken ct) =>
+        group
+        .WithName("Register")
+        .WithSummary("Register a new account")
+        .MapPost("/register", async (RegisterRequest req, IAuthService authService, CancellationToken ct) =>
         {
             var registrationResult = await authService.RegisterAsync(req.Name, req.Email, req.Password, ct);
 
-            if (!registrationResult.Succeeded)
+            if (!registrationResult.Succeeded || registrationResult.UserId is null)
             {
                 return Results.Conflict(new AuthErrorResponse(
                     registrationResult.ErrorCode ?? AuthErrorCodes.InvalidCredentials,
                     registrationResult.ErrorMessage ?? "Unable to register user."));
             }
 
-            var user = registrationResult.User!;
-            return Results.Created($"/api/users/{user.Id}", new RegisterResponse(user.Id, user.Name, user.Email));
-        })
-        .WithName("Register")
-        .WithSummary("Register a new account");
+            return Results.Created($"/api/users/{registrationResult.UserId}", new RegisterResponse(registrationResult.UserId.Value, req.Name, req.Email));
+        });
+
+
+
+
 
         // POST /api/auth/login
-        group.MapPost("/login", async (LoginRequest req, IAuthService authService, ITokenService tokenService, CancellationToken ct) =>
+        group
+        .WithName("Login")
+        .WithSummary("Authenticate user and issue tokens")
+        .MapPost("/login", async (LoginRequest req, IAuthService authService, ITokenService tokenService, CancellationToken ct) =>
         {
             var validationResult = await authService.ValidateCredentialsAsync(req.Email, req.Password, ct);
 
@@ -56,9 +67,8 @@ public static class AuthEndpoints
                 tokenResult.AccessToken!,
                 tokenResult.RefreshToken!,
                 tokenResult.AccessTokenExpiresAtUtc!.Value));
-        })
-        .WithName("Login")
-        .WithSummary("Authenticate user and issue tokens");
+        });
+
 
         // POST /api/auth/refresh
         group.MapPost("/refresh", async (RefreshTokenRequest req, ITokenService tokenService, CancellationToken ct) =>
@@ -128,8 +138,28 @@ public static class AuthEndpoints
     }
 }
 
-public record RegisterRequest(string Name, string Email, string Password);
-public record LoginRequest(string Email, string Password);
+public record RegisterRequest(
+    [property: Required, StringLength(100, MinimumLength = 2)]
+    string Name,
+
+    [property: Required, EmailAddress, StringLength(256)]
+    string Email,
+
+    [property: Required]
+    [property: StringLength(128, MinimumLength = 8)]
+    [property: RegularExpression(
+        @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,128}$",
+        ErrorMessage = "Password must contain upper, lower, digit, and special character."
+    )]
+    string Password
+);
+public record LoginRequest(
+    [property: Required, EmailAddress]
+    string Email,
+
+    [property: Required]
+    string Password
+);
 public record RefreshTokenRequest(string RefreshToken);
 public record LogoutRequest(string RefreshToken);
 public record ResetPasswordInitiateRequest(string Email);

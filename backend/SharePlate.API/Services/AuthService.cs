@@ -30,9 +30,7 @@ public class AuthService : IAuthService
     {
         if (await _uow.Users.EmailExistsAsync(email, ct))
         {
-            return new RegisterUserResult(
-                false,
-                null,
+            return RegisterUserResult.Failure(
                 AuthErrorCodes.InvalidCredentials,
                 $"Email '{email}' is already in use.");
         }
@@ -43,7 +41,7 @@ public class AuthService : IAuthService
         await _uow.Users.AddAsync(user, ct);
         await _uow.SaveChangesAsync(ct);
 
-        return new RegisterUserResult(true, user);
+        return RegisterUserResult.Success(user.Id);
     }
 
     public async Task<ValidateCredentialsResult> ValidateCredentialsAsync(string email, string password, CancellationToken ct = default)

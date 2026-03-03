@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SharePlate.API.Configuration;
 using SharePlate.API.Endpoints;
+using SharePlate.API.Filters;
 using SharePlate.API.Services;
 using SharePlate.Core.Constants.Auth;
 using SharePlate.Core.Repositories;
@@ -126,8 +127,11 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapAuthEndpoints();
-app.MapUserEndpoints();
-app.MapHouseEndpoints();
+var api = app.MapGroup("/api")
+             .AddEndpointFilter<DataAnnotationValidationFilter>();
+
+api.MapAuthEndpoints();
+api.MapUserEndpoints();
+api.MapHouseEndpoints();
 
 app.Run();

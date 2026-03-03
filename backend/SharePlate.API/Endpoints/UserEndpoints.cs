@@ -37,21 +37,6 @@ public static class UserEndpoints
         .WithName("GetAllUsers")
         .WithSummary("Get all users");
 
-        // POST /api/users
-        group.MapPost("/", async (CreateUserRequest req, IAuthService authService, CancellationToken ct) =>
-        {
-            var registrationResult = await authService.RegisterAsync(req.Name, req.Email, req.Password, ct);
-            if (!registrationResult.Succeeded)
-                return Results.Conflict(registrationResult.ErrorMessage);
-
-            var user = registrationResult.User!;
-
-            return Results.Created($"/api/users/{user.Id}", ToResponse(user));
-        })
-        .AllowAnonymous()
-        .WithName("CreateUser")
-        .WithSummary("Create a new user");
-
         // PUT /api/users/{id}/name
         group.MapPut("/{id:guid}/name", async (Guid id, UpdateUserNameRequest req, IUnitOfWork uow, CancellationToken ct) =>
         {
