@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { useAuth } from '@/auth/AuthContext';
+import { useI18n } from '@/i18n/I18nContext';
 import { apiFetch } from '@/lib/api';
 
 type LoginRequest = {
@@ -26,6 +27,7 @@ export function LoginPage() {
 	const [password, setPassword] = useState('');
 	const auth = useAuth();
 	const navigate = useNavigate();
+	const { t } = useI18n();
 
 	const loginMutation = useMutation({
 		mutationFn: (payload: LoginRequest) =>
@@ -47,21 +49,21 @@ export function LoginPage() {
 
 	return (
 		<AuthShell
-			title='Welcome back'
-			description='Sign in to continue to your household workspace.'
+			title={t('auth.login.title')}
+			description={t('auth.login.description')}
 			footer={
-				<p className='text-center text-sm text-stone-600'>
-					No account yet?{' '}
+				<p className='text-center text-sm text-stone-600 dark:text-stone-300'>
+					{t('auth.login.noAccount')}{' '}
 					<Link
 						to='/register'
-						className='font-semibold text-stone-900 underline-offset-4 hover:underline'>
-						Register
+						className='font-semibold text-stone-900 underline-offset-4 hover:underline dark:text-stone-100'>
+						{t('auth.login.register')}
 					</Link>
 				</p>
 			}>
 			<form className='space-y-4' onSubmit={handleSubmit}>
 				<div className='space-y-2'>
-					<Label htmlFor='login-email'>Email</Label>
+					<Label htmlFor='login-email'>{t('auth.login.email')}</Label>
 					<Input
 						id='login-email'
 						type='email'
@@ -72,7 +74,7 @@ export function LoginPage() {
 					/>
 				</div>
 				<div className='space-y-2'>
-					<Label htmlFor='login-password'>Pass</Label>
+					<Label htmlFor='login-password'>{t('auth.login.password')}</Label>
 					<Input
 						id='login-password'
 						type='password'
@@ -85,17 +87,18 @@ export function LoginPage() {
 
 				<Button
 					type='submit'
-					className='w-full bg-stone-900 text-white hover:bg-stone-800'
+					className='w-full'
 					disabled={loginMutation.isPending}>
-					{loginMutation.isPending ? 'Signing in...' : 'Sign in'}
+					{loginMutation.isPending
+						? t('auth.login.submitting')
+						: t('auth.login.submit')}
 				</Button>
 
 				{loginMutation.isError && (
 					<Alert variant='destructive'>
-						<AlertTitle>Login failed</AlertTitle>
+						<AlertTitle>{t('auth.login.errorTitle')}</AlertTitle>
 						<AlertDescription>
-							{loginMutation.error.message ||
-								'Invalid credentials. Please try again.'}
+							{loginMutation.error.message || t('auth.login.errorDescription')}
 						</AlertDescription>
 					</Alert>
 				)}

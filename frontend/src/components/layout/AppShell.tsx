@@ -7,7 +7,13 @@ import {
 } from '@tanstack/react-router';
 import { House, Layers3, Settings2, UserCircle2 } from 'lucide-react';
 import { useAuth } from '@/auth/AuthContext';
+import { useI18n } from '@/i18n/I18nContext';
 import { apiFetch } from '@/lib/api';
+import {
+	type Language,
+	type Theme,
+	useUserSettings,
+} from '@/settings/UserSettingsContext';
 
 type TabItem = {
 	to: '/' | '/tab-2' | '/tab-3';
@@ -15,18 +21,20 @@ type TabItem = {
 	icon: typeof House;
 };
 
-const tabs: TabItem[] = [
-	{ to: '/', label: 'Home', icon: House },
-	{ to: '/tab-2', label: 'Board', icon: Layers3 },
-	{ to: '/tab-3', label: 'More', icon: Settings2 },
-];
-
 export function AppShell() {
 	const auth = useAuth();
 	const navigate = useNavigate();
 	const location = useLocation();
+	const { t } = useI18n();
+	const { theme, setTheme, language, setLanguage } = useUserSettings();
 	const [menuOpen, setMenuOpen] = useState(false);
 	const menuRef = useRef<HTMLDivElement | null>(null);
+
+	const tabs: TabItem[] = [
+		{ to: '/', label: t('tabs.home'), icon: House },
+		{ to: '/tab-2', label: t('tabs.board'), icon: Layers3 },
+		{ to: '/tab-3', label: t('tabs.more'), icon: Settings2 },
+	];
 
 	useEffect(() => {
 		const onDocumentClick = (event: MouseEvent) => {
@@ -59,28 +67,56 @@ export function AppShell() {
 	};
 
 	return (
-		<div className='min-h-screen bg-stone-100 text-stone-900'>
-			<header className='sticky top-0 z-20 border-b border-stone-200/80 bg-white/90 backdrop-blur-md'>
+		<div className='min-h-screen bg-stone-100 text-stone-900 dark:bg-stone-950 dark:text-stone-100'>
+			<header className='sticky top-0 z-20 border-b border-stone-200/80 bg-white/90 backdrop-blur-md dark:border-stone-800 dark:bg-stone-900/90'>
 				<div className='mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-4'>
-					<p className='text-base font-semibold tracking-tight'>SharePlate</p>
+					<p className='text-base font-semibold tracking-tight'>{t('app.brand')}</p>
 
 					<div className='relative' ref={menuRef}>
 						<button
 							type='button'
 							onClick={() => setMenuOpen((prev) => !prev)}
-							className='inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm font-medium text-stone-700 shadow-sm transition hover:bg-stone-50'>
+							className='inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm font-medium text-stone-700 shadow-sm transition hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800'>
 							<UserCircle2 className='h-5 w-5' />
-							Profile
+							{t('shell.profile')}
 						</button>
 
 						{menuOpen && (
-							<div className='absolute right-0 mt-2 w-40 rounded-xl border border-stone-200 bg-white p-2 shadow-lg'>
-								<button
-									type='button'
-									onClick={handleLogout}
-									className='w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50'>
-									Logout
-								</button>
+							<div className='absolute right-0 mt-2 w-52 rounded-xl border border-stone-200 bg-white p-3 shadow-lg dark:border-stone-700 dark:bg-stone-900'>
+								<div className='space-y-3'>
+									<label className='block text-xs font-medium text-stone-500 dark:text-stone-400'>
+										{t('shell.theme')}
+										<select
+											value={theme}
+											onChange={(event) =>
+												setTheme(event.target.value as Theme)
+											}
+											className='mt-1 w-full rounded-md border border-stone-300 bg-white px-2 py-1.5 text-sm text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100'>
+											<option value='light'>{t('shell.theme.light')}</option>
+											<option value='dark'>{t('shell.theme.dark')}</option>
+										</select>
+									</label>
+
+									<label className='block text-xs font-medium text-stone-500 dark:text-stone-400'>
+										{t('shell.language')}
+										<select
+											value={language}
+											onChange={(event) =>
+												setLanguage(event.target.value as Language)
+											}
+											className='mt-1 w-full rounded-md border border-stone-300 bg-white px-2 py-1.5 text-sm text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100'>
+											<option value='en'>{t('shell.language.en')}</option>
+											<option value='ro'>{t('shell.language.ro')}</option>
+										</select>
+									</label>
+
+									<button
+										type='button'
+										onClick={handleLogout}
+										className='w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50 dark:hover:bg-red-950/40'>
+										{t('shell.logout')}
+									</button>
+								</div>
 							</div>
 						)}
 					</div>
@@ -91,8 +127,8 @@ export function AppShell() {
 				<Outlet />
 			</main>
 
-			<footer className='fixed bottom-0 left-0 right-0 z-20 border-t border-stone-200/80 bg-white/90 pb-4 pt-2 backdrop-blur-md'>
-				<div className='mx-auto grid w-full max-w-md grid-cols-3 gap-2 rounded-2xl bg-stone-100/80 p-2'>
+			<footer className='fixed bottom-0 left-0 right-0 z-20 border-t border-stone-200/80 bg-white/90 pb-4 pt-2 backdrop-blur-md dark:border-stone-800 dark:bg-stone-900/90'>
+				<div className='mx-auto grid w-full max-w-md grid-cols-3 gap-2 rounded-2xl bg-stone-100/80 p-2 dark:bg-stone-800/70'>
 					{tabs.map((tab) => {
 						const Icon = tab.icon;
 						const isActive = location.pathname === tab.to;
@@ -103,8 +139,8 @@ export function AppShell() {
 								to={tab.to}
 								className={`flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-xs font-medium transition ${
 									isActive
-										? 'bg-white text-stone-900 shadow-sm'
-										: 'text-stone-500 hover:text-stone-700'
+										? 'bg-white text-stone-900 shadow-sm dark:bg-stone-700 dark:text-stone-100'
+										: 'text-stone-500 hover:text-stone-700 dark:text-stone-300 dark:hover:text-stone-100'
 								}`}>
 								<Icon className='h-4 w-4' />
 								<span>{tab.label}</span>

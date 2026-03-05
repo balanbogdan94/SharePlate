@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthShell } from '@/components/auth/AuthShell';
+import { useI18n } from '@/i18n/I18nContext';
 import { apiFetch } from '@/lib/api';
 
 type RegisterRequest = {
@@ -21,9 +22,6 @@ type RegisterResponse = {
 	email: string;
 };
 
-const passwordHint =
-	'8+ characters with uppercase, lowercase, number, and special symbol.';
-
 export function RegisterPage() {
 	const [name, setName] = useState('');
 	const [email, setEmail] = useState('');
@@ -31,6 +29,7 @@ export function RegisterPage() {
 	const [repeatPassword, setRepeatPassword] = useState('');
 	const [passwordMismatch, setPasswordMismatch] = useState(false);
 	const navigate = useNavigate();
+	const { t } = useI18n();
 
 	const registerMutation = useMutation({
 		mutationFn: (payload: RegisterRequest) =>
@@ -58,21 +57,21 @@ export function RegisterPage() {
 
 	return (
 		<AuthShell
-			title='Create your account'
-			description='Register to start meal planning with your people.'
+			title={t('auth.register.title')}
+			description={t('auth.register.description')}
 			footer={
-				<p className='text-center text-sm text-stone-600'>
-					Already have an account?{' '}
+				<p className='text-center text-sm text-stone-600 dark:text-stone-300'>
+					{t('auth.register.alreadyAccount')}{' '}
 					<Link
 						to='/login'
-						className='font-semibold text-stone-900 underline-offset-4 hover:underline'>
-						Sign in
+						className='font-semibold text-stone-900 underline-offset-4 hover:underline dark:text-stone-100'>
+						{t('auth.register.signIn')}
 					</Link>
 				</p>
 			}>
 			<form className='space-y-4' onSubmit={handleSubmit}>
 				<div className='space-y-2'>
-					<Label htmlFor='register-name'>Name</Label>
+					<Label htmlFor='register-name'>{t('auth.register.name')}</Label>
 					<Input
 						id='register-name'
 						autoComplete='name'
@@ -82,7 +81,7 @@ export function RegisterPage() {
 					/>
 				</div>
 				<div className='space-y-2'>
-					<Label htmlFor='register-email'>Email</Label>
+					<Label htmlFor='register-email'>{t('auth.register.email')}</Label>
 					<Input
 						id='register-email'
 						type='email'
@@ -93,7 +92,7 @@ export function RegisterPage() {
 					/>
 				</div>
 				<div className='space-y-2'>
-					<Label htmlFor='register-password'>Pass</Label>
+					<Label htmlFor='register-password'>{t('auth.register.password')}</Label>
 					<Input
 						id='register-password'
 						type='password'
@@ -102,10 +101,14 @@ export function RegisterPage() {
 						onChange={(event) => setPassword(event.target.value)}
 						required
 					/>
-					<p className='text-xs text-stone-500'>{passwordHint}</p>
+					<p className='text-xs text-stone-500 dark:text-stone-400'>
+						{t('auth.register.passwordHint')}
+					</p>
 				</div>
 				<div className='space-y-2'>
-					<Label htmlFor='register-repeat-password'>Repeat pass</Label>
+					<Label htmlFor='register-repeat-password'>
+						{t('auth.register.repeatPassword')}
+					</Label>
 					<Input
 						id='register-repeat-password'
 						type='password'
@@ -116,28 +119,27 @@ export function RegisterPage() {
 					/>
 				</div>
 
-				<Button
-					type='submit'
-					className='w-full bg-stone-900 text-white hover:bg-stone-800'
-					disabled={registerMutation.isPending}>
-					{registerMutation.isPending ? 'Creating account...' : 'Create account'}
+				<Button type='submit' className='w-full' disabled={registerMutation.isPending}>
+					{registerMutation.isPending
+						? t('auth.register.submitting')
+						: t('auth.register.submit')}
 				</Button>
 
 				{passwordMismatch && (
 					<Alert variant='destructive'>
-						<AlertTitle>Password mismatch</AlertTitle>
+						<AlertTitle>{t('auth.register.passwordMismatchTitle')}</AlertTitle>
 						<AlertDescription>
-							Pass and Repeat pass must be the same.
+							{t('auth.register.passwordMismatchDescription')}
 						</AlertDescription>
 					</Alert>
 				)}
 
 				{registerMutation.isError && (
 					<Alert variant='destructive'>
-						<AlertTitle>Registration failed</AlertTitle>
+						<AlertTitle>{t('auth.register.errorTitle')}</AlertTitle>
 						<AlertDescription>
 							{registerMutation.error.message ||
-								'Could not create account. Please try again.'}
+								t('auth.register.errorDescription')}
 						</AlertDescription>
 					</Alert>
 				)}
