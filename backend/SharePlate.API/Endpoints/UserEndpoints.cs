@@ -1,6 +1,7 @@
-using Humanizer;
+using System.Security.Claims;
 using SharePlate.API.Contracts.Users;
 using SharePlate.Core.Entities;
+using SharePlate.Core.Extensions.Security;
 using SharePlate.Core.Repositories;
 
 namespace SharePlate.API.Endpoints;
@@ -14,8 +15,14 @@ public static class UserEndpoints
 
 
         // GET /api/users/{id}
-        group.MapGet("/{id:guid}", async (Guid id, IUnitOfWork uow, CancellationToken ct) =>
+        group.MapGet("/{id:guid}", async (Guid id, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
+            if (!principal.TryGetUserId(out var actorUserId))
+                return Results.Unauthorized();
+
+            if (actorUserId != id)
+                return Results.Forbid();
+
             var user = await uow.Users.GetByIdAsync(id, ct);
             return user is null ? Results.NotFound() : Results.Ok(ToUserResponse(user));
         })
@@ -26,9 +33,19 @@ public static class UserEndpoints
 
 
         // GET /api/users/by-email/{email}
-        group.MapGet("/by-email/{email}", async (string email, IUnitOfWork uow, CancellationToken ct) =>
+        group.MapGet("/by-email/{email}", async (string email, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
-            var user = await uow.Users.GetByEmailAsync(email, ct);
+            if (!principal.TryGetUserId(out var actorUserId))
+                return Results.Unauthorized();
+
+            var actor = await uow.Users.GetByIdAsync(actorUserId, ct);
+            if (actor is null)
+                return Results.Unauthorized();
+
+            if (!string.Equals(actor.Email, email, StringComparison.OrdinalIgnoreCase))
+                return Results.Forbid();
+
+            var user = await uow.Users.GetByEmailAsync(actor.Email, ct);
             return user is null ? Results.NotFound() : Results.Ok(ToUserResponse(user));
         })
         .WithName("GetUserByEmail")
@@ -37,8 +54,14 @@ public static class UserEndpoints
 
 
         // PUT /api/users/{id}/name
-        group.MapPut("/{id:guid}/name", async (Guid id, UpdateUserNameRequest req, IUnitOfWork uow, CancellationToken ct) =>
+        group.MapPut("/{id:guid}/name", async (Guid id, UpdateUserNameRequest req, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
+            if (!principal.TryGetUserId(out var actorUserId))
+                return Results.Unauthorized();
+
+            if (actorUserId != id)
+                return Results.Forbid();
+
             var user = await uow.Users.GetByIdAsync(id, ct);
             if (user is null) return Results.NotFound();
 
@@ -54,8 +77,14 @@ public static class UserEndpoints
 
 
         // DELETE /api/users/{id}
-        group.MapDelete("/{id:guid}", async (Guid id, IUnitOfWork uow, CancellationToken ct) =>
+        group.MapDelete("/{id:guid}", async (Guid id, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
+            if (!principal.TryGetUserId(out var actorUserId))
+                return Results.Unauthorized();
+
+            if (actorUserId != id)
+                return Results.Forbid();
+
             var user = await uow.Users.GetByIdAsync(id, ct);
             if (user is null) return Results.NotFound();
 

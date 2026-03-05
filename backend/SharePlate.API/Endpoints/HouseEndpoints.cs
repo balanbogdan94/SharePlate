@@ -14,8 +14,14 @@ public static class HouseEndpoints
         var group = app.MapGroup("/api/houses").WithTags("Houses").RequireAuthorization();
 
         // GET /api/houses/{id}
-        group.MapGet("/{id:guid}", async (Guid id, IUnitOfWork uow, CancellationToken ct) =>
+        group.MapGet("/{id:guid}", async (Guid id, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
+            if (!principal.TryGetUserId(out var actorUserId))
+                return Results.Unauthorized();
+
+            if (!await uow.HouseMembers.IsMemberAsync(id, actorUserId, ct))
+                return Results.Forbid();
+
             var house = await uow.Houses.GetByIdAsync(id, ct);
             return house is null ? Results.NotFound() : Results.Ok(ToResponse(house));
         })
@@ -26,8 +32,14 @@ public static class HouseEndpoints
 
 
         // GET /api/houses/{id}/members
-        group.MapGet("/{id:guid}/members", async (Guid id, IUnitOfWork uow, CancellationToken ct) =>
+        group.MapGet("/{id:guid}/members", async (Guid id, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
+            if (!principal.TryGetUserId(out var actorUserId))
+                return Results.Unauthorized();
+
+            if (!await uow.HouseMembers.IsMemberAsync(id, actorUserId, ct))
+                return Results.Forbid();
+
             var house = await uow.Houses.GetWithMembersAsync(id, ct);
             if (house is null) return Results.NotFound();
 
@@ -78,8 +90,14 @@ public static class HouseEndpoints
 
 
         // DELETE /api/houses/{id}/members/{userId}
-        group.MapDelete("/{id:guid}/members/{userId:guid}", async (Guid id, Guid userId, IUnitOfWork uow, CancellationToken ct) =>
+        group.MapDelete("/{id:guid}/members/{userId:guid}", async (Guid id, Guid userId, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
+            if (!principal.TryGetUserId(out var actorUserId))
+                return Results.Unauthorized();
+
+            if (!await uow.HouseMembers.IsOwnerAsync(id, actorUserId, ct))
+                return Results.Forbid();
+
             var house = await uow.Houses.GetWithMembersAsync(id, ct);
             if (house is null) return Results.NotFound();
 
@@ -125,8 +143,14 @@ public static class HouseEndpoints
 
 
         // DELETE /api/houses/{id}
-        group.MapDelete("/{id:guid}", async (Guid id, IUnitOfWork uow, CancellationToken ct) =>
+        group.MapDelete("/{id:guid}", async (Guid id, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
+            if (!principal.TryGetUserId(out var actorUserId))
+                return Results.Unauthorized();
+
+            if (!await uow.HouseMembers.IsOwnerAsync(id, actorUserId, ct))
+                return Results.Forbid();
+
             var house = await uow.Houses.GetByIdAsync(id, ct);
             if (house is null) return Results.NotFound();
 
