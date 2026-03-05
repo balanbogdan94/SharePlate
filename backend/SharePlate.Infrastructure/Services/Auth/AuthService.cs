@@ -1,14 +1,16 @@
+using SharePlate.Core.Configuration;
 using SharePlate.Core.Constants.Auth;
 using SharePlate.Core.Entities;
+using SharePlate.Core.Extensions.Security;
 using SharePlate.Core.Repositories;
+using SharePlate.Core.Services.Auth;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using SharePlate.API.Configuration;
 
-namespace SharePlate.API.Services;
+namespace SharePlate.Infrastructure.Services.Auth;
 
 public class AuthService : IAuthService
 {
@@ -138,11 +140,7 @@ public class AuthService : IAuthService
                 "Invalid or expired password reset token.");
         }
 
-        var userIdClaim = tokenPrincipal.FindFirstValue(AuthClaimTypes.UserId)
-            ?? tokenPrincipal.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? tokenPrincipal.FindFirstValue(JwtRegisteredClaimNames.Sub)
-            ?? tokenPrincipal.FindFirstValue("sub");
-        if (!Guid.TryParse(userIdClaim, out var userId))
+        if (!tokenPrincipal.TryGetUserId(out var userId))
         {
             return new CompletePasswordResetResult(
                 false,

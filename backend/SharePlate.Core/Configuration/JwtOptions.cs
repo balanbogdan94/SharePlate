@@ -1,4 +1,4 @@
-namespace SharePlate.API.Configuration;
+namespace SharePlate.Core.Configuration;
 
 public sealed class JwtOptions
 {

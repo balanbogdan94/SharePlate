@@ -1,6 +1,6 @@
 using SharePlate.Core.Entities;
 
-namespace SharePlate.API.Services;
+namespace SharePlate.Core.Services.Auth;
 
 public interface IAuthService
 {
@@ -31,6 +31,7 @@ public sealed record RegisterUserResult
     public static RegisterUserResult Failure(string errorCode, string errorMessage) =>
         new(false, null, errorCode, errorMessage);
 }
+
 public record ValidateCredentialsResult(bool Succeeded, User? User, string? ErrorCode = null, string? ErrorMessage = null);
 public record InitiatePasswordResetResult(bool Succeeded, string? ResetToken = null, DateTime? ExpiresAtUtc = null, string? ErrorCode = null, string? ErrorMessage = null);
 public record CompletePasswordResetResult(bool Succeeded, string? ErrorCode = null, string? ErrorMessage = null);

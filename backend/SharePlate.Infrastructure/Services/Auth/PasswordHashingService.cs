@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using SharePlate.Core.Constants;
+using SharePlate.Core.Services.Auth;
 
-namespace SharePlate.API.Services;
+namespace SharePlate.Infrastructure.Services.Auth;
 
 public class PasswordHashingService : IPasswordHashingService
 {

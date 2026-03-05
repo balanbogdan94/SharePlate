@@ -1,17 +1,16 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using SharePlate.API.Configuration;
 using SharePlate.API.Endpoints;
 using SharePlate.API.Filters;
-using SharePlate.API.Services;
+using SharePlate.Core.Configuration;
 using SharePlate.Core.Constants.Auth;
 using SharePlate.Core.Repositories;
 using SharePlate.Infrastructure.Data;
+using SharePlate.Infrastructure.Extensions;
 using SharePlate.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -122,10 +121,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddScoped<IPasswordHasher<string>, PasswordHasher<string>>();
-builder.Services.AddScoped<IPasswordHashingService, PasswordHashingService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddInfrastructureAuthServices();
 
 
 var app = builder.Build();

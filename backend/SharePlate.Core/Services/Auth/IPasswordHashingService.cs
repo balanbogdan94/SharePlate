@@ -1,4 +1,4 @@
-namespace SharePlate.API.Services;
+namespace SharePlate.Core.Services.Auth;
 
 public interface IPasswordHashingService
 {

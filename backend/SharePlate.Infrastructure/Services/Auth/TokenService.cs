@@ -2,14 +2,15 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Options;
-using SharePlate.API.Configuration;
+using Microsoft.IdentityModel.Tokens;
+using SharePlate.Core.Configuration;
 using SharePlate.Core.Constants.Auth;
 using SharePlate.Core.Entities;
 using SharePlate.Core.Repositories;
+using SharePlate.Core.Services.Auth;
 
-namespace SharePlate.API.Services;
+namespace SharePlate.Infrastructure.Services.Auth;
 
 public class TokenService : ITokenService
 {
