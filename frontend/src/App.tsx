@@ -1,1 +1,3 @@
-export { HomePage as default } from '@/pages/HomePage';
+export default function App() {
+	return null;
+}
