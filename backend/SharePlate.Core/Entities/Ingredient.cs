@@ -1,10 +1,12 @@
+using SharePlate.Core.Enums;
+
 namespace SharePlate.Core.Entities;
 
 public sealed class Ingredient : BaseEntity
 {
     private Ingredient() { }
 
-    public static Ingredient Create(string name, int defaultUnitId)
+    public static Ingredient Create(string name, UnitType defaultUnitId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
@@ -20,6 +22,6 @@ public sealed class Ingredient : BaseEntity
 
     public string Name { get; private set; } = string.Empty;
 
-    public int DefaultUnitId { get; private set; }
+    public UnitType DefaultUnitId { get; private set; }
     public Unit DefaultUnit { get; private set; } = null!;
 }

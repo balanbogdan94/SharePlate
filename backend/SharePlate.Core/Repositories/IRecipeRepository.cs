@@ -5,5 +5,7 @@ namespace SharePlate.Core.Repositories;
 public interface IRecipeRepository : IRepository<Recipe>
 {
     Task<Recipe?> GetWithIngredientsAsync(Guid recipeId, CancellationToken ct = default);
+    Task<IReadOnlyList<Recipe>> GetAllWithAuthorAsync(CancellationToken ct = default);
     Task<IReadOnlyList<Recipe>> GetByAuthorAsync(Guid authorId, CancellationToken ct = default);
+    Task<IReadOnlyList<Recipe>> SearchByNameAsync(string name, CancellationToken ct = default);
 }

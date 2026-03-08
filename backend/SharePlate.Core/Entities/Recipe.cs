@@ -4,15 +4,15 @@ public sealed class Recipe : BaseEntity
 {
     private Recipe() { }
 
-    public static Recipe Create(string name, string description, Guid authorId, string imageUrl = "")
+    public static Recipe Create(string title, string notes, Guid authorId, string imageUrl = "")
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentException.ThrowIfNullOrWhiteSpace(title);
 
         return new Recipe
         {
             Id = Guid.NewGuid(),
-            Name = name,
-            Description = description,
+            Title = title,
+            Notes = notes,
             AuthorId = authorId,
             ImageUrl = imageUrl,
             CreatedAt = DateTime.UtcNow,
@@ -20,8 +20,8 @@ public sealed class Recipe : BaseEntity
         };
     }
 
-    public string Name { get; private set; } = string.Empty;
-    public string Description { get; private set; } = string.Empty;
+    public string Title { get; private set; } = string.Empty;
+    public string Notes { get; private set; } = string.Empty;
     public string ImageUrl { get; private set; } = string.Empty;
 
     public Guid AuthorId { get; private set; }
@@ -29,16 +29,16 @@ public sealed class Recipe : BaseEntity
 
     public ICollection<RecipeIngredient> RecipeIngredients { get; private set; } = new List<RecipeIngredient>();
 
-    public void UpdateName(string name)
+    public void UpdateTitle(string title)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        Name = name;
+        ArgumentException.ThrowIfNullOrWhiteSpace(title);
+        Title = title;
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void UpdateDescription(string description)
+    public void UpdateNotes(string notes)
     {
-        Description = description;
+        Notes = notes;
         UpdatedAt = DateTime.UtcNow;
     }
 

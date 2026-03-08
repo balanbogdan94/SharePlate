@@ -17,4 +17,9 @@ public class IngredientRepository : Repository<Ingredient>, IIngredientRepositor
 
     public async Task<bool> NameExistsAsync(string name, CancellationToken ct = default)
         => await DbSet.AnyAsync(i => i.Name.ToLower() == name.ToLower(), ct);
+
+    public async Task<Ingredient?> GetByExactNameAsync(string name, CancellationToken ct = default)
+        => await DbSet
+            .Include(i => i.DefaultUnit)
+            .FirstOrDefaultAsync(i => i.Name.ToLower() == name.ToLower(), ct);
 }

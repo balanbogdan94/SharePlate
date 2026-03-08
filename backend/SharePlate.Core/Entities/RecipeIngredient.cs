@@ -1,10 +1,12 @@
+using SharePlate.Core.Enums;
+
 namespace SharePlate.Core.Entities;
 
 public sealed class RecipeIngredient : BaseEntity
 {
     private RecipeIngredient() { }
 
-    public static RecipeIngredient Create(Guid recipeId, Guid ingredientId, double quantity, int unitId)
+    public static RecipeIngredient Create(Guid recipeId, Guid ingredientId, double quantity, UnitType unitId)
     {
         if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be positive.");
 
@@ -28,13 +30,19 @@ public sealed class RecipeIngredient : BaseEntity
 
     public double Quantity { get; private set; }
 
-    public int UnitId { get; private set; }
+    public UnitType UnitId { get; private set; }
     public Unit Unit { get; private set; } = null!;
 
     public void UpdateQuantity(double quantity)
     {
         if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be positive.");
         Quantity = quantity;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateUnit(UnitType unitId)
+    {
+        UnitId = unitId;
         UpdatedAt = DateTime.UtcNow;
     }
 }

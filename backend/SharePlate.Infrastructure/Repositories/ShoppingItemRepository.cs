@@ -24,7 +24,7 @@ public class ShoppingItemRepository : Repository<ShoppingItem>, IShoppingItemRep
             .Where(si => si.HouseId == houseId)
             .ToListAsync(ct);
 
-    public async Task<ShoppingItem?> GetPendingByIngredientAndUnitAsync(Guid mealPlanId, Guid ingredientId, int unitId, CancellationToken ct = default)
+    public async Task<ShoppingItem?> GetPendingByIngredientAndUnitAsync(Guid mealPlanId, Guid ingredientId, UnitType unitId, CancellationToken ct = default)
         => await DbSet.FirstOrDefaultAsync(
             si => si.MealPlanId == mealPlanId
                && si.IngredientId == ingredientId

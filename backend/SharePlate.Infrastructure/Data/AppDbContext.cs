@@ -58,12 +58,12 @@ public class AppDbContext : DbContext
 
 
         modelBuilder.Entity<Unit>().HasData(
-            new { Id = 1, Name = "Kilogram", Symbol = "kg", Category = UnitCategory.Weight, ToBaseUnitFactor = 1.0 },
-            new { Id = 2, Name = "Gram", Symbol = "g", Category = UnitCategory.Weight, ToBaseUnitFactor = 0.001 },
-            new { Id = 3, Name = "Liter", Symbol = "l", Category = UnitCategory.Volume, ToBaseUnitFactor = 1.0 },
-            new { Id = 4, Name = "Milliliter", Symbol = "ml", Category = UnitCategory.Volume, ToBaseUnitFactor = 0.001 },
-            new { Id = 5, Name = "Piece", Symbol = "pc", Category = UnitCategory.Quantity, ToBaseUnitFactor = 1.0 },
-            new { Id = 6, Name = "Portion", Symbol = "ptn", Category = UnitCategory.Quantity, ToBaseUnitFactor = 1.0 }
+            new { Id = UnitType.Kilogram, Name = "Kilogram", Symbol = "kg", Category = UnitCategory.Weight, ToBaseUnitFactor = 1.0 },
+            new { Id = UnitType.Gram, Name = "Gram", Symbol = "g", Category = UnitCategory.Weight, ToBaseUnitFactor = 0.001 },
+            new { Id = UnitType.Liter, Name = "Liter", Symbol = "l", Category = UnitCategory.Volume, ToBaseUnitFactor = 1.0 },
+            new { Id = UnitType.Milliliter, Name = "Milliliter", Symbol = "ml", Category = UnitCategory.Volume, ToBaseUnitFactor = 0.001 },
+            new { Id = UnitType.Piece, Name = "Piece", Symbol = "pc", Category = UnitCategory.Quantity, ToBaseUnitFactor = 1.0 },
+            new { Id = UnitType.Portion, Name = "Portion", Symbol = "ptn", Category = UnitCategory.Quantity, ToBaseUnitFactor = 1.0 }
         );
     }
 }

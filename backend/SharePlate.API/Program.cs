@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -123,6 +124,13 @@ builder.Services.AddCors(options =>
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddInfrastructureAuthServices();
 
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
+
+builder.Services.AddScoped<IUnitRepository, UnitRepository>();
+
 
 var app = builder.Build();
 
@@ -146,5 +154,8 @@ var api = app.MapGroup("/api")
 api.MapAuthEndpoints();
 api.MapUserEndpoints();
 api.MapHouseEndpoints();
+api.MapUnitEndpoints();
+api.MapIngredientEndpoints();
+api.MapRecipeEndpoints();
 
 app.Run();
