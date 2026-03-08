@@ -5,6 +5,7 @@ import { RouterProvider } from '@tanstack/react-router';
 import { AuthProvider, useAuth } from '@/auth/AuthContext';
 import { I18nProvider } from '@/i18n/I18nContext';
 import { UserSettingsProvider } from '@/settings/UserSettingsContext';
+import { registerServiceWorker } from '@/pwa/registerServiceWorker';
 import './index.css';
 import { router } from './router';
 
@@ -19,6 +20,8 @@ export function AppRouter() {
 
 	return <RouterProvider router={router} context={{ auth }} />;
 }
+
+registerServiceWorker();
 
 createRoot(document.getElementById('root')!).render(
 	<StrictMode>

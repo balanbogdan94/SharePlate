@@ -19,15 +19,15 @@ export function AuthShell({ title, description, children, footer }: AuthShellPro
 	const { t } = useI18n();
 
 	return (
-		<main className='relative min-h-screen overflow-hidden bg-stone-100 px-6 py-12 text-stone-900 dark:bg-stone-950 dark:text-stone-100'>
+		<main className='safe-x safe-y relative min-h-screen min-h-[100dvh] overflow-hidden bg-stone-100 px-4 py-6 text-stone-900 dark:bg-stone-950 dark:text-stone-100 sm:px-6 sm:py-8'>
 			<div className='pointer-events-none absolute inset-0'>
 				<div className='absolute -left-24 top-[-5rem] h-72 w-72 rounded-full bg-amber-300/35 blur-3xl dark:bg-amber-500/15' />
 				<div className='absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-emerald-300/30 blur-3xl dark:bg-emerald-500/15' />
 				<div className='absolute left-1/3 top-1/3 h-56 w-56 rounded-full bg-sky-200/35 blur-3xl dark:bg-sky-500/15' />
 			</div>
 
-			<div className='relative mx-auto flex min-h-[calc(100vh-6rem)] w-full max-w-5xl items-center'>
-				<div className='grid w-full gap-6 lg:grid-cols-2'>
+			<div className='relative mx-auto flex min-h-[calc(100dvh-3rem)] w-full max-w-5xl items-center sm:min-h-[calc(100dvh-4rem)]'>
+				<div className='grid w-full gap-4 sm:gap-6 lg:grid-cols-2'>
 					<section className='hidden rounded-3xl border border-white/70 bg-gradient-to-br from-amber-100 via-orange-50 to-stone-50 p-10 shadow-xl dark:border-stone-700/70 dark:from-stone-900 dark:via-stone-900 dark:to-stone-800 lg:flex lg:flex-col lg:justify-between'>
 						<div>
 							<p className='mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400'>
@@ -48,7 +48,7 @@ export function AuthShell({ title, description, children, footer }: AuthShellPro
 					</section>
 
 					<Card className='w-full rounded-3xl border-white/70 bg-white/90 shadow-2xl backdrop-blur-sm dark:border-stone-700/70 dark:bg-stone-900/85'>
-						<CardHeader>
+						<CardHeader className='p-5 pb-3 sm:p-6 sm:pb-4'>
 							<CardTitle className='text-3xl text-stone-900 dark:text-stone-100'>
 								{title}
 							</CardTitle>
@@ -56,7 +56,7 @@ export function AuthShell({ title, description, children, footer }: AuthShellPro
 								{description}
 							</CardDescription>
 						</CardHeader>
-						<CardContent>
+						<CardContent className='p-5 pt-0 sm:p-6 sm:pt-0'>
 							<div className='space-y-4'>
 								{children}
 								{footer}

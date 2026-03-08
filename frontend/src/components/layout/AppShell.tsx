@@ -9,6 +9,7 @@ import { House, Layers3, Settings2, UserCircle2 } from 'lucide-react';
 import { useAuth } from '@/auth/AuthContext';
 import { useI18n } from '@/i18n/I18nContext';
 import { apiFetch } from '@/lib/api';
+import { IosInstallPrompt } from '@/components/pwa/IosInstallPrompt';
 import {
 	type Language,
 	type Theme,
@@ -67,22 +68,22 @@ export function AppShell() {
 	};
 
 	return (
-		<div className='min-h-screen bg-stone-100 text-stone-900 dark:bg-stone-950 dark:text-stone-100'>
-			<header className='sticky top-0 z-20 border-b border-stone-200/80 bg-white/90 backdrop-blur-md dark:border-stone-800 dark:bg-stone-900/90'>
-				<div className='mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-4'>
+		<div className='mobile-shell min-h-screen min-h-[100dvh] bg-stone-100 text-stone-900 dark:bg-stone-950 dark:text-stone-100'>
+			<header className='safe-top sticky top-0 z-20 border-b border-stone-200/80 bg-white/90 backdrop-blur-md dark:border-stone-800 dark:bg-stone-900/90'>
+				<div className='mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-4 sm:h-16'>
 					<p className='text-base font-semibold tracking-tight'>{t('app.brand')}</p>
 
 					<div className='relative' ref={menuRef}>
 						<button
 							type='button'
 							onClick={() => setMenuOpen((prev) => !prev)}
-							className='inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm font-medium text-stone-700 shadow-sm transition hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800'>
+							className='inline-flex min-h-11 items-center gap-2 rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm font-medium text-stone-700 shadow-sm transition hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800'>
 							<UserCircle2 className='h-5 w-5' />
 							{t('shell.profile')}
 						</button>
 
 						{menuOpen && (
-							<div className='absolute right-0 mt-2 w-52 rounded-xl border border-stone-200 bg-white p-3 shadow-lg dark:border-stone-700 dark:bg-stone-900'>
+							<div className='absolute right-0 mt-2 w-56 rounded-xl border border-stone-200 bg-white p-3 shadow-lg dark:border-stone-700 dark:bg-stone-900'>
 								<div className='space-y-3'>
 									<label className='block text-xs font-medium text-stone-500 dark:text-stone-400'>
 										{t('shell.theme')}
@@ -91,7 +92,7 @@ export function AppShell() {
 											onChange={(event) =>
 												setTheme(event.target.value as Theme)
 											}
-											className='mt-1 w-full rounded-md border border-stone-300 bg-white px-2 py-1.5 text-sm text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100'>
+											className='mt-1 h-11 w-full rounded-md border border-stone-300 bg-white px-2 py-1.5 text-base text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100'>
 											<option value='light'>{t('shell.theme.light')}</option>
 											<option value='dark'>{t('shell.theme.dark')}</option>
 										</select>
@@ -104,7 +105,7 @@ export function AppShell() {
 											onChange={(event) =>
 												setLanguage(event.target.value as Language)
 											}
-											className='mt-1 w-full rounded-md border border-stone-300 bg-white px-2 py-1.5 text-sm text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100'>
+											className='mt-1 h-11 w-full rounded-md border border-stone-300 bg-white px-2 py-1.5 text-base text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100'>
 											<option value='en'>{t('shell.language.en')}</option>
 											<option value='ro'>{t('shell.language.ro')}</option>
 										</select>
@@ -113,7 +114,7 @@ export function AppShell() {
 									<button
 										type='button'
 										onClick={handleLogout}
-										className='w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50 dark:hover:bg-red-950/40'>
+										className='min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50 dark:hover:bg-red-950/40'>
 										{t('shell.logout')}
 									</button>
 								</div>
@@ -123,11 +124,11 @@ export function AppShell() {
 				</div>
 			</header>
 
-			<main className='mx-auto h-[calc(100vh-10rem)] w-full max-w-5xl px-4 py-4'>
+			<main className='mx-auto h-[calc(100dvh-3.5rem)] w-full max-w-5xl overflow-y-auto px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-3 sm:h-[calc(100dvh-4rem)] sm:pt-4'>
 				<Outlet />
 			</main>
 
-			<footer className='fixed bottom-0 left-0 right-0 z-20 border-t border-stone-200/80 bg-white/90 pb-4 pt-2 backdrop-blur-md dark:border-stone-800 dark:bg-stone-900/90'>
+			<footer className='safe-bottom fixed bottom-0 left-0 right-0 z-20 border-t border-stone-200/80 bg-white/92 pt-2 backdrop-blur-md dark:border-stone-800 dark:bg-stone-900/92'>
 				<div className='mx-auto grid w-full max-w-md grid-cols-3 gap-2 rounded-2xl bg-stone-100/80 p-2 dark:bg-stone-800/70'>
 					{tabs.map((tab) => {
 						const Icon = tab.icon;
@@ -137,7 +138,7 @@ export function AppShell() {
 							<Link
 								key={tab.to}
 								to={tab.to}
-								className={`flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-xs font-medium transition ${
+								className={`flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-xs font-medium transition ${
 									isActive
 										? 'bg-white text-stone-900 shadow-sm dark:bg-stone-700 dark:text-stone-100'
 										: 'text-stone-500 hover:text-stone-700 dark:text-stone-300 dark:hover:text-stone-100'
@@ -149,6 +150,8 @@ export function AppShell() {
 					})}
 				</div>
 			</footer>
+
+			<IosInstallPrompt />
 		</div>
 	);
 }

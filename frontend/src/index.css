@@ -4,11 +4,30 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
+body,
+#root {
+	min-height: 100%;
+}
+
 body {
 	margin: 0;
 	min-width: 320px;
 	min-height: 100vh;
+	min-height: 100dvh;
 	font-family: 'Manrope', 'Avenir Next', 'Segoe UI', sans-serif;
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+	-webkit-tap-highlight-color: transparent;
+	touch-action: manipulation;
+	overscroll-behavior-y: none;
+}
+
+input,
+select,
+textarea,
+button {
+	font: inherit;
 }
 
 @layer base {
@@ -72,5 +91,25 @@ body {
 		--chart-3: 30 80% 55%;
 		--chart-4: 280 65% 60%;
 		--chart-5: 340 75% 55%;
+	}
+}
+
+@layer utilities {
+	.safe-top {
+		padding-top: env(safe-area-inset-top);
+	}
+
+	.safe-bottom {
+		padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+	}
+
+	.safe-x {
+		padding-left: max(1rem, env(safe-area-inset-left));
+		padding-right: max(1rem, env(safe-area-inset-right));
+	}
+
+	.safe-y {
+		padding-top: max(1rem, env(safe-area-inset-top));
+		padding-bottom: max(1rem, env(safe-area-inset-bottom));
 	}
 }
