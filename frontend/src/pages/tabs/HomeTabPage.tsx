@@ -24,10 +24,11 @@ type Unit = {
 
 type RecipeSummary = {
 	id: string;
-	name: string;
-	description: string;
+	title: string;
+	notes: string;
 	imageUrl: string;
 	authorId: string;
+	authorName: string;
 	createdAt: string;
 	updatedAt: string;
 };
@@ -51,8 +52,8 @@ type RecipeDetail = RecipeSummary & {
 };
 
 type RecipePayload = {
-	name: string;
-	description: string;
+	title: string;
+	notes: string;
 	imageUrl: string;
 };
 
@@ -68,8 +69,8 @@ type IngredientEditPayload = {
 };
 
 type FormState = {
-	name: string;
-	description: string;
+	title: string;
+	notes: string;
 	imageUrl: string;
 };
 
@@ -80,9 +81,16 @@ type IngredientFormState = {
 };
 
 const defaultRecipeForm: FormState = {
-	name: '',
-	description: '',
+	title: '',
+	notes: '',
 	imageUrl: '',
+};
+
+type ImagePickerFieldProps = {
+	id: string;
+	label: string;
+	value: string;
+	onChange: (nextValue: string) => void;
 };
 
 function toErrorMessage(error: unknown, fallback: string): string {
@@ -101,10 +109,124 @@ function formatQuantity(value: number): string {
 	return String(Number(value.toFixed(3)));
 }
 
+function toDataUrl(file: File): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => resolve(String(reader.result ?? ''));
+		reader.onerror = () => reject(new Error('Could not read image file.'));
+		reader.readAsDataURL(file);
+	});
+}
+
+function ImagePickerField({ id, label, value, onChange }: ImagePickerFieldProps) {
+	const [isDragging, setIsDragging] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+
+	const selectFile = async (file: File | null) => {
+		if (!file) {
+			return;
+		}
+
+		if (!file.type.startsWith('image/')) {
+			setError('Please choose an image file.');
+			return;
+		}
+
+		try {
+			const dataUrl = await toDataUrl(file);
+			onChange(dataUrl);
+			setError(null);
+		} catch (readError) {
+			setError(toErrorMessage(readError, 'Could not process this image.'));
+		}
+	};
+
+	return (
+		<div className='space-y-2'>
+			<Label>{label}</Label>
+			<div
+				onDragOver={(event) => {
+					event.preventDefault();
+					setIsDragging(true);
+				}}
+				onDragLeave={() => setIsDragging(false)}
+				onDrop={(event) => {
+					event.preventDefault();
+					setIsDragging(false);
+					void selectFile(event.dataTransfer.files?.[0] ?? null);
+				}}
+				className={`space-y-2 rounded-md border border-dashed p-3 ${
+					isDragging
+						? 'border-stone-500 bg-stone-50 dark:border-stone-300 dark:bg-stone-800/40'
+						: 'border-stone-300 dark:border-stone-700'
+				}`}>
+				<p className='text-xs text-stone-600 dark:text-stone-300'>
+					Drag and drop an image here
+				</p>
+				<div className='flex flex-wrap gap-2'>
+					<Label
+						htmlFor={`${id}-file`}
+						className='inline-flex h-10 cursor-pointer items-center justify-center rounded-md border border-stone-300 px-3 text-sm font-medium text-stone-800 dark:border-stone-600 dark:text-stone-100'>
+						Choose image
+					</Label>
+					<input
+						id={`${id}-file`}
+						type='file'
+						accept='image/*'
+						className='hidden'
+						onChange={(event) => {
+							void selectFile(event.target.files?.[0] ?? null);
+							event.currentTarget.value = '';
+						}}
+					/>
+
+					<Label
+						htmlFor={`${id}-camera`}
+						className='inline-flex h-10 cursor-pointer items-center justify-center rounded-md border border-stone-300 px-3 text-sm font-medium text-stone-800 dark:border-stone-600 dark:text-stone-100'>
+						Take photo
+					</Label>
+					<input
+						id={`${id}-camera`}
+						type='file'
+						accept='image/*'
+						capture='environment'
+						className='hidden'
+						onChange={(event) => {
+							void selectFile(event.target.files?.[0] ?? null);
+							event.currentTarget.value = '';
+						}}
+					/>
+
+					{value && (
+						<Button type='button' variant='outline' onClick={() => onChange('')}>
+							Remove
+						</Button>
+					)}
+				</div>
+
+				{value && (
+					<img
+						src={value}
+						alt='Recipe'
+						className='h-36 w-full rounded-md border border-stone-200 object-cover dark:border-stone-700'
+					/>
+				)}
+			</div>
+			{error && <p className='text-xs text-red-600 dark:text-red-400'>{error}</p>}
+		</div>
+	);
+}
+
 export function HomeTabPage() {
 	const queryClient = useQueryClient();
 	const [showCreate, setShowCreate] = useState(false);
 	const [createForm, setCreateForm] = useState<FormState>(defaultRecipeForm);
+	const [createIngredientForm, setCreateIngredientForm] = useState<IngredientFormState>({
+		ingredientName: '',
+		quantity: '',
+		unitId: 'Piece',
+	});
+	const [createIngredients, setCreateIngredients] = useState<IngredientPayload[]>([]);
 	const [editingRecipeId, setEditingRecipeId] = useState<string | null>(null);
 	const [editForm, setEditForm] = useState<FormState>(defaultRecipeForm);
 	const [openRecipeId, setOpenRecipeId] = useState<string | null>(null);
@@ -137,15 +259,35 @@ export function HomeTabPage() {
 	);
 
 	const createRecipeMutation = useMutation({
-		mutationFn: (payload: RecipePayload) =>
-			apiFetch<RecipeSummary>('/api/recipes', {
+		mutationFn: async (payload: RecipePayload) => {
+			const created = await apiFetch<RecipeSummary>('/api/recipes', {
 				method: 'POST',
 				body: JSON.stringify(payload),
-			}),
-		onSuccess: () => {
+			});
+
+			for (const ingredient of createIngredients) {
+				await apiFetch<RecipeIngredient>(`/api/recipes/${created.id}/ingredients`, {
+					method: 'POST',
+					body: JSON.stringify(ingredient),
+				});
+			}
+
+			return apiFetch<RecipeDetail>(`/api/recipes/${created.id}`);
+		},
+		onSuccess: (createdDetail) => {
 			setCreateForm(defaultRecipeForm);
+			setCreateIngredientForm({
+				ingredientName: '',
+				quantity: '',
+				unitId: defaultUnit,
+			});
+			setCreateIngredients([]);
 			setShowCreate(false);
+			setOpenRecipeId(createdDetail.id);
 			void queryClient.invalidateQueries({ queryKey: ['recipes', 'my'] });
+			void queryClient.invalidateQueries({
+				queryKey: ['recipes', 'detail', createdDetail.id],
+			});
 		},
 	});
 
@@ -260,6 +402,15 @@ export function HomeTabPage() {
 				`/api/ingredients/search?name=${encodeURIComponent(ingredientSearchTerm)}`,
 			),
 	});
+	const createIngredientSearchTerm = createIngredientForm.ingredientName.trim();
+	const createIngredientSearchQuery = useQuery({
+		queryKey: ['ingredients', 'search', 'create', createIngredientSearchTerm],
+		enabled: showCreate && createIngredientSearchTerm.length >= 2,
+		queryFn: () =>
+			apiFetch<IngredientSearchItem[]>(
+				`/api/ingredients/search?name=${encodeURIComponent(createIngredientSearchTerm)}`,
+			),
+	});
 
 	const onCreateRecipe = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -267,11 +418,41 @@ export function HomeTabPage() {
 		createRecipeMutation.mutate(createForm);
 	};
 
+	const onQueueCreateIngredient = () => {
+		const ingredientName = createIngredientForm.ingredientName.trim();
+		if (ingredientName.length < 2) {
+			return;
+		}
+
+		const quantity = Number(createIngredientForm.quantity);
+		if (!Number.isFinite(quantity) || quantity <= 0) {
+			return;
+		}
+
+		setCreateIngredients((prev) => [
+			...prev,
+			{
+				ingredientName,
+				quantity,
+				unitId: createIngredientForm.unitId,
+			},
+		]);
+		setCreateIngredientForm({
+			ingredientName: '',
+			quantity: '',
+			unitId: defaultUnit,
+		});
+	};
+
+	const onRemoveQueuedCreateIngredient = (index: number) => {
+		setCreateIngredients((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
+	};
+
 	const onStartEditRecipe = (recipe: RecipeSummary) => {
 		setEditingRecipeId(recipe.id);
 		setEditForm({
-			name: recipe.name,
-			description: recipe.description,
+			title: recipe.title,
+			notes: recipe.notes,
 			imageUrl: recipe.imageUrl,
 		});
 		updateRecipeMutation.reset();
@@ -291,7 +472,7 @@ export function HomeTabPage() {
 	};
 
 	const onDeleteRecipe = (recipe: RecipeSummary) => {
-		if (!window.confirm(`Delete recipe "${recipe.name}"?`)) {
+		if (!window.confirm(`Delete recipe "${recipe.title}"?`)) {
 			return;
 		}
 
@@ -378,12 +559,12 @@ export function HomeTabPage() {
 					onSubmit={onCreateRecipe}
 					className='space-y-3 rounded-xl border border-stone-200 bg-white p-3 dark:border-stone-700 dark:bg-stone-900'>
 					<div className='space-y-2'>
-						<Label htmlFor='new-recipe-name'>name</Label>
+						<Label htmlFor='new-recipe-name'>title</Label>
 						<Input
 							id='new-recipe-name'
-							value={createForm.name}
+							value={createForm.title}
 							onChange={(event) =>
-								setCreateForm((prev) => ({ ...prev, name: event.target.value }))
+								setCreateForm((prev) => ({ ...prev, title: event.target.value }))
 							}
 							minLength={2}
 							maxLength={200}
@@ -391,34 +572,130 @@ export function HomeTabPage() {
 						/>
 					</div>
 					<div className='space-y-2'>
-						<Label htmlFor='new-recipe-description'>description</Label>
+						<Label htmlFor='new-recipe-description'>notes</Label>
 						<Input
 							id='new-recipe-description'
-							value={createForm.description}
+							value={createForm.notes}
 							onChange={(event) =>
 								setCreateForm((prev) => ({
 									...prev,
-									description: event.target.value,
+									notes: event.target.value,
 								}))
 							}
 						/>
 					</div>
-					<div className='space-y-2'>
-						<Label htmlFor='new-recipe-image'>imageUrl</Label>
-						<Input
-							id='new-recipe-image'
-							value={createForm.imageUrl}
-							onChange={(event) =>
-								setCreateForm((prev) => ({
-									...prev,
-									imageUrl: event.target.value,
-								}))
-							}
-						/>
-					</div>
+					<ImagePickerField
+						id='new-recipe-image'
+						label='Image'
+						value={createForm.imageUrl}
+						onChange={(imageUrl) =>
+							setCreateForm((prev) => ({
+								...prev,
+								imageUrl,
+							}))
+						}
+					/>
 					<Button type='submit' className='w-full' disabled={createRecipeMutation.isPending}>
 						{createRecipeMutation.isPending ? 'Saving...' : 'Create recipe'}
 					</Button>
+
+					<div className='space-y-2 rounded-lg border border-dashed border-stone-300 p-3 dark:border-stone-600'>
+						<p className='text-xs font-medium text-stone-500 dark:text-stone-400'>
+							ingredients
+						</p>
+						<div className='space-y-2'>
+							<Input
+								placeholder='ingredientName'
+								value={createIngredientForm.ingredientName}
+								onChange={(event) =>
+									setCreateIngredientForm((prev) => ({
+										...prev,
+										ingredientName: event.target.value,
+									}))
+								}
+								minLength={2}
+								maxLength={200}
+							/>
+							{createIngredientSearchQuery.data &&
+								createIngredientSearchQuery.data.length > 0 && (
+									<div className='rounded-md border border-stone-200 bg-stone-50 p-1 dark:border-stone-700 dark:bg-stone-800/60'>
+										{createIngredientSearchQuery.data.slice(0, 5).map((item) => (
+											<button
+												key={item.id}
+												type='button'
+												onClick={() =>
+													setCreateIngredientForm((prev) => ({
+														...prev,
+														ingredientName: item.name,
+														unitId: item.defaultUnitId,
+													}))
+												}
+												className='flex w-full items-center justify-between rounded px-2 py-2 text-left text-xs text-stone-700 hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-stone-700/70'>
+												<span>{item.name}</span>
+												<span className='text-stone-500 dark:text-stone-400'>
+													{item.defaultUnitId}
+												</span>
+											</button>
+										))}
+									</div>
+								)}
+							<div className='grid grid-cols-[1fr_1fr_auto] gap-2'>
+								<Input
+									type='number'
+									min='0.001'
+									step='0.001'
+									placeholder='quantity'
+									value={createIngredientForm.quantity}
+									onChange={(event) =>
+										setCreateIngredientForm((prev) => ({
+											...prev,
+											quantity: event.target.value,
+										}))
+									}
+								/>
+								<select
+									value={createIngredientForm.unitId}
+									onChange={(event) =>
+										setCreateIngredientForm((prev) => ({
+											...prev,
+											unitId: event.target.value as UnitType,
+										}))
+									}
+									className='h-11 rounded-md border border-stone-300 bg-white px-2 text-sm text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100'>
+									{unitsQuery.data?.map((unit) => (
+										<option key={unit.id} value={unit.id}>
+											{unit.name}
+										</option>
+									))}
+								</select>
+								<Button type='button' variant='outline' onClick={onQueueCreateIngredient}>
+									Add
+								</Button>
+							</div>
+						</div>
+
+						{createIngredients.length > 0 && (
+							<div className='space-y-2'>
+								{createIngredients.map((ingredient, index) => (
+									<div
+										key={`${ingredient.ingredientName}-${ingredient.unitId}-${index}`}
+										className='flex items-center justify-between rounded border border-stone-200 px-2 py-2 text-xs dark:border-stone-700'>
+										<span>
+											{ingredient.ingredientName} - {formatQuantity(ingredient.quantity)}{' '}
+											{ingredient.unitId}
+										</span>
+										<Button
+											type='button'
+											variant='outline'
+											size='sm'
+											onClick={() => onRemoveQueuedCreateIngredient(index)}>
+											Remove
+										</Button>
+									</div>
+								))}
+							</div>
+						)}
+					</div>
 
 					{createRecipeMutation.isError && (
 						<Alert variant='destructive'>
@@ -467,10 +744,13 @@ export function HomeTabPage() {
 									onClick={() => onToggleRecipe(recipe.id)}
 									className='min-w-0 flex-1 text-left'>
 									<p className='truncate text-sm font-semibold text-stone-900 dark:text-stone-100'>
-										{recipe.name}
+										{recipe.title}
 									</p>
 									<p className='mt-1 text-[11px] text-stone-500 dark:text-stone-400'>
 										authorId: {recipe.authorId}
+									</p>
+									<p className='text-[11px] text-stone-500 dark:text-stone-400'>
+										authorName: {recipe.authorName}
 									</p>
 									<p className='text-[11px] text-stone-500 dark:text-stone-400'>
 										createdAt: {recipe.createdAt}
@@ -478,9 +758,9 @@ export function HomeTabPage() {
 									<p className='text-[11px] text-stone-500 dark:text-stone-400'>
 										updatedAt: {recipe.updatedAt}
 									</p>
-									{recipe.description && (
+									{recipe.notes && (
 										<p className='mt-1 text-xs text-stone-500 dark:text-stone-400'>
-											{recipe.description}
+											{recipe.notes}
 										</p>
 									)}
 								</button>
@@ -491,7 +771,7 @@ export function HomeTabPage() {
 										variant='outline'
 										size='icon'
 										onClick={() => onStartEditRecipe(recipe)}
-										aria-label={`Edit ${recipe.name}`}>
+										aria-label={`Edit ${recipe.title}`}>
 										<Pencil className='h-4 w-4' />
 									</Button>
 									<Button
@@ -500,7 +780,7 @@ export function HomeTabPage() {
 										size='icon'
 										onClick={() => onDeleteRecipe(recipe)}
 										disabled={deleteRecipeMutation.isPending}
-										aria-label={`Delete ${recipe.name}`}>
+										aria-label={`Delete ${recipe.title}`}>
 										<Trash2 className='h-4 w-4' />
 									</Button>
 								</div>
@@ -511,12 +791,12 @@ export function HomeTabPage() {
 									onSubmit={onUpdateRecipe}
 									className='space-y-3 rounded-lg border border-stone-200 p-3 dark:border-stone-700'>
 									<div className='space-y-2'>
-										<Label htmlFor={`edit-name-${recipe.id}`}>name</Label>
+										<Label htmlFor={`edit-name-${recipe.id}`}>title</Label>
 										<Input
 											id={`edit-name-${recipe.id}`}
-											value={editForm.name}
+											value={editForm.title}
 											onChange={(event) =>
-												setEditForm((prev) => ({ ...prev, name: event.target.value }))
+												setEditForm((prev) => ({ ...prev, title: event.target.value }))
 											}
 											minLength={2}
 											maxLength={200}
@@ -524,31 +804,29 @@ export function HomeTabPage() {
 										/>
 									</div>
 									<div className='space-y-2'>
-										<Label htmlFor={`edit-description-${recipe.id}`}>description</Label>
+										<Label htmlFor={`edit-description-${recipe.id}`}>notes</Label>
 										<Input
 											id={`edit-description-${recipe.id}`}
-											value={editForm.description}
+											value={editForm.notes}
 											onChange={(event) =>
 												setEditForm((prev) => ({
 													...prev,
-													description: event.target.value,
+													notes: event.target.value,
 												}))
 											}
 										/>
 									</div>
-									<div className='space-y-2'>
-										<Label htmlFor={`edit-image-${recipe.id}`}>imageUrl</Label>
-										<Input
-											id={`edit-image-${recipe.id}`}
-											value={editForm.imageUrl}
-											onChange={(event) =>
-												setEditForm((prev) => ({
-													...prev,
-													imageUrl: event.target.value,
-												}))
-											}
-										/>
-									</div>
+									<ImagePickerField
+										id={`edit-image-${recipe.id}`}
+										label='Image'
+										value={editForm.imageUrl}
+										onChange={(imageUrl) =>
+											setEditForm((prev) => ({
+												...prev,
+												imageUrl,
+											}))
+										}
+									/>
 									<div className='grid grid-cols-2 gap-2'>
 										<Button
 											type='button'
