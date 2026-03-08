@@ -1,0 +1,15 @@
+meta {
+  name: Search Recipes
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/recipes?name=pasta
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

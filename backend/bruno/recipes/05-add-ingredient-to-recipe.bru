@@ -1,0 +1,27 @@
+meta {
+  name: Add Ingredient To Recipe
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/recipes/{{recipeId}}/ingredients
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "ingredientName": "Spaghetti",
+    "quantity": 200,
+    "unitId": "Gram"
+  }
+}

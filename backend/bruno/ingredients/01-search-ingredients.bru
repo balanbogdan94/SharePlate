@@ -1,0 +1,15 @@
+meta {
+  name: Search Ingredients
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/ingredients/search?name=tomato
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

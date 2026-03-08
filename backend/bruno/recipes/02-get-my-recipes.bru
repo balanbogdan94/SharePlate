@@ -1,0 +1,15 @@
+meta {
+  name: Get My Recipes
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/recipes/my
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

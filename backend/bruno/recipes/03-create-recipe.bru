@@ -1,0 +1,35 @@
+meta {
+  name: Create Recipe
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/recipes
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Spaghetti Carbonara",
+    "notes": "Classic Italian pasta dish",
+    "imageUrl": ""
+  }
+}
+
+script:post-response {
+  const data = res.getBody();
+
+  if (data?.id) {
+    bru.setEnvVar("recipeId", data.id, { persist: true });
+  }
+}

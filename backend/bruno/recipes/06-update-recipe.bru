@@ -1,0 +1,27 @@
+meta {
+  name: Update Recipe
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/api/recipes/{{recipeId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Spaghetti Carbonara (Updated)",
+    "notes": "Classic Italian pasta dish with guanciale",
+    "imageUrl": ""
+  }
+}
