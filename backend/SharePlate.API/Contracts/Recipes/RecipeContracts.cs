@@ -1,42 +1,55 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using SharePlate.Core.Enums;
 
 namespace SharePlate.API.Contracts.Recipes;
 
-public record CreateRecipeRequest(
-    [property: Required, StringLength(200, MinimumLength = 2)]
-    string Title,
+public sealed class RecipeIngredientRequest
+{
+    [FromForm]
+    [Required, StringLength(200, MinimumLength = 2)]
+    public string Name { get; init; } = "";
 
-    string Notes = "",
-    string ImageUrl = ""
-);
+    [FromForm]
+    [Range(0.001, double.MaxValue, ErrorMessage = "Quantity must be positive.")]
+    public double Quantity { get; init; }
 
-public record UpdateRecipeRequest(
-    [property: Required, StringLength(200, MinimumLength = 2)]
-    string Title,
+    [FromForm]
+    [Required]
+    public UnitType Unit { get; init; }
+}
 
-    string Notes = "",
-    string ImageUrl = ""
-);
+public sealed class CreateRecipeRequest
+{
+    [FromForm]
+    [Required, StringLength(200, MinimumLength = 2)]
+    public string Title { get; init; } = "";
 
-public record AddIngredientToRecipeRequest(
-    [property: Required, StringLength(200, MinimumLength = 2)]
-    string IngredientName,
+    [FromForm]
+    public string Notes { get; init; } = "";
 
-    [property: Range(0.001, double.MaxValue, ErrorMessage = "Quantity must be positive.")]
-    double Quantity,
+    public IFormFile? Image { get; init; }
 
-    [property: Required]
-    UnitType UnitId
-);
+    public List<RecipeIngredientRequest> Ingredients { get; init; } = [];
+}
 
-public record UpdateRecipeIngredientRequest(
-    [property: Range(0.001, double.MaxValue, ErrorMessage = "Quantity must be positive.")]
-    double Quantity,
+public sealed class UpdateRecipeRequest
+{
+    [FromForm]
+    [Required, StringLength(200, MinimumLength = 2)]
+    public string Title { get; init; } = "";
 
-    [property: Required]
-    UnitType UnitId
-);
+    [FromForm]
+    public string Notes { get; init; } = "";
+
+    [FromForm]
+    public bool RemoveImage { get; init; }
+
+    public IFormFile? Image { get; init; }
+
+    public List<RecipeIngredientRequest> Ingredients { get; init; } = [];
+}
 
 public record RecipeResponse(
     Guid Id,

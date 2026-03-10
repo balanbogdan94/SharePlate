@@ -3,6 +3,7 @@ using SharePlate.API.Contracts.Recipes;
 using SharePlate.Core.Entities;
 using SharePlate.Core.Extensions.Security;
 using SharePlate.Core.Repositories;
+using SharePlate.Core.Services;
 
 namespace SharePlate.API.Endpoints;
 
@@ -60,31 +61,46 @@ public static class RecipeEndpoints
 
 
         // POST /api/recipes
-        group.MapPost("/", async (CreateRecipeRequest req, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
+        group.MapPost("/", async ([AsParameters] CreateRecipeRequest req, ClaimsPrincipal principal, IUnitOfWork uow, IStorageService storage, CancellationToken ct) =>
         {
             if (!principal.TryGetUserId(out var actorUserId))
                 return Results.Unauthorized();
 
-            var recipe = Recipe.Create(req.Title, req.Notes, actorUserId, req.ImageUrl);
+            if (req.Ingredients.Count == 0)
+                return Results.BadRequest("At least one ingredient is required.");
 
+            var imageUrl = "";
+            if (req.Image is not null)
+            {
+                if (!IsValidImage(req.Image))
+                    return Results.BadRequest("Image must be jpeg, png, or webp and under 5 MB.");
+                imageUrl = await storage.UploadImageAsync(req.Image.OpenReadStream(), req.Image.FileName, req.Image.ContentType, ct);
+            }
+
+            var recipe = Recipe.Create(req.Title, req.Notes, actorUserId, imageUrl);
             await uow.Recipes.AddAsync(recipe, ct);
+            await AddIngredientsAsync(recipe.Id, req.Ingredients, uow, ct);
             await uow.SaveChangesAsync(ct);
 
             return Results.Created($"/api/recipes/{recipe.Id}", ToResponse(recipe));
         })
         .WithName("CreateRecipe")
-        .WithSummary("Create a new recipe");
+        .WithSummary("Create a new recipe")
+        .DisableAntiforgery();
 
 
 
 
         // PUT /api/recipes/{id}
-        group.MapPut("/{id:guid}", async (Guid id, UpdateRecipeRequest req, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
+        group.MapPut("/{id:guid}", async (Guid id, [AsParameters] UpdateRecipeRequest req, ClaimsPrincipal principal, IUnitOfWork uow, IStorageService storage, CancellationToken ct) =>
         {
             if (!principal.TryGetUserId(out var actorUserId))
                 return Results.Unauthorized();
 
-            var recipe = await uow.Recipes.GetByIdAsync(id, ct);
+            if (req.Ingredients.Count == 0)
+                return Results.BadRequest("At least one ingredient is required.");
+
+            var recipe = await uow.Recipes.GetWithIngredientsAsync(id, ct);
             if (recipe is null) return Results.NotFound();
 
             if (recipe.AuthorId != actorUserId)
@@ -92,19 +108,38 @@ public static class RecipeEndpoints
 
             recipe.UpdateTitle(req.Title);
             recipe.UpdateNotes(req.Notes);
-            recipe.UpdateImageUrl(req.ImageUrl);
+
+            if (req.RemoveImage)
+            {
+                await storage.DeleteImageAsync(recipe.ImageUrl, ct);
+                recipe.UpdateImageUrl("");
+            }
+            else if (req.Image is not null)
+            {
+                if (!IsValidImage(req.Image))
+                    return Results.BadRequest("Image must be jpeg, png, or webp and under 5 MB.");
+                await storage.DeleteImageAsync(recipe.ImageUrl, ct);
+                var newUrl = await storage.UploadImageAsync(req.Image.OpenReadStream(), req.Image.FileName, req.Image.ContentType, ct);
+                recipe.UpdateImageUrl(newUrl);
+            }
+
+            foreach (var ri in recipe.RecipeIngredients.ToList())
+                uow.RecipeIngredients.Remove(ri);
+            await AddIngredientsAsync(recipe.Id, req.Ingredients, uow, ct);
+
             await uow.SaveChangesAsync(ct);
 
             return Results.Ok(ToResponse(recipe));
         })
         .WithName("UpdateRecipe")
-        .WithSummary("Update a recipe's details (author only)");
+        .WithSummary("Update a recipe's details (author only)")
+        .DisableAntiforgery();
 
 
 
 
         // DELETE /api/recipes/{id}
-        group.MapDelete("/{id:guid}", async (Guid id, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
+        group.MapDelete("/{id:guid}", async (Guid id, ClaimsPrincipal principal, IUnitOfWork uow, IStorageService storage, CancellationToken ct) =>
         {
             if (!principal.TryGetUserId(out var actorUserId))
                 return Results.Unauthorized();
@@ -115,6 +150,7 @@ public static class RecipeEndpoints
             if (recipe.AuthorId != actorUserId)
                 return Results.Forbid();
 
+            await storage.DeleteImageAsync(recipe.ImageUrl, ct);
             uow.Recipes.Remove(recipe);
             await uow.SaveChangesAsync(ct);
 
@@ -122,100 +158,39 @@ public static class RecipeEndpoints
         })
         .WithName("DeleteRecipe")
         .WithSummary("Delete a recipe (author only)");
-
-
-
-
-        // POST /api/recipes/{id}/ingredients
-        group.MapPost("/{id:guid}/ingredients", async (Guid id, AddIngredientToRecipeRequest req, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
-        {
-            if (!principal.TryGetUserId(out var actorUserId))
-                return Results.Unauthorized();
-
-            var recipe = await uow.Recipes.GetWithIngredientsAsync(id, ct);
-            if (recipe is null) return Results.NotFound();
-
-            if (recipe.AuthorId != actorUserId)
-                return Results.Forbid();
-
-            // Find or create the ingredient in the shared ingredients table
-            var ingredient = await uow.Ingredients.GetByExactNameAsync(req.IngredientName, ct);
-            if (ingredient is null)
-            {
-                ingredient = Ingredient.Create(req.IngredientName, req.UnitId);
-                await uow.Ingredients.AddAsync(ingredient, ct);
-            }
-
-            var alreadyAdded = recipe.RecipeIngredients
-                .Any(ri => ri.IngredientId == ingredient.Id);
-            if (alreadyAdded)
-                return Results.Conflict("Ingredient is already in this recipe.");
-
-            var recipeIngredient = RecipeIngredient.Create(recipe.Id, ingredient.Id, req.Quantity, req.UnitId);
-            await uow.RecipeIngredients.AddAsync(recipeIngredient, ct);
-            await uow.SaveChangesAsync(ct);
-
-            return Results.Created(
-                $"/api/recipes/{id}/ingredients/{recipeIngredient.Id}",
-                ToIngredientResponse(recipeIngredient));
-        })
-        .WithName("AddIngredientToRecipe")
-        .WithSummary("Add an ingredient to a recipe — creates the ingredient in the shared table if it does not exist");
-
-
-
-
-        // PUT /api/recipes/{id}/ingredients/{recipeIngredientId}
-        group.MapPut("/{id:guid}/ingredients/{recipeIngredientId:guid}", async (Guid id, Guid recipeIngredientId, UpdateRecipeIngredientRequest req, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
-        {
-            if (!principal.TryGetUserId(out var actorUserId))
-                return Results.Unauthorized();
-
-            var recipe = await uow.Recipes.GetWithIngredientsAsync(id, ct);
-            if (recipe is null) return Results.NotFound();
-
-            if (recipe.AuthorId != actorUserId)
-                return Results.Forbid();
-
-            var ri = recipe.RecipeIngredients.FirstOrDefault(x => x.Id == recipeIngredientId);
-            if (ri is null) return Results.NotFound("Recipe ingredient not found.");
-
-            ri.UpdateQuantity(req.Quantity);
-            ri.UpdateUnit(req.UnitId);
-            await uow.SaveChangesAsync(ct);
-
-            return Results.Ok(ToIngredientResponse(ri));
-        })
-        .WithName("UpdateRecipeIngredient")
-        .WithSummary("Update the quantity of an ingredient in a recipe (author only)");
-
-
-
-
-        // DELETE /api/recipes/{id}/ingredients/{recipeIngredientId}
-        group.MapDelete("/{id:guid}/ingredients/{recipeIngredientId:guid}", async (Guid id, Guid recipeIngredientId, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
-        {
-            if (!principal.TryGetUserId(out var actorUserId))
-                return Results.Unauthorized();
-
-            var recipe = await uow.Recipes.GetWithIngredientsAsync(id, ct);
-            if (recipe is null) return Results.NotFound();
-
-            if (recipe.AuthorId != actorUserId)
-                return Results.Forbid();
-
-            var ri = recipe.RecipeIngredients.FirstOrDefault(x => x.Id == recipeIngredientId);
-            if (ri is null) return Results.NotFound("Recipe ingredient not found.");
-
-            uow.RecipeIngredients.Remove(ri);
-            await uow.SaveChangesAsync(ct);
-
-            return Results.NoContent();
-        })
-        .WithName("RemoveIngredientFromRecipe")
-        .WithSummary("Remove an ingredient from a recipe (author only)");
     }
 
+
+    private static async Task AddIngredientsAsync(
+        Guid recipeId,
+        IEnumerable<RecipeIngredientRequest> items,
+        IUnitOfWork uow,
+        CancellationToken ct)
+    {
+        var cache = new Dictionary<string, Ingredient>(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in items)
+        {
+            if (!cache.TryGetValue(item.Name, out var ingredient))
+            {
+                ingredient = await uow.Ingredients.GetByExactNameAsync(item.Name, ct);
+                if (ingredient is null)
+                {
+                    ingredient = Ingredient.Create(item.Name, item.Unit);
+                    await uow.Ingredients.AddAsync(ingredient, ct);
+                }
+                cache[item.Name] = ingredient;
+            }
+            await uow.RecipeIngredients.AddAsync(
+                RecipeIngredient.Create(recipeId, ingredient.Id, item.Quantity, item.Unit), ct);
+        }
+    }
+
+    private static readonly string[] AllowedImageContentTypes = ["image/jpeg", "image/png", "image/webp"];
+    private const long MaxImageSizeBytes = 5 * 1024 * 1024; // 5 MB
+
+    private static bool IsValidImage(IFormFile file) =>
+        AllowedImageContentTypes.Contains(file.ContentType, StringComparer.OrdinalIgnoreCase)
+        && file.Length is > 0 and <= MaxImageSizeBytes;
 
     private static RecipeResponse ToResponse(Core.Entities.Recipe r) =>
         new(r.Id, r.Title, r.Notes, r.ImageUrl, r.AuthorId, r.Author?.Name ?? string.Empty, r.CreatedAt, r.UpdatedAt);

@@ -6,7 +6,7 @@ meta {
 
 post {
   url: {{baseUrl}}/api/recipes
-  body: json
+  body: multipart-form
   auth: bearer
 }
 
@@ -14,16 +14,18 @@ auth:bearer {
   token: {{accessToken}}
 }
 
-headers {
-  Content-Type: application/json
-}
-
-body:json {
-  {
-    "title": "Spaghetti Carbonara",
-    "notes": "Classic Italian pasta dish",
-    "imageUrl": ""
-  }
+body:multipart-form {
+  title: Spaghetti Carbonara
+  notes: Classic Italian pasta dish
+  ingredients[0].name: Spaghetti
+  ingredients[0].quantity: 200
+  ingredients[0].unit: Gram
+  ingredients[1].name: Guanciale
+  ingredients[1].quantity: 150
+  ingredients[1].unit: Gram
+  ingredients[2].name: Egg
+  ingredients[2].quantity: 4
+  ingredients[2].unit: Piece
 }
 
 script:post-response {
