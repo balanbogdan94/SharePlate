@@ -7,15 +7,12 @@ namespace SharePlate.API.Contracts.Recipes;
 
 public sealed class RecipeIngredientRequest
 {
-    [FromForm]
     [Required, StringLength(200, MinimumLength = 2)]
     public string Name { get; init; } = "";
 
-    [FromForm]
     [Range(0.001, double.MaxValue, ErrorMessage = "Quantity must be positive.")]
     public double Quantity { get; init; }
 
-    [FromForm]
     [Required]
     public UnitType Unit { get; init; }
 }
@@ -31,7 +28,10 @@ public sealed class CreateRecipeRequest
 
     public IFormFile? Image { get; init; }
 
-    public List<RecipeIngredientRequest> Ingredients { get; init; } = [];
+    // JSON-encoded array: [{"name":"Flour","quantity":200,"unit":"Gram"},...]
+    [FromForm]
+    [Required]
+    public string Ingredients { get; init; } = "[]";
 }
 
 public sealed class UpdateRecipeRequest
@@ -48,7 +48,10 @@ public sealed class UpdateRecipeRequest
 
     public IFormFile? Image { get; init; }
 
-    public List<RecipeIngredientRequest> Ingredients { get; init; } = [];
+    // JSON-encoded array: [{"name":"Flour","quantity":200,"unit":"Gram"},...]
+    [FromForm]
+    [Required]
+    public string Ingredients { get; init; } = "[]";
 }
 
 public record RecipeResponse(

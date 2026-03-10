@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using SharePlate.API.Contracts.Recipes;
 using SharePlate.Core.Entities;
 using SharePlate.Core.Extensions.Security;
@@ -66,7 +67,11 @@ public static class RecipeEndpoints
             if (!principal.TryGetUserId(out var actorUserId))
                 return Results.Unauthorized();
 
-            if (req.Ingredients.Count == 0)
+            List<RecipeIngredientRequest> ingredients;
+            try { ingredients = JsonSerializer.Deserialize<List<RecipeIngredientRequest>>(req.Ingredients, JsonSerializerOptions.Web) ?? []; }
+            catch { return Results.BadRequest("Ingredients must be a valid JSON array."); }
+
+            if (ingredients.Count == 0)
                 return Results.BadRequest("At least one ingredient is required.");
 
             var imageUrl = "";
@@ -79,7 +84,7 @@ public static class RecipeEndpoints
 
             var recipe = Recipe.Create(req.Title, req.Notes, actorUserId, imageUrl);
             await uow.Recipes.AddAsync(recipe, ct);
-            await AddIngredientsAsync(recipe.Id, req.Ingredients, uow, ct);
+            await AddIngredientsAsync(recipe.Id, ingredients, uow, ct);
             await uow.SaveChangesAsync(ct);
 
             return Results.Created($"/api/recipes/{recipe.Id}", ToResponse(recipe));
@@ -97,7 +102,11 @@ public static class RecipeEndpoints
             if (!principal.TryGetUserId(out var actorUserId))
                 return Results.Unauthorized();
 
-            if (req.Ingredients.Count == 0)
+            List<RecipeIngredientRequest> ingredients;
+            try { ingredients = JsonSerializer.Deserialize<List<RecipeIngredientRequest>>(req.Ingredients, JsonSerializerOptions.Web) ?? []; }
+            catch { return Results.BadRequest("Ingredients must be a valid JSON array."); }
+
+            if (ingredients.Count == 0)
                 return Results.BadRequest("At least one ingredient is required.");
 
             var recipe = await uow.Recipes.GetWithIngredientsAsync(id, ct);
@@ -125,7 +134,7 @@ public static class RecipeEndpoints
 
             foreach (var ri in recipe.RecipeIngredients.ToList())
                 uow.RecipeIngredients.Remove(ri);
-            await AddIngredientsAsync(recipe.Id, req.Ingredients, uow, ct);
+            await AddIngredientsAsync(recipe.Id, ingredients, uow, ct);
 
             await uow.SaveChangesAsync(ct);
 
