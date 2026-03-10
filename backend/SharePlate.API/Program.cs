@@ -123,6 +123,7 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddInfrastructureAuthServices();
+builder.Services.AddInfrastructureStorageServices(builder.Configuration);
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
