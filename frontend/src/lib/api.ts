@@ -24,13 +24,14 @@ export async function apiFetch<T>(
 ): Promise<T> {
 	const normalizedPath = normalizePath(path);
 	const isRefreshRequest = normalizedPath === '/auth/refresh';
+	const isFormData = init?.body instanceof FormData;
 
 	const request = async (overrideAccessToken?: string): Promise<Response> => {
 		const accessToken = overrideAccessToken ?? apiAuthConfig?.getAccessToken() ?? null;
 
 		return fetch(`${apiBaseUrl}${normalizedPath}`, {
 			headers: {
-				'Content-Type': 'application/json',
+				...(isFormData ? {} : { 'Content-Type': 'application/json' }),
 				...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
 				...(init?.headers ?? {}),
 			},
