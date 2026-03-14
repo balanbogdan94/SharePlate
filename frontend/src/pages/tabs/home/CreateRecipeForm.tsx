@@ -89,9 +89,6 @@ export function CreateRecipeForm({
 				}
 				onFileChange={onImageFileChange}
 			/>
-			<Button type='submit' className='w-full' disabled={isPending}>
-				{isPending ? 'Saving...' : 'Create recipe'}
-			</Button>
 
 			<div className='space-y-2 rounded-lg border border-dashed border-stone-300 p-3 dark:border-stone-600'>
 				<p className='text-xs font-medium text-stone-500 dark:text-stone-400'>
@@ -201,6 +198,10 @@ export function CreateRecipeForm({
 					<AlertDescription>{errorMessage}</AlertDescription>
 				</Alert>
 			)}
+
+			<Button type='submit' className='w-full' disabled={isPending}>
+				{isPending ? 'Saving...' : 'Create recipe'}
+			</Button>
 		</form>
 	);
 }
