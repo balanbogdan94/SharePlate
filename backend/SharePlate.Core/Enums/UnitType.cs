@@ -1,5 +1,8 @@
+using System.Text.Json.Serialization;
+
 namespace SharePlate.Core.Enums;
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum UnitType
 {
     Kilogram = 1,
