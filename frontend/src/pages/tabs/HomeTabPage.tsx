@@ -1,13 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/api';
-import { CreateRecipeForm } from './home/CreateRecipeForm';
 import { RecipeCard } from './home/RecipeCard';
 import type {
-	CreateRecipePayload,
 	FormState,
 	IngredientEditPayload,
 	IngredientFormState,
@@ -54,22 +51,7 @@ function serializeIngredients(ingredients: IngredientPayload[]): string {
 
 export function HomeTabPage() {
 	const queryClient = useQueryClient();
-	const [showCreate, setShowCreate] = useState(false);
-	const [createForm, setCreateForm] = useState<FormState>(defaultRecipeForm);
-	const [createImageFile, setCreateImageFile] = useState<File | null>(null);
 	const [editImageFile, setEditImageFile] = useState<File | null>(null);
-	const [createIngredientForm, setCreateIngredientForm] =
-		useState<IngredientFormState>({
-			ingredientName: '',
-			quantity: '',
-			unitId: 'Piece',
-		});
-	const [createIngredients, setCreateIngredients] = useState<
-		IngredientPayload[]
-	>([]);
-	const [createIngredientsError, setCreateIngredientsError] = useState<
-		string | null
-	>(null);
 	const [editingRecipeId, setEditingRecipeId] = useState<string | null>(null);
 	const [editForm, setEditForm] = useState<FormState>(defaultRecipeForm);
 	const [openRecipeId, setOpenRecipeId] = useState<string | null>(null);
@@ -100,42 +82,6 @@ export function HomeTabPage() {
 		() => unitsQuery.data?.[0]?.id ?? 'Piece',
 		[unitsQuery.data],
 	);
-
-	const createRecipeMutation = useMutation({
-		mutationFn: async (payload: CreateRecipePayload) => {
-			const formData = new FormData();
-			formData.append('Title', payload.form.title);
-			formData.append('Notes', payload.form.notes ?? '');
-			if (payload.imageFile) {
-				formData.append('Image', payload.imageFile, payload.imageFile.name);
-			}
-			formData.append('Ingredients', serializeIngredients(payload.ingredients));
-
-			const created = await apiFetch<RecipeSummary>('/api/recipes', {
-				method: 'POST',
-				body: formData,
-			});
-
-			return apiFetch<RecipeDetail>(`/api/recipes/${created.id}`);
-		},
-		onSuccess: (createdDetail) => {
-			setCreateForm(defaultRecipeForm);
-			setCreateImageFile(null);
-			setCreateIngredientForm({
-				ingredientName: '',
-				quantity: '',
-				unitId: defaultUnit,
-			});
-			setCreateIngredients([]);
-			setCreateIngredientsError(null);
-			setShowCreate(false);
-			setOpenRecipeId(createdDetail.id);
-			void queryClient.invalidateQueries({ queryKey: ['recipes', 'my'] });
-			void queryClient.invalidateQueries({
-				queryKey: ['recipes', 'detail', createdDetail.id],
-			});
-		},
-	});
 
 	const updateRecipeMutation = useMutation({
 		mutationFn: ({
@@ -280,68 +226,6 @@ export function HomeTabPage() {
 				`/api/ingredients/search?name=${encodeURIComponent(ingredientSearchTerm)}`,
 			),
 	});
-	const createIngredientSearchTerm = createIngredientForm.ingredientName.trim();
-	const createIngredientSearchQuery = useQuery({
-		queryKey: ['ingredients', 'search', 'create', createIngredientSearchTerm],
-		enabled: showCreate && createIngredientSearchTerm.length >= 2,
-		queryFn: () =>
-			apiFetch<IngredientSearchItem[]>(
-				`/api/ingredients/search?name=${encodeURIComponent(createIngredientSearchTerm)}`,
-			),
-	});
-
-	const onCreateRecipe = (event: React.FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
-		if (createIngredients.length === 0) {
-			setCreateIngredientsError('Add at least one ingredient.');
-			return;
-		}
-		setCreateIngredientsError(null);
-		createRecipeMutation.reset();
-		createRecipeMutation.mutate({
-			form: createForm,
-			ingredients: createIngredients,
-			imageFile: createImageFile,
-		});
-	};
-
-	const onQueueCreateIngredient = () => {
-		const ingredientName = createIngredientForm.ingredientName.trim();
-		if (ingredientName.length < 2) {
-			return;
-		}
-
-		const quantity = Number(createIngredientForm.quantity);
-		if (!Number.isFinite(quantity) || quantity <= 0) {
-			return;
-		}
-
-		setCreateIngredients((prev) => [
-			...prev,
-			{
-				name: ingredientName,
-				quantity,
-				unit: createIngredientForm.unitId,
-			},
-		]);
-		setCreateIngredientsError(null);
-		setCreateIngredientForm({
-			ingredientName: '',
-			quantity: '',
-			unitId: defaultUnit,
-		});
-	};
-
-	const onRemoveQueuedCreateIngredient = (index: number) => {
-		setCreateIngredients((prev) => {
-			const next = prev.filter((_, currentIndex) => currentIndex !== index);
-			if (next.length === 0) {
-				setCreateIngredientsError('Add at least one ingredient.');
-			}
-			return next;
-		});
-	};
-
 	const onStartEditRecipe = (recipe: RecipeSummary) => {
 		setEditingRecipeId(recipe.id);
 		setOpenRecipeId(recipe.id);
@@ -454,9 +338,6 @@ export function HomeTabPage() {
 		});
 	};
 
-	const createErrorMessage = createRecipeMutation.isError
-		? toErrorMessage(createRecipeMutation.error, 'Could not create recipe.')
-		: null;
 	const updateErrorMessage = updateRecipeMutation.isError
 		? toErrorMessage(updateRecipeMutation.error, 'Could not update recipe.')
 		: null;
@@ -481,38 +362,14 @@ export function HomeTabPage() {
 				<h1 className='text-base font-semibold text-stone-900 dark:text-stone-100'>
 					My recipes
 				</h1>
-				<Button
-					type='button'
-					size='icon'
-					onClick={() => {
-						setShowCreate((prev) => !prev);
-						createRecipeMutation.reset();
-						setCreateIngredientsError(null);
-					}}
-					aria-label='Add recipe'>
-					<Plus className='h-4 w-4' />
-				</Button>
+				<div className='flex items-center gap-2'>
+					<Link
+						to='/recipes/add'
+						className='inline-flex h-10 items-center rounded-full border border-sky-200 bg-white px-3 text-sm font-semibold text-sky-700 shadow-sm transition hover:bg-sky-50'>
+						Add Recipe
+					</Link>
+				</div>
 			</div>
-
-			{showCreate && (
-				<CreateRecipeForm
-					form={createForm}
-					setForm={setCreateForm}
-					onImageFileChange={setCreateImageFile}
-					ingredientForm={createIngredientForm}
-					setIngredientForm={setCreateIngredientForm}
-					ingredients={createIngredients}
-					ingredientsError={createIngredientsError}
-					ingredientSearchResults={createIngredientSearchQuery.data}
-					units={unitsQuery.data}
-					defaultUnit={defaultUnit}
-					onQueueIngredient={onQueueCreateIngredient}
-					onRemoveIngredient={onRemoveQueuedCreateIngredient}
-					onSubmit={onCreateRecipe}
-					isPending={createRecipeMutation.isPending}
-					errorMessage={createErrorMessage}
-				/>
-			)}
 
 			{recipesQuery.isLoading && (
 				<p className='rounded-xl border border-stone-200 bg-white p-4 text-sm text-stone-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300'>
