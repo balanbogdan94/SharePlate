@@ -135,9 +135,9 @@ export function AddRecipePage() {
 				document.documentElement.dataset.navDirection = 'back';
 				(
 					document as Document & {
-						startViewTransition: (
-							callback: () => void | Promise<void>,
-						) => { finished: Promise<void> };
+						startViewTransition: (callback: () => void | Promise<void>) => {
+							finished: Promise<void>;
+						};
 					}
 				).startViewTransition(() => {
 					if (canGoBack) {
@@ -187,9 +187,9 @@ export function AddRecipePage() {
 				document.documentElement.dataset.navDirection = 'back';
 				(
 					document as Document & {
-						startViewTransition: (
-							callback: () => void | Promise<void>,
-						) => { finished: Promise<void> };
+						startViewTransition: (callback: () => void | Promise<void>) => {
+							finished: Promise<void>;
+						};
 					}
 				).startViewTransition(() => {
 					if (canGoBack) {
@@ -278,7 +278,7 @@ export function AddRecipePage() {
 		form.title.trim().length === 0 ||
 		ingredients.length === 0;
 
-	if (isEditing && recipeDetailQuery.isLoading && !hasHydratedEdit.current) {
+	if (isEditing && recipeDetailQuery.isLoading && !recipeDetailQuery.data) {
 		return (
 			<section className='relative mx-auto flex h-full w-full max-w-2xl flex-col gap-4 pb-10'>
 				<p className='rounded-2xl border border-stone-200 bg-white p-4 text-sm text-stone-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300'>
@@ -435,17 +435,17 @@ export function AddRecipePage() {
 						<p className='text-base font-semibold text-stone-900 dark:text-stone-100'>
 							New Ingredient
 						</p>
-					<button
-						type='button'
-						onClick={onAddIngredient}
-						disabled={!isIngredientDraftValid}
-						className={`transition hover:text-sky-700 ${
-							!isIngredientDraftValid
-								? 'pointer-events-none text-stone-300 dark:text-stone-600'
-								: ''
-						}`}>
-						Add
-					</button>
+						<button
+							type='button'
+							onClick={onAddIngredient}
+							disabled={!isIngredientDraftValid}
+							className={`transition hover:text-sky-700 ${
+								!isIngredientDraftValid
+									? 'pointer-events-none text-stone-300 dark:text-stone-600'
+									: ''
+							}`}>
+							Add
+						</button>
 					</div>
 
 					<div className='space-y-3 rounded-2xl border border-stone-200/70 bg-white/80 p-3 shadow-sm dark:border-stone-700/70 dark:bg-stone-950/70'>
@@ -502,9 +502,7 @@ export function AddRecipePage() {
 										<option key={unit.id} value={unit.id}>
 											{unit.name}
 										</option>
-									)) ?? (
-										<option value={defaultUnit}>{defaultUnit}</option>
-									)}
+									)) ?? <option value={defaultUnit}>{defaultUnit}</option>}
 								</select>
 							</label>
 						</div>
