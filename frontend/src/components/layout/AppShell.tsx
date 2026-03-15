@@ -2,10 +2,18 @@ import { useEffect, useRef, useState } from 'react';
 import {
 	Link,
 	Outlet,
+	useCanGoBack,
 	useLocation,
 	useNavigate,
+	useRouter,
 } from '@tanstack/react-router';
-import { House, Layers3, Settings2, UserCircle2 } from 'lucide-react';
+import {
+	ChevronLeft,
+	House,
+	Layers3,
+	Settings2,
+	UserCircle2,
+} from 'lucide-react';
 import { useAuth } from '@/auth/AuthContext';
 import { useI18n } from '@/i18n/I18nContext';
 import { apiFetch } from '@/lib/api';
@@ -17,7 +25,7 @@ import {
 } from '@/settings/UserSettingsContext';
 
 type TabItem = {
-	to: '/' | '/tab-2' | '/tab-3';
+	to: '/recipes' | '/tab-2' | '/tab-3';
 	label: string;
 	icon: typeof House;
 };
@@ -25,6 +33,8 @@ type TabItem = {
 export function AppShell() {
 	const auth = useAuth();
 	const navigate = useNavigate();
+	const router = useRouter();
+	const canGoBack = useCanGoBack();
 	const location = useLocation();
 	const { t } = useI18n();
 	const { theme, setTheme, language, setLanguage } = useUserSettings();
@@ -32,10 +42,11 @@ export function AppShell() {
 	const menuRef = useRef<HTMLDivElement | null>(null);
 
 	const tabs: TabItem[] = [
-		{ to: '/', label: t('tabs.home'), icon: House },
+		{ to: '/recipes', label: t('tabs.home'), icon: House },
 		{ to: '/tab-2', label: t('tabs.board'), icon: Layers3 },
 		{ to: '/tab-3', label: t('tabs.more'), icon: Settings2 },
 	];
+	const isMainRoute = tabs.some((tab) => tab.to === location.pathname);
 
 	useEffect(() => {
 		const onDocumentClick = (event: MouseEvent) => {
@@ -67,13 +78,55 @@ export function AppShell() {
 		await navigate({ to: '/login' });
 	};
 
+	const handleBack = () => {
+		if ('startViewTransition' in document) {
+			document.documentElement.dataset.navDirection = 'back';
+			(
+				document as Document & {
+					startViewTransition: (callback: () => void | Promise<void>) => {
+						finished: Promise<void>;
+					};
+				}
+			).startViewTransition(() => {
+				if (canGoBack) {
+					router.history.back();
+					return;
+				}
+
+				void navigate({ to: '/' });
+			});
+			return;
+		}
+
+		if (canGoBack) {
+			router.history.back();
+			return;
+		}
+
+		void navigate({ to: '/' });
+	};
+
 	return (
 		<div className='mobile-shell min-h-screen min-h-[100dvh] bg-stone-100 text-stone-900 dark:bg-stone-950 dark:text-stone-100'>
 			<header className='safe-top sticky top-0 z-20 border-b border-stone-200/80 bg-white/90 backdrop-blur-md dark:border-stone-800 dark:bg-stone-900/90'>
-				<div className='mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-4 sm:h-16'>
-					<p className='text-base font-semibold tracking-tight'>{t('app.brand')}</p>
+				<div className='mx-auto grid h-14 w-full max-w-5xl grid-cols-[minmax(6.5rem,auto),1fr,minmax(6.5rem,auto)] items-center gap-2 px-4 sm:h-16'>
+					<div className='min-w-[6.5rem]'>
+						{!isMainRoute && (
+							<button
+								type='button'
+								onClick={handleBack}
+								className='inline-flex items-center gap-1 text-base font-semibold text-sky-600 transition hover:text-sky-700'>
+								<ChevronLeft className='h-5 w-5' />
+								Back
+							</button>
+						)}
+					</div>
 
-					<div className='relative' ref={menuRef}>
+					<p className='text-center text-base font-semibold tracking-tight'>
+						{t('app.brand')}
+					</p>
+
+					<div className='relative justify-self-end' ref={menuRef}>
 						<button
 							type='button'
 							onClick={() => setMenuOpen((prev) => !prev)}
@@ -132,7 +185,7 @@ export function AppShell() {
 				<div className='mx-auto grid w-full max-w-md grid-cols-3 gap-2 rounded-2xl bg-stone-100/80 p-2 dark:bg-stone-800/70'>
 					{tabs.map((tab) => {
 						const Icon = tab.icon;
-						const isActive = location.pathname === tab.to;
+						const isActive = location.pathname.includes(tab.to);
 
 						return (
 							<Link

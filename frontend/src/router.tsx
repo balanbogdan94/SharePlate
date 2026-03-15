@@ -9,6 +9,7 @@ import type { AuthContextValue } from '@/auth/AuthContext';
 import { AppShell } from '@/components/layout/AppShell';
 import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
+import { AddRecipePage } from '@/pages/AddRecipePage';
 import { HomeTabPage } from '@/pages/tabs/HomeTabPage';
 import { SecondTabPage } from '@/pages/tabs/SecondTabPage';
 import { ThirdTabPage } from '@/pages/tabs/ThirdTabPage';
@@ -34,8 +35,14 @@ const appLayoutRoute = createRoute({
 
 const homeTabRoute = createRoute({
 	getParentRoute: () => appLayoutRoute,
-	path: '/',
+	path: '/recipes',
 	component: HomeTabPage,
+});
+
+const addRecipeRoute = createRoute({
+	getParentRoute: () => appLayoutRoute,
+	path: '/recipes/add',
+	component: AddRecipePage,
 });
 
 const secondTabRoute = createRoute({
@@ -73,7 +80,12 @@ const registerRoute = createRoute({
 });
 
 const routeTree = rootRoute.addChildren([
-	appLayoutRoute.addChildren([homeTabRoute, secondTabRoute, thirdTabRoute]),
+	appLayoutRoute.addChildren([
+		homeTabRoute,
+		addRecipeRoute,
+		secondTabRoute,
+		thirdTabRoute,
+	]),
 	loginRoute,
 	registerRoute,
 ]);
