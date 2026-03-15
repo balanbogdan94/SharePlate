@@ -1,6 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCanGoBack, useNavigate, useRouter } from '@tanstack/react-router';
+import {
+	useCanGoBack,
+	useNavigate,
+	useParams,
+	useRouter,
+} from '@tanstack/react-router';
 import { Plus, X } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -11,6 +16,7 @@ import { apiFetch } from '@/lib/api';
 import type {
 	FormState,
 	IngredientPayload,
+	RecipeDetail,
 	Unit,
 	UnitType,
 } from '@/pages/tabs/home/types';
@@ -50,8 +56,13 @@ export function AddRecipePage() {
 	const navigate = useNavigate();
 	const router = useRouter();
 	const canGoBack = useCanGoBack();
+	const params = useParams({ strict: false }) as { recipeId?: string };
+	const recipeId = params.recipeId;
+	const isEditing = Boolean(recipeId);
+	const hasHydratedEdit = useRef(false);
 	const [form, setForm] = useState<FormState>(defaultRecipeForm);
 	const [imageFile, setImageFile] = useState<File | null>(null);
+	const [initialImageUrl, setInitialImageUrl] = useState<string>('');
 	const [ingredients, setIngredients] = useState<IngredientPayload[]>([]);
 	const [ingredientsError, setIngredientsError] = useState<string | null>(null);
 	const [isIngredientModalOpen, setIsIngredientModalOpen] = useState(false);
@@ -70,6 +81,34 @@ export function AddRecipePage() {
 		() => unitsQuery.data?.[0]?.id ?? 'Piece',
 		[unitsQuery.data],
 	);
+
+	const recipeDetailQuery = useQuery({
+		queryKey: ['recipes', 'detail', recipeId],
+		enabled: Boolean(recipeId),
+		queryFn: () => apiFetch<RecipeDetail>(`/api/recipes/${recipeId}`),
+	});
+
+	useEffect(() => {
+		if (!isEditing || !recipeDetailQuery.data || hasHydratedEdit.current) {
+			return;
+		}
+
+		const detail = recipeDetailQuery.data;
+		setForm({
+			title: detail.title,
+			notes: detail.notes ?? '',
+			imageUrl: detail.imageUrl ?? '',
+		});
+		setInitialImageUrl(detail.imageUrl ?? '');
+		setIngredients(
+			detail.ingredients.map((ingredient) => ({
+				name: ingredient.ingredientName,
+				quantity: ingredient.quantity,
+				unit: ingredient.unitId,
+			})),
+		);
+		hasHydratedEdit.current = true;
+	}, [isEditing, recipeDetailQuery.data]);
 
 	const createRecipeMutation = useMutation({
 		mutationFn: async () => {
@@ -92,6 +131,58 @@ export function AddRecipePage() {
 			setIngredients([]);
 			setIngredientsError(null);
 			void queryClient.invalidateQueries({ queryKey: ['recipes', 'my'] });
+			if ('startViewTransition' in document) {
+				document.documentElement.dataset.navDirection = 'back';
+				(
+					document as Document & {
+						startViewTransition: (
+							callback: () => void | Promise<void>,
+						) => { finished: Promise<void> };
+					}
+				).startViewTransition(() => {
+					if (canGoBack) {
+						router.history.back();
+						return;
+					}
+					void navigate({ to: '/' });
+				});
+				return;
+			}
+
+			if (canGoBack) {
+				router.history.back();
+				return;
+			}
+			await navigate({ to: '/' });
+		},
+	});
+
+	const updateRecipeMutation = useMutation({
+		mutationFn: async () => {
+			if (!recipeId) {
+				throw new Error('Missing recipe id.');
+			}
+
+			const formData = new FormData();
+			formData.append('Title', form.title);
+			formData.append('Notes', form.notes ?? '');
+			const removeImage = Boolean(initialImageUrl) && !form.imageUrl;
+			formData.append('RemoveImage', String(removeImage));
+			if (imageFile) {
+				formData.append('Image', imageFile, imageFile.name);
+			}
+			formData.append('Ingredients', serializeIngredients(ingredients));
+
+			return apiFetch(`/api/recipes/${recipeId}`, {
+				method: 'PUT',
+				body: formData,
+			});
+		},
+		onSuccess: async () => {
+			void queryClient.invalidateQueries({ queryKey: ['recipes', 'my'] });
+			void queryClient.invalidateQueries({
+				queryKey: ['recipes', 'detail', recipeId],
+			});
 			if ('startViewTransition' in document) {
 				document.documentElement.dataset.navDirection = 'back';
 				(
@@ -159,12 +250,23 @@ export function AddRecipePage() {
 			return;
 		}
 
+		if (isEditing) {
+			updateRecipeMutation.reset();
+			updateRecipeMutation.mutate();
+			return;
+		}
+
 		createRecipeMutation.reset();
 		createRecipeMutation.mutate();
 	};
 
 	const submitErrorMessage = createRecipeMutation.isError
 		? toErrorMessage(createRecipeMutation.error, 'Could not create recipe.')
+		: updateRecipeMutation.isError
+			? toErrorMessage(updateRecipeMutation.error, 'Could not update recipe.')
+			: null;
+	const loadErrorMessage = recipeDetailQuery.isError
+		? toErrorMessage(recipeDetailQuery.error, 'Could not load recipe.')
 		: null;
 	const isIngredientDraftValid =
 		ingredientDraft.name.trim().length >= 2 &&
@@ -172,11 +274,28 @@ export function AddRecipePage() {
 		Number(ingredientDraft.quantity) > 0;
 	const isSaveDisabled =
 		createRecipeMutation.isPending ||
+		updateRecipeMutation.isPending ||
 		form.title.trim().length === 0 ||
 		ingredients.length === 0;
 
+	if (isEditing && recipeDetailQuery.isLoading && !hasHydratedEdit.current) {
+		return (
+			<section className='relative mx-auto flex h-full w-full max-w-2xl flex-col gap-4 pb-10'>
+				<p className='rounded-2xl border border-stone-200 bg-white p-4 text-sm text-stone-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300'>
+					Loading recipe...
+				</p>
+			</section>
+		);
+	}
+
 	return (
 		<section className='relative mx-auto flex h-full w-full max-w-2xl flex-col gap-4 pb-10'>
+			{loadErrorMessage && (
+				<Alert variant='destructive'>
+					<AlertTitle>Could not load recipe</AlertTitle>
+					<AlertDescription>{loadErrorMessage}</AlertDescription>
+				</Alert>
+			)}
 			<form
 				onSubmit={handleSubmit}
 				className='space-y-4 rounded-3xl border border-stone-200/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm dark:border-stone-700/80 dark:bg-stone-900/70'>
@@ -276,7 +395,11 @@ export function AddRecipePage() {
 					type='submit'
 					className='h-12 w-full rounded-full text-base'
 					disabled={isSaveDisabled}>
-					{createRecipeMutation.isPending ? 'Saving...' : 'Save Recipe'}
+					{createRecipeMutation.isPending || updateRecipeMutation.isPending
+						? 'Saving...'
+						: isEditing
+							? 'Update Recipe'
+							: 'Save Recipe'}
 				</Button>
 
 				{submitErrorMessage && (

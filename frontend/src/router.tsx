@@ -45,6 +45,12 @@ const addRecipeRoute = createRoute({
 	component: AddRecipePage,
 });
 
+const editRecipeRoute = createRoute({
+	getParentRoute: () => appLayoutRoute,
+	path: '/recipes/$recipeId/edit',
+	component: AddRecipePage,
+});
+
 const secondTabRoute = createRoute({
 	getParentRoute: () => appLayoutRoute,
 	path: '/tab-2',
@@ -83,6 +89,7 @@ const routeTree = rootRoute.addChildren([
 	appLayoutRoute.addChildren([
 		homeTabRoute,
 		addRecipeRoute,
+		editRecipeRoute,
 		secondTabRoute,
 		thirdTabRoute,
 	]),

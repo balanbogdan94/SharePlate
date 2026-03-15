@@ -1,27 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { apiFetch } from '@/lib/api';
 import { RecipeCard } from './home/RecipeCard';
 import type {
-	FormState,
-	IngredientEditPayload,
-	IngredientFormState,
-	IngredientPayload,
-	IngredientSearchItem,
 	RecipeDetail,
-	RecipeIngredient,
 	RecipeSummary,
-	Unit,
-	UnitType,
 } from './home/types';
-
-const defaultRecipeForm: FormState = {
-	title: '',
-	notes: '',
-	imageUrl: '',
-};
 
 function toErrorMessage(error: unknown, fallback: string): string {
 	if (error instanceof Error && error.message.trim()) {
@@ -31,45 +17,14 @@ function toErrorMessage(error: unknown, fallback: string): string {
 	return fallback;
 }
 
-function formatQuantity(value: number): string {
-	if (Number.isInteger(value)) {
-		return String(value);
-	}
-
-	return String(Number(value.toFixed(3)));
-}
-
-function serializeIngredients(ingredients: IngredientPayload[]): string {
-	return JSON.stringify(
-		ingredients.map((ingredient) => ({
-			name: ingredient.name,
-			quantity: ingredient.quantity,
-			unit: ingredient.unit,
-		})),
-	);
-}
-
 export function HomeTabPage() {
 	const queryClient = useQueryClient();
-	const [editImageFile, setEditImageFile] = useState<File | null>(null);
-	const [editingRecipeId, setEditingRecipeId] = useState<string | null>(null);
-	const [editForm, setEditForm] = useState<FormState>(defaultRecipeForm);
+	const navigate = useNavigate();
 	const [openRecipeId, setOpenRecipeId] = useState<string | null>(null);
-	const [ingredientFormsByRecipeId, setIngredientFormsByRecipeId] = useState<
-		Record<string, IngredientFormState>
-	>({});
-	const [ingredientEditsById, setIngredientEditsById] = useState<
-		Record<string, { quantity: string; unitId: UnitType }>
-	>({});
 
 	const recipesQuery = useQuery({
 		queryKey: ['recipes', 'my'],
 		queryFn: () => apiFetch<RecipeSummary[]>('/api/recipes/my'),
-	});
-
-	const unitsQuery = useQuery({
-		queryKey: ['units'],
-		queryFn: () => apiFetch<Unit[]>('/api/units'),
 	});
 
 	const openRecipeQuery = useQuery({
@@ -78,46 +33,6 @@ export function HomeTabPage() {
 		queryFn: () => apiFetch<RecipeDetail>(`/api/recipes/${openRecipeId}`),
 	});
 
-	const defaultUnit = useMemo<UnitType>(
-		() => unitsQuery.data?.[0]?.id ?? 'Piece',
-		[unitsQuery.data],
-	);
-
-	const updateRecipeMutation = useMutation({
-		mutationFn: ({
-			id,
-			form,
-			ingredients,
-			imageFile,
-			removeImage,
-		}: {
-			id: string;
-			form: FormState;
-			ingredients: IngredientPayload[];
-			imageFile: File | null;
-			removeImage: boolean;
-		}) => {
-			const formData = new FormData();
-			formData.append('Title', form.title);
-			formData.append('Notes', form.notes ?? '');
-			formData.append('RemoveImage', String(removeImage));
-			if (imageFile) {
-				formData.append('Image', imageFile, imageFile.name);
-			}
-			formData.append('Ingredients', serializeIngredients(ingredients));
-			return apiFetch<RecipeSummary>(`/api/recipes/${id}`, {
-				method: 'PUT',
-				body: formData,
-			});
-		},
-		onSuccess: (_, vars) => {
-			setEditingRecipeId(null);
-			void queryClient.invalidateQueries({ queryKey: ['recipes', 'my'] });
-			void queryClient.invalidateQueries({
-				queryKey: ['recipes', 'detail', vars.id],
-			});
-		},
-	});
 
 	const deleteRecipeMutation = useMutation({
 		mutationFn: (id: string) =>
@@ -133,140 +48,15 @@ export function HomeTabPage() {
 		},
 	});
 
-	const addIngredientMutation = useMutation({
-		mutationFn: ({
-			recipeId,
-			payload,
-		}: {
-			recipeId: string;
-			payload: IngredientPayload;
-		}) =>
-			apiFetch<RecipeIngredient>(`/api/recipes/${recipeId}/ingredients`, {
-				method: 'POST',
-				body: JSON.stringify(payload),
-			}),
-		onSuccess: (_, vars) => {
-			setIngredientFormsByRecipeId((prev) => ({
-				...prev,
-				[vars.recipeId]: {
-					ingredientName: '',
-					quantity: '',
-					unitId: defaultUnit,
-				},
-			}));
-			void queryClient.invalidateQueries({
-				queryKey: ['recipes', 'detail', vars.recipeId],
-			});
-		},
-	});
-
-	const updateIngredientMutation = useMutation({
-		mutationFn: ({
-			recipeId,
-			recipeIngredientId,
-			payload,
-		}: {
-			recipeId: string;
-			recipeIngredientId: string;
-			payload: IngredientEditPayload;
-		}) =>
-			apiFetch<RecipeIngredient>(
-				`/api/recipes/${recipeId}/ingredients/${recipeIngredientId}`,
-				{
-					method: 'PUT',
-					body: JSON.stringify(payload),
-				},
-			),
-		onSuccess: (_, vars) => {
-			void queryClient.invalidateQueries({
-				queryKey: ['recipes', 'detail', vars.recipeId],
-			});
-		},
-	});
-
-	const removeIngredientMutation = useMutation({
-		mutationFn: ({
-			recipeId,
-			recipeIngredientId,
-		}: {
-			recipeId: string;
-			recipeIngredientId: string;
-		}) =>
-			apiFetch<void>(
-				`/api/recipes/${recipeId}/ingredients/${recipeIngredientId}`,
-				{
-					method: 'DELETE',
-				},
-			),
-		onSuccess: (_, vars) => {
-			void queryClient.invalidateQueries({
-				queryKey: ['recipes', 'detail', vars.recipeId],
-			});
-		},
-	});
-
 	const currentOpenRecipe =
 		openRecipeId && openRecipeQuery.data?.id === openRecipeId
 			? openRecipeQuery.data
 			: null;
 
-	const currentOpenForm = openRecipeId
-		? (ingredientFormsByRecipeId[openRecipeId] ?? {
-				ingredientName: '',
-				quantity: '',
-				unitId: defaultUnit,
-			})
-		: null;
-	const ingredientSearchTerm = currentOpenForm?.ingredientName.trim() ?? '';
-	const ingredientSearchQuery = useQuery({
-		queryKey: ['ingredients', 'search', ingredientSearchTerm],
-		enabled: Boolean(openRecipeId) && ingredientSearchTerm.length >= 2,
-		queryFn: () =>
-			apiFetch<IngredientSearchItem[]>(
-				`/api/ingredients/search?name=${encodeURIComponent(ingredientSearchTerm)}`,
-			),
-	});
-	const onStartEditRecipe = (recipe: RecipeSummary) => {
-		setEditingRecipeId(recipe.id);
-		setOpenRecipeId(recipe.id);
-		setEditForm({
-			title: recipe.title,
-			notes: recipe.notes,
-			imageUrl: recipe.imageUrl,
-		});
-		setEditImageFile(null);
-		updateRecipeMutation.reset();
-	};
-
-	const onUpdateRecipe = (event: React.FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
-		if (!editingRecipeId) {
-			return;
-		}
-
-		const recipeDetail =
-			openRecipeQuery.data && openRecipeQuery.data.id === editingRecipeId
-				? openRecipeQuery.data
-				: null;
-		if (!recipeDetail) {
-			window.alert('Open the recipe first so ingredients can be loaded.');
-			return;
-		}
-
-		const ingredients = recipeDetail.ingredients.map((ingredient) => ({
-			name: ingredient.ingredientName,
-			quantity: ingredient.quantity,
-			unit: ingredient.unitId,
-		}));
-		const removeImage = Boolean(recipeDetail.imageUrl) && !editForm.imageUrl;
-
-		updateRecipeMutation.reset();
-		updateRecipeMutation.mutate({
-			id: editingRecipeId,
-			form: editForm,
-			ingredients,
-			imageFile: editImageFile,
-			removeImage,
+	const onEditRecipe = (recipe: RecipeSummary) => {
+		void navigate({
+			to: '/recipes/$recipeId/edit',
+			params: { recipeId: recipe.id },
 		});
 	};
 
@@ -281,80 +71,10 @@ export function HomeTabPage() {
 
 	const onToggleRecipe = (id: string) => {
 		setOpenRecipeId((prev) => (prev === id ? null : id));
-		addIngredientMutation.reset();
 	};
-
-	const onAddIngredient = (event: React.FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
-		if (!openRecipeId || !currentOpenForm) {
-			return;
-		}
-
-		const quantity = Number(currentOpenForm.quantity);
-		if (!Number.isFinite(quantity) || quantity <= 0) {
-			return;
-		}
-
-		addIngredientMutation.reset();
-		addIngredientMutation.mutate({
-			recipeId: openRecipeId,
-			payload: {
-				name: currentOpenForm.ingredientName,
-				quantity,
-				unit: currentOpenForm.unitId,
-			},
-		});
-	};
-
-	const onSaveIngredient = (recipeId: string, ingredient: RecipeIngredient) => {
-		const edit = ingredientEditsById[ingredient.id] ?? {
-			quantity: formatQuantity(ingredient.quantity),
-			unitId: ingredient.unitId,
-		};
-		const quantity = Number(edit.quantity);
-		if (!Number.isFinite(quantity) || quantity <= 0) {
-			return;
-		}
-
-		updateIngredientMutation.reset();
-		updateIngredientMutation.mutate({
-			recipeId,
-			recipeIngredientId: ingredient.id,
-			payload: {
-				quantity,
-				unitId: edit.unitId,
-			},
-		});
-	};
-
-	const onRemoveIngredient = (
-		recipeId: string,
-		ingredient: RecipeIngredient,
-	) => {
-		removeIngredientMutation.reset();
-		removeIngredientMutation.mutate({
-			recipeId,
-			recipeIngredientId: ingredient.id,
-		});
-	};
-
-	const updateErrorMessage = updateRecipeMutation.isError
-		? toErrorMessage(updateRecipeMutation.error, 'Could not update recipe.')
-		: null;
 	const openRecipeErrorMessage = openRecipeQuery.isError
 		? toErrorMessage(openRecipeQuery.error, 'Could not load recipe details.')
 		: null;
-	const ingredientsErrorMessage =
-		addIngredientMutation.isError ||
-		updateIngredientMutation.isError ||
-		removeIngredientMutation.isError
-			? toErrorMessage(
-					addIngredientMutation.error ??
-						updateIngredientMutation.error ??
-						removeIngredientMutation.error,
-					'Could not update ingredients.',
-				)
-			: null;
 
 	return (
 		<section className='h-full w-full space-y-3 rounded-2xl border border-stone-200/70 bg-white/40 p-3 pb-24 dark:border-stone-700/70 dark:bg-stone-900/40 sm:p-4'>
@@ -397,49 +117,19 @@ export function HomeTabPage() {
 			<div className='space-y-3'>
 				{recipesQuery.data?.map((recipe) => {
 					const isOpen = openRecipeId === recipe.id;
-					const isEditing = editingRecipeId === recipe.id;
 
 					return (
 						<RecipeCard
 							key={recipe.id}
 							recipe={recipe}
 							isOpen={isOpen}
-							isEditing={isEditing}
 							onToggle={onToggleRecipe}
-							onStartEdit={onStartEditRecipe}
-							onCancelEdit={() => setEditingRecipeId(null)}
+							onEdit={onEditRecipe}
 							onDelete={onDeleteRecipe}
 							deletePending={deleteRecipeMutation.isPending}
-							editForm={editForm}
-							setEditForm={setEditForm}
-							onUpdateRecipe={onUpdateRecipe}
-							updatePending={updateRecipeMutation.isPending}
-							updateErrorMessage={updateErrorMessage}
-							onEditImageFileChange={setEditImageFile}
 							openRecipe={isOpen ? currentOpenRecipe : null}
 							openRecipeLoading={openRecipeQuery.isLoading && isOpen}
 							openRecipeErrorMessage={isOpen ? openRecipeErrorMessage : null}
-							units={unitsQuery.data}
-							ingredientEditsById={ingredientEditsById}
-							setIngredientEditsById={setIngredientEditsById}
-							onSaveIngredient={onSaveIngredient}
-							onRemoveIngredient={onRemoveIngredient}
-							currentOpenForm={isOpen ? currentOpenForm : null}
-							onIngredientFormChange={(next) => {
-								if (!openRecipeId) return;
-								setIngredientFormsByRecipeId((prev) => ({
-									...prev,
-									[openRecipeId]: next,
-								}));
-							}}
-							onAddIngredient={onAddIngredient}
-							ingredientSearchResults={
-								isOpen ? ingredientSearchQuery.data : undefined
-							}
-							addIngredientPending={addIngredientMutation.isPending}
-							updateIngredientPending={updateIngredientMutation.isPending}
-							removeIngredientPending={removeIngredientMutation.isPending}
-							ingredientsErrorMessage={isOpen ? ingredientsErrorMessage : null}
 						/>
 					);
 				})}
