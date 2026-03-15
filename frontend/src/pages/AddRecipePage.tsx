@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
 	useCanGoBack,
@@ -51,19 +51,36 @@ function serializeIngredients(ingredients: IngredientPayload[]): string {
 	);
 }
 
-export function AddRecipePage() {
+type AddRecipeFormProps = {
+	recipeId?: string;
+	initialData?: RecipeDetail;
+};
+
+function AddRecipeForm({ recipeId, initialData }: AddRecipeFormProps) {
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
 	const router = useRouter();
 	const canGoBack = useCanGoBack();
-	const params = useParams({ strict: false }) as { recipeId?: string };
-	const recipeId = params.recipeId;
 	const isEditing = Boolean(recipeId);
-	const hasHydratedEdit = useRef(false);
-	const [form, setForm] = useState<FormState>(defaultRecipeForm);
+	const [form, setForm] = useState<FormState>(() =>
+		initialData
+			? {
+					title: initialData.title,
+					notes: initialData.notes ?? '',
+					imageUrl: initialData.imageUrl ?? '',
+				}
+			: defaultRecipeForm,
+	);
 	const [imageFile, setImageFile] = useState<File | null>(null);
-	const [initialImageUrl, setInitialImageUrl] = useState<string>('');
-	const [ingredients, setIngredients] = useState<IngredientPayload[]>([]);
+	const [ingredients, setIngredients] = useState<IngredientPayload[]>(() =>
+		initialData
+			? initialData.ingredients.map((ingredient) => ({
+					name: ingredient.ingredientName,
+					quantity: ingredient.quantity,
+					unit: ingredient.unitId,
+				}))
+			: [],
+	);
 	const [ingredientsError, setIngredientsError] = useState<string | null>(null);
 	const [isIngredientModalOpen, setIsIngredientModalOpen] = useState(false);
 	const [ingredientDraft, setIngredientDraft] = useState<IngredientDraft>({
@@ -81,34 +98,6 @@ export function AddRecipePage() {
 		() => unitsQuery.data?.[0]?.id ?? 'Piece',
 		[unitsQuery.data],
 	);
-
-	const recipeDetailQuery = useQuery({
-		queryKey: ['recipes', 'detail', recipeId],
-		enabled: Boolean(recipeId),
-		queryFn: () => apiFetch<RecipeDetail>(`/api/recipes/${recipeId}`),
-	});
-
-	useEffect(() => {
-		if (!isEditing || !recipeDetailQuery.data || hasHydratedEdit.current) {
-			return;
-		}
-
-		const detail = recipeDetailQuery.data;
-		setForm({
-			title: detail.title,
-			notes: detail.notes ?? '',
-			imageUrl: detail.imageUrl ?? '',
-		});
-		setInitialImageUrl(detail.imageUrl ?? '');
-		setIngredients(
-			detail.ingredients.map((ingredient) => ({
-				name: ingredient.ingredientName,
-				quantity: ingredient.quantity,
-				unit: ingredient.unitId,
-			})),
-		);
-		hasHydratedEdit.current = true;
-	}, [isEditing, recipeDetailQuery.data]);
 
 	const createRecipeMutation = useMutation({
 		mutationFn: async () => {
@@ -166,7 +155,7 @@ export function AddRecipePage() {
 			const formData = new FormData();
 			formData.append('Title', form.title);
 			formData.append('Notes', form.notes ?? '');
-			const removeImage = Boolean(initialImageUrl) && !form.imageUrl;
+			const removeImage = Boolean(initialData?.imageUrl) && !form.imageUrl;
 			formData.append('RemoveImage', String(removeImage));
 			if (imageFile) {
 				formData.append('Image', imageFile, imageFile.name);
@@ -265,9 +254,6 @@ export function AddRecipePage() {
 		: updateRecipeMutation.isError
 			? toErrorMessage(updateRecipeMutation.error, 'Could not update recipe.')
 			: null;
-	const loadErrorMessage = recipeDetailQuery.isError
-		? toErrorMessage(recipeDetailQuery.error, 'Could not load recipe.')
-		: null;
 	const isIngredientDraftValid =
 		ingredientDraft.name.trim().length >= 2 &&
 		Number.isFinite(Number(ingredientDraft.quantity)) &&
@@ -278,24 +264,8 @@ export function AddRecipePage() {
 		form.title.trim().length === 0 ||
 		ingredients.length === 0;
 
-	if (isEditing && recipeDetailQuery.isLoading && !recipeDetailQuery.data) {
-		return (
-			<section className='relative mx-auto flex h-full w-full max-w-2xl flex-col gap-4 pb-10'>
-				<p className='rounded-2xl border border-stone-200 bg-white p-4 text-sm text-stone-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300'>
-					Loading recipe...
-				</p>
-			</section>
-		);
-	}
-
 	return (
 		<section className='relative mx-auto flex h-full w-full max-w-2xl flex-col gap-4 pb-10'>
-			{loadErrorMessage && (
-				<Alert variant='destructive'>
-					<AlertTitle>Could not load recipe</AlertTitle>
-					<AlertDescription>{loadErrorMessage}</AlertDescription>
-				</Alert>
-			)}
 			<form
 				onSubmit={handleSubmit}
 				className='space-y-4 rounded-3xl border border-stone-200/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm dark:border-stone-700/80 dark:bg-stone-900/70'>
@@ -510,5 +480,48 @@ export function AddRecipePage() {
 				</div>
 			</div>
 		</section>
+	);
+}
+
+export function AddRecipePage() {
+	const params = useParams({ strict: false }) as { recipeId?: string };
+	const recipeId = params.recipeId;
+	const isEditing = Boolean(recipeId);
+
+	const recipeDetailQuery = useQuery({
+		queryKey: ['recipes', 'detail', recipeId],
+		enabled: isEditing,
+		queryFn: () => apiFetch<RecipeDetail>(`/api/recipes/${recipeId}`),
+	});
+
+	if (isEditing && recipeDetailQuery.isLoading) {
+		return (
+			<section className='relative mx-auto flex h-full w-full max-w-2xl flex-col gap-4 pb-10'>
+				<p className='rounded-2xl border border-stone-200 bg-white p-4 text-sm text-stone-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300'>
+					Loading recipe...
+				</p>
+			</section>
+		);
+	}
+
+	if (isEditing && recipeDetailQuery.isError) {
+		return (
+			<section className='relative mx-auto flex h-full w-full max-w-2xl flex-col gap-4 pb-10'>
+				<Alert variant='destructive'>
+					<AlertTitle>Could not load recipe</AlertTitle>
+					<AlertDescription>
+						{toErrorMessage(recipeDetailQuery.error, 'Could not load recipe.')}
+					</AlertDescription>
+				</Alert>
+			</section>
+		);
+	}
+
+	return (
+		<AddRecipeForm
+			key={recipeId ?? 'new'}
+			recipeId={recipeId}
+			initialData={recipeDetailQuery.data}
+		/>
 	);
 }
