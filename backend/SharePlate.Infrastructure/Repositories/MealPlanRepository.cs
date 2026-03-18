@@ -17,7 +17,26 @@ public class MealPlanRepository : Repository<MealPlan>, IMealPlanRepository
 
     public async Task<IReadOnlyList<MealPlan>> GetByHouseAsync(Guid houseId, CancellationToken ct = default)
         => await DbSet
+            .Include(mp => mp.MealPlanRecipes)
+                .ThenInclude(mpr => mpr.Recipe)
             .Where(mp => mp.HouseId == houseId)
             .OrderByDescending(mp => mp.StartDate)
             .ToListAsync(ct);
+
+    public async Task<MealPlan?> GetActiveByHouseAsync(Guid houseId, DateOnly date, CancellationToken ct = default)
+        => await DbSet
+            .Include(mp => mp.MealPlanRecipes)
+                .ThenInclude(mpr => mpr.Recipe)
+            .Where(mp => mp.HouseId == houseId && mp.StartDate <= date && mp.EndDate >= date)
+            .OrderByDescending(mp => mp.UpdatedAt)
+            .ThenByDescending(mp => mp.CreatedAt)
+            .FirstOrDefaultAsync(ct);
+
+    public async Task<bool> HasOverlappingRangeAsync(Guid houseId, DateOnly startDate, DateOnly endDate, Guid? excludedMealPlanId = null, CancellationToken ct = default)
+        => await DbSet.AnyAsync(mp =>
+            mp.HouseId == houseId
+            && (!excludedMealPlanId.HasValue || mp.Id != excludedMealPlanId.Value)
+            && mp.StartDate <= endDate
+            && mp.EndDate >= startDate,
+            ct);
 }

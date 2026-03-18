@@ -158,5 +158,6 @@ api.MapHouseEndpoints();
 api.MapUnitEndpoints();
 api.MapIngredientEndpoints();
 api.MapRecipeEndpoints();
+api.MapPlanEndpoints();
 
 app.Run();

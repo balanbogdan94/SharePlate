@@ -32,4 +32,14 @@ public sealed class MealPlanRecipe : BaseEntity
     public DateOnly PlannedDate { get; private set; }
     public MealTime MealTime { get; private set; }
     public int Servings { get; private set; }
+
+    public void Update(DateOnly plannedDate, MealTime mealTime, int servings)
+    {
+        if (servings <= 0) throw new ArgumentOutOfRangeException(nameof(servings), "Servings must be positive.");
+
+        PlannedDate = plannedDate;
+        MealTime = mealTime;
+        Servings = servings;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }

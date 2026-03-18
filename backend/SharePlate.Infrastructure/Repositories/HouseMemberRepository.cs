@@ -19,6 +19,13 @@ public class HouseMemberRepository : Repository<HouseMember>, IHouseMemberReposi
             .Where(m => m.HouseId == houseId)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<HouseMember>> GetByUserAsync(Guid userId, CancellationToken ct = default)
+        => await DbSet
+            .Where(m => m.UserId == userId)
+            .OrderBy(m => m.JoinedAt)
+            .ThenBy(m => m.HouseId)
+            .ToListAsync(ct);
+
     public async Task<bool> IsMemberAsync(Guid houseId, Guid userId, CancellationToken ct = default)
         => await DbSet.AnyAsync(m => m.HouseId == houseId && m.UserId == userId, ct);
 
