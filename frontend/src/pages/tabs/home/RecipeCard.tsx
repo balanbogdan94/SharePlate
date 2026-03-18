@@ -45,7 +45,7 @@ export function RecipeCard({
 
 	return (
 		<article className='flex overflow-hidden rounded-xl border border-stone-200 bg-white dark:border-stone-700 dark:bg-stone-900'>
-			<div className='relative w-32 shrink-0'>
+			<div className='relative w-24 shrink-0 sm:w-32'>
 				{recipe.imageUrl ? (
 					<img
 						src={recipe.imageUrl}
@@ -55,13 +55,13 @@ export function RecipeCard({
 				) : (
 					<div className='absolute inset-0 bg-stone-100 dark:bg-stone-800' />
 				)}
-				<div className='pointer-events-none absolute inset-y-0 right-0 w-14 bg-gradient-to-r from-transparent to-white dark:to-stone-900' />
+				<div className='pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-r from-transparent to-white sm:w-14 dark:to-stone-900' />
 			</div>
 
 			<div className='min-w-0 flex-1 space-y-3 p-3'>
 				<div className='flex items-start justify-between gap-3'>
 					<div className='min-w-0 flex-1'>
-						<p className='truncate text-sm font-semibold text-stone-900 dark:text-stone-100'>
+						<p className='line-clamp-2 text-sm font-semibold leading-tight text-stone-900 dark:text-stone-100'>
 							{recipe.title}
 						</p>
 						<p className='mt-0.5 text-[11px] text-stone-500 dark:text-stone-400'>
@@ -86,35 +86,34 @@ export function RecipeCard({
 						)}
 					</div>
 
-					<div className='flex items-center gap-1'>
+					<div className='flex items-center gap-0.5 sm:gap-1'>
 						<Button
 							type='button'
 							variant='outline'
 							size='icon'
+							className='h-9 w-9 sm:h-11 sm:w-11 [&_svg]:!size-3.5 sm:[&_svg]:!size-4'
 							onClick={() => onToggle(recipe.id)}
 							aria-label={isOpen ? 'Collapse recipe' : 'Expand recipe'}>
-							{isOpen ? (
-								<ChevronUp className='h-4 w-4' />
-							) : (
-								<ChevronDown className='h-4 w-4' />
-							)}
+							{isOpen ? <ChevronUp /> : <ChevronDown />}
 						</Button>
 						<Button
 							type='button'
 							variant='outline'
 							size='icon'
+							className='h-9 w-9 sm:h-11 sm:w-11 [&_svg]:!size-3.5 sm:[&_svg]:!size-4'
 							onClick={() => onEdit(recipe)}
 							aria-label={`Edit ${recipe.title}`}>
-							<Pencil className='h-4 w-4' />
+							<Pencil />
 						</Button>
 						<Button
 							type='button'
 							variant='outline'
 							size='icon'
+							className='h-9 w-9 sm:h-11 sm:w-11 [&_svg]:!size-3.5 sm:[&_svg]:!size-4'
 							onClick={() => onDelete(recipe)}
 							disabled={deletePending}
 							aria-label={`Delete ${recipe.title}`}>
-							<Trash2 className='h-4 w-4' />
+							<Trash2 />
 						</Button>
 					</div>
 				</div>
