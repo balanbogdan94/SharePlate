@@ -22,12 +22,25 @@ const rootRoute = createRootRouteWithContext<RouterContext>()({
 	component: () => <Outlet />,
 });
 
+const indexRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: '/',
+	beforeLoad: ({ context }) => {
+		throw redirect({ to: context.auth.isAuthenticated ? '/recipes' : '/login' });
+	},
+});
+
 const appLayoutRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	id: 'app-layout',
-	beforeLoad: ({ context }) => {
+	beforeLoad: ({ context, location }) => {
 		if (!context.auth.isAuthenticated) {
-			throw redirect({ to: '/login' });
+			throw redirect({
+				to: '/login',
+				search: {
+					redirect: `${location.pathname}${location.search}${location.hash}`,
+				},
+			});
 		}
 	},
 	component: AppShell,
@@ -66,9 +79,14 @@ const thirdTabRoute = createRoute({
 const loginRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: '/login',
+	validateSearch: (
+		search: Record<string, unknown>,
+	): { redirect?: string } => ({
+		redirect: typeof search.redirect === 'string' ? search.redirect : undefined,
+	}),
 	beforeLoad: ({ context }) => {
 		if (context.auth.isAuthenticated) {
-			throw redirect({ to: '/' });
+			throw redirect({ to: '/recipes' });
 		}
 	},
 	component: LoginPage,
@@ -79,13 +97,14 @@ const registerRoute = createRoute({
 	path: '/register',
 	beforeLoad: ({ context }) => {
 		if (context.auth.isAuthenticated) {
-			throw redirect({ to: '/' });
+			throw redirect({ to: '/recipes' });
 		}
 	},
 	component: RegisterPage,
 });
 
 const routeTree = rootRoute.addChildren([
+	indexRoute,
 	appLayoutRoute.addChildren([
 		homeTabRoute,
 		addRecipeRoute,

@@ -93,7 +93,7 @@ export function AppShell() {
 					return;
 				}
 
-				void navigate({ to: '/' });
+				void navigate({ to: '/recipes' });
 			});
 			return;
 		}
@@ -103,7 +103,7 @@ export function AppShell() {
 			return;
 		}
 
-		void navigate({ to: '/' });
+		void navigate({ to: '/recipes' });
 	};
 
 	return (

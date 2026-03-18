@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { useMutation } from '@tanstack/react-query';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -22,12 +22,27 @@ type LoginResponse = {
 	expiresAtUtc: string;
 };
 
+function sanitizeRedirectTarget(target: string | undefined): string | null {
+	if (!target || !target.startsWith('/') || target.startsWith('//')) {
+		return null;
+	}
+
+	const pathname = target.split(/[?#]/, 1)[0] ?? '/';
+	if (pathname === '/login' || pathname === '/register') {
+		return null;
+	}
+
+	return target;
+}
+
 export function LoginPage() {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const auth = useAuth();
 	const navigate = useNavigate();
+	const search = useSearch({ from: '/login' });
 	const { t } = useI18n();
+	const postLoginTarget = sanitizeRedirectTarget(search.redirect);
 
 	const loginMutation = useMutation({
 		mutationFn: (payload: LoginRequest) =>
@@ -37,7 +52,12 @@ export function LoginPage() {
 			}),
 		onSuccess: async (tokens) => {
 			auth.login(tokens);
-			await navigate({ to: '/' });
+			if (postLoginTarget) {
+				await navigate({ href: postLoginTarget });
+				return;
+			}
+
+			await navigate({ to: '/recipes' });
 		},
 	});
 

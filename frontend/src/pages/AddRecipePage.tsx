@@ -135,16 +135,16 @@ export function AddRecipePage() {
 				document.documentElement.dataset.navDirection = 'back';
 				(
 					document as Document & {
-						startViewTransition: (
-							callback: () => void | Promise<void>,
-						) => { finished: Promise<void> };
+						startViewTransition: (callback: () => void | Promise<void>) => {
+							finished: Promise<void>;
+						};
 					}
 				).startViewTransition(() => {
 					if (canGoBack) {
 						router.history.back();
 						return;
 					}
-					void navigate({ to: '/' });
+					void navigate({ to: '/recipes' });
 				});
 				return;
 			}
@@ -153,7 +153,7 @@ export function AddRecipePage() {
 				router.history.back();
 				return;
 			}
-			await navigate({ to: '/' });
+			await navigate({ to: '/recipes' });
 		},
 	});
 
@@ -187,16 +187,16 @@ export function AddRecipePage() {
 				document.documentElement.dataset.navDirection = 'back';
 				(
 					document as Document & {
-						startViewTransition: (
-							callback: () => void | Promise<void>,
-						) => { finished: Promise<void> };
+						startViewTransition: (callback: () => void | Promise<void>) => {
+							finished: Promise<void>;
+						};
 					}
 				).startViewTransition(() => {
 					if (canGoBack) {
 						router.history.back();
 						return;
 					}
-					void navigate({ to: '/' });
+					void navigate({ to: '/recipes' });
 				});
 				return;
 			}
@@ -205,7 +205,7 @@ export function AddRecipePage() {
 				router.history.back();
 				return;
 			}
-			await navigate({ to: '/' });
+			await navigate({ to: '/recipes' });
 		},
 	});
 
@@ -278,136 +278,142 @@ export function AddRecipePage() {
 		form.title.trim().length === 0 ||
 		ingredients.length === 0;
 
-	if (isEditing && recipeDetailQuery.isLoading && !hasHydratedEdit.current) {
+	if (isEditing && recipeDetailQuery.isLoading) {
 		return (
-			<section className='relative mx-auto flex h-full w-full max-w-2xl flex-col gap-4 pb-10'>
-				<p className='rounded-2xl border border-stone-200 bg-white p-4 text-sm text-stone-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300'>
-					Loading recipe...
-				</p>
+			<section className='relative mx-auto flex h-full w-full max-w-2xl flex-col overflow-hidden'>
+				<div className='flex-1 overflow-y-auto p-3'>
+					<p className='rounded-2xl border border-stone-200 bg-white p-4 text-sm text-stone-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300'>
+						Loading recipe...
+					</p>
+				</div>
 			</section>
 		);
 	}
 
 	return (
-		<section className='relative mx-auto flex h-full w-full max-w-2xl flex-col gap-4 pb-10'>
-			{loadErrorMessage && (
-				<Alert variant='destructive'>
-					<AlertTitle>Could not load recipe</AlertTitle>
-					<AlertDescription>{loadErrorMessage}</AlertDescription>
-				</Alert>
-			)}
+		<section className='relative mx-auto flex h-full w-full max-w-2xl flex-col overflow-hidden'>
 			<form
 				onSubmit={handleSubmit}
-				className='space-y-4 rounded-3xl border border-stone-200/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm dark:border-stone-700/80 dark:bg-stone-900/70'>
-				<div className='space-y-2'>
-					<Label htmlFor='recipe-title'>Title</Label>
-					<Input
-						id='recipe-title'
-						value={form.title}
-						onChange={(event) =>
-							setForm((prev) => ({
-								...prev,
-								title: event.target.value,
-							}))
-						}
-						required
-					/>
-				</div>
+				className='flex flex-1 flex-col overflow-hidden'>
+				<div className='flex-1 overflow-y-auto p-3 pb-24'>
+					{loadErrorMessage && (
+						<Alert variant='destructive' className='mb-4'>
+							<AlertTitle>Could not load recipe</AlertTitle>
+							<AlertDescription>{loadErrorMessage}</AlertDescription>
+						</Alert>
+					)}
+					<div className='space-y-4 rounded-3xl border border-stone-200/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm dark:border-stone-700/80 dark:bg-stone-900/70'>
+						<div className='space-y-2'>
+							<Label htmlFor='recipe-title'>Title</Label>
+							<Input
+								id='recipe-title'
+								value={form.title}
+								onChange={(event) =>
+									setForm((prev) => ({
+										...prev,
+										title: event.target.value,
+									}))
+								}
+								required
+							/>
+						</div>
 
-				<div className='space-y-2'>
-					<Label htmlFor='recipe-notes'>Notes</Label>
-					<textarea
-						id='recipe-notes'
-						value={form.notes}
-						onChange={(event) =>
-							setForm((prev) => ({
-								...prev,
-								notes: event.target.value,
-							}))
-						}
-						rows={4}
-						className='w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100 dark:focus:border-sky-500 dark:focus:ring-sky-900'
-					/>
-				</div>
+						<div className='space-y-2'>
+							<Label htmlFor='recipe-notes'>Notes</Label>
+							<textarea
+								id='recipe-notes'
+								value={form.notes}
+								onChange={(event) =>
+									setForm((prev) => ({
+										...prev,
+										notes: event.target.value,
+									}))
+								}
+								rows={4}
+								className='w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100 dark:focus:border-sky-500 dark:focus:ring-sky-900'
+							/>
+						</div>
 
-				<ImagePickerField
-					id='add-recipe-image'
-					label='Photo'
-					value={form.imageUrl}
-					onChange={(nextValue) =>
-						setForm((prev) => ({ ...prev, imageUrl: nextValue }))
-					}
-					onFileChange={setImageFile}
-				/>
+						<ImagePickerField
+							id='add-recipe-image'
+							label='Photo'
+							value={form.imageUrl}
+							onChange={(nextValue) =>
+								setForm((prev) => ({ ...prev, imageUrl: nextValue }))
+							}
+							onFileChange={setImageFile}
+						/>
 
-				<div className='space-y-3 rounded-2xl border border-stone-200/70 bg-stone-50/70 p-3 dark:border-stone-700/70 dark:bg-stone-950/60'>
-					<div className='flex items-center justify-between'>
-						<p className='text-sm font-semibold text-stone-900 dark:text-stone-100'>
-							Ingredients
-						</p>
+						<div className='space-y-3 rounded-2xl border border-stone-200/70 bg-stone-50/70 p-3 dark:border-stone-700/70 dark:bg-stone-950/60'>
+							<div className='flex items-center justify-between'>
+								<p className='text-sm font-semibold text-stone-900 dark:text-stone-100'>
+									Ingredients
+								</p>
+								<Button
+									type='button'
+									variant='outline'
+									onClick={onOpenIngredientModal}
+									className='h-9 gap-1 rounded-full border-sky-200 bg-white/80 text-sky-700 hover:bg-sky-50'>
+									<Plus className='h-4 w-4' />
+									Add Ingredient
+								</Button>
+							</div>
+
+							{ingredients.length === 0 ? (
+								<p className='text-sm text-stone-500 dark:text-stone-400'>
+									No ingredients yet. Add your first one.
+								</p>
+							) : (
+								<ul className='space-y-2'>
+									{ingredients.map((ingredient, index) => (
+										<li
+											key={`${ingredient.name}-${index}`}
+											className='flex items-center justify-between rounded-xl border border-stone-200/70 bg-white/90 px-3 py-2 text-sm text-stone-700 shadow-sm dark:border-stone-700/70 dark:bg-stone-900/70 dark:text-stone-200'>
+											<div>
+												<p className='font-medium text-stone-900 dark:text-stone-100'>
+													{ingredient.name}
+												</p>
+												<p className='text-xs text-stone-500 dark:text-stone-400'>
+													{ingredient.quantity} {ingredient.unit}
+												</p>
+											</div>
+											<button
+												type='button'
+												onClick={() => onRemoveIngredient(index)}
+												className='inline-flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 text-stone-500 transition hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800'>
+												<X className='h-4 w-4' />
+											</button>
+										</li>
+									))}
+								</ul>
+							)}
+
+							{ingredientsError && (
+								<p className='text-xs text-red-600 dark:text-red-400'>
+									{ingredientsError}
+								</p>
+							)}
+						</div>
+
+						{submitErrorMessage && (
+							<Alert variant='destructive'>
+								<AlertTitle>Could not save recipe</AlertTitle>
+								<AlertDescription>{submitErrorMessage}</AlertDescription>
+							</Alert>
+						)}
+
 						<Button
-							type='button'
-							variant='outline'
-							onClick={onOpenIngredientModal}
-							className='h-9 gap-1 rounded-full border-sky-200 bg-white/80 text-sky-700 hover:bg-sky-50'>
-							<Plus className='h-4 w-4' />
-							Add Ingredient
+							type='submit'
+							className='h-12 w-full rounded-full text-base'
+							disabled={isSaveDisabled}>
+							{createRecipeMutation.isPending || updateRecipeMutation.isPending
+								? 'Saving...'
+								: isEditing
+									? 'Update Recipe'
+									: 'Save Recipe'}
 						</Button>
 					</div>
-
-					{ingredients.length === 0 ? (
-						<p className='text-sm text-stone-500 dark:text-stone-400'>
-							No ingredients yet. Add your first one.
-						</p>
-					) : (
-						<ul className='space-y-2'>
-							{ingredients.map((ingredient, index) => (
-								<li
-									key={`${ingredient.name}-${index}`}
-									className='flex items-center justify-between rounded-xl border border-stone-200/70 bg-white/90 px-3 py-2 text-sm text-stone-700 shadow-sm dark:border-stone-700/70 dark:bg-stone-900/70 dark:text-stone-200'>
-									<div>
-										<p className='font-medium text-stone-900 dark:text-stone-100'>
-											{ingredient.name}
-										</p>
-										<p className='text-xs text-stone-500 dark:text-stone-400'>
-											{ingredient.quantity} {ingredient.unit}
-										</p>
-									</div>
-									<button
-										type='button'
-										onClick={() => onRemoveIngredient(index)}
-										className='inline-flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 text-stone-500 transition hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800'>
-										<X className='h-4 w-4' />
-									</button>
-								</li>
-							))}
-						</ul>
-					)}
-
-					{ingredientsError && (
-						<p className='text-xs text-red-600 dark:text-red-400'>
-							{ingredientsError}
-						</p>
-					)}
 				</div>
-
-				<Button
-					type='submit'
-					className='h-12 w-full rounded-full text-base'
-					disabled={isSaveDisabled}>
-					{createRecipeMutation.isPending || updateRecipeMutation.isPending
-						? 'Saving...'
-						: isEditing
-							? 'Update Recipe'
-							: 'Save Recipe'}
-				</Button>
-
-				{submitErrorMessage && (
-					<Alert variant='destructive'>
-						<AlertTitle>Could not save recipe</AlertTitle>
-						<AlertDescription>{submitErrorMessage}</AlertDescription>
-					</Alert>
-				)}
 			</form>
 
 			<div
@@ -435,17 +441,17 @@ export function AddRecipePage() {
 						<p className='text-base font-semibold text-stone-900 dark:text-stone-100'>
 							New Ingredient
 						</p>
-					<button
-						type='button'
-						onClick={onAddIngredient}
-						disabled={!isIngredientDraftValid}
-						className={`transition hover:text-sky-700 ${
-							!isIngredientDraftValid
-								? 'pointer-events-none text-stone-300 dark:text-stone-600'
-								: ''
-						}`}>
-						Add
-					</button>
+						<button
+							type='button'
+							onClick={onAddIngredient}
+							disabled={!isIngredientDraftValid}
+							className={`transition hover:text-sky-700 ${
+								!isIngredientDraftValid
+									? 'pointer-events-none text-stone-300 dark:text-stone-600'
+									: ''
+							}`}>
+							Add
+						</button>
 					</div>
 
 					<div className='space-y-3 rounded-2xl border border-stone-200/70 bg-white/80 p-3 shadow-sm dark:border-stone-700/70 dark:bg-stone-950/70'>
@@ -502,9 +508,7 @@ export function AddRecipePage() {
 										<option key={unit.id} value={unit.id}>
 											{unit.name}
 										</option>
-									)) ?? (
-										<option value={defaultUnit}>{defaultUnit}</option>
-									)}
+									)) ?? <option value={defaultUnit}>{defaultUnit}</option>}
 								</select>
 							</label>
 						</div>
