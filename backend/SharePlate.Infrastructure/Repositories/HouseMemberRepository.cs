@@ -13,6 +13,15 @@ public class HouseMemberRepository : Repository<HouseMember>, IHouseMemberReposi
     public async Task<HouseMember?> GetAsync(Guid houseId, Guid userId, CancellationToken ct = default)
         => await DbSet.FirstOrDefaultAsync(m => m.HouseId == houseId && m.UserId == userId, ct);
 
+    public async Task<HouseMember?> GetCurrentForUserAsync(Guid userId, CancellationToken ct = default)
+        => await DbSet
+            .Include(m => m.House)
+            .Where(m => m.UserId == userId)
+            .OrderBy(m => m.House.IsPersonal)
+            .ThenBy(m => m.JoinedAt)
+            .ThenBy(m => m.HouseId)
+            .FirstOrDefaultAsync(ct);
+
     public async Task<IReadOnlyList<HouseMember>> GetByHouseAsync(Guid houseId, CancellationToken ct = default)
         => await DbSet
             .Include(m => m.User)

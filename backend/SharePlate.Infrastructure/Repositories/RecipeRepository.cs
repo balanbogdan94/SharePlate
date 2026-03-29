@@ -29,6 +29,18 @@ public class RecipeRepository : Repository<Recipe>, IRecipeRepository
             .Where(r => r.AuthorId == authorId)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<Recipe>> GetByAuthorIdsAsync(IEnumerable<Guid> authorIds, CancellationToken ct = default)
+    {
+        var ids = authorIds.Distinct().ToArray();
+        if (ids.Length == 0)
+            return [];
+
+        return await DbSet
+            .Include(r => r.Author)
+            .Where(r => ids.Contains(r.AuthorId))
+            .ToListAsync(ct);
+    }
+
     public async Task<IReadOnlyList<Recipe>> SearchByNameAsync(string name, CancellationToken ct = default)
         => await DbSet
             .Include(r => r.Author)

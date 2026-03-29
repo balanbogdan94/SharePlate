@@ -43,6 +43,28 @@ public static class RecipeEndpoints
         .WithName("GetMyRecipes")
         .WithSummary("Get all recipes created by the current user");
 
+        // GET /api/recipes/house
+        group.MapGet("/house", async (ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
+        {
+            if (!principal.TryGetUserId(out var actorUserId))
+                return Results.Unauthorized();
+
+            var membership = await uow.HouseMembers.GetCurrentForUserAsync(actorUserId, ct);
+            if (membership is null)
+                return Results.NotFound("You need to join or create a house before viewing house recipes.");
+
+            var members = await uow.HouseMembers.GetByHouseAsync(membership.HouseId, ct);
+            var recipes = await uow.Recipes.GetByAuthorIdsAsync(members.Select(member => member.UserId), ct);
+
+            return Results.Ok(recipes
+                .OrderBy(recipe => recipe.Title)
+                .ThenBy(recipe => recipe.Author!.Name)
+                .Select(ToResponse)
+                .ToList());
+        })
+        .WithName("GetHouseRecipes")
+        .WithSummary("Get all recipes created by members of the current house");
+
 
 
 

@@ -18,7 +18,7 @@ public static class PlanEndpoints
             if (!principal.TryGetUserId(out var actorUserId))
                 return Results.Unauthorized();
 
-            var houseMembership = await GetCurrentHouseMembershipAsync(actorUserId, uow, ct);
+            var houseMembership = await uow.HouseMembers.GetCurrentForUserAsync(actorUserId, ct);
             if (houseMembership is null)
                 return Results.NotFound("You need to join or create a house before managing plans.");
 
@@ -33,7 +33,7 @@ public static class PlanEndpoints
             if (!principal.TryGetUserId(out var actorUserId))
                 return Results.Unauthorized();
 
-            var houseMembership = await GetCurrentHouseMembershipAsync(actorUserId, uow, ct);
+            var houseMembership = await uow.HouseMembers.GetCurrentForUserAsync(actorUserId, ct);
             if (houseMembership is null)
                 return Results.NotFound("You need to join or create a house before managing plans.");
 
@@ -52,7 +52,7 @@ public static class PlanEndpoints
             if (!principal.TryGetUserId(out var actorUserId))
                 return Results.Unauthorized();
 
-            var houseMembership = await GetCurrentHouseMembershipAsync(actorUserId, uow, ct);
+            var houseMembership = await uow.HouseMembers.GetCurrentForUserAsync(actorUserId, ct);
             if (houseMembership is null)
                 return Results.NotFound("You need to join or create a house before managing plans.");
 
@@ -214,12 +214,6 @@ public static class PlanEndpoints
         .WithSummary("Remove a recipe from a plan");
     }
 
-    private static async Task<HouseMember?> GetCurrentHouseMembershipAsync(Guid userId, IUnitOfWork uow, CancellationToken ct)
-    {
-        var memberships = await uow.HouseMembers.GetByUserAsync(userId, ct);
-        return memberships.FirstOrDefault();
-    }
-
     private static async Task<IResult?> ValidatePlanRecipeRequestAsync(
         Guid recipeId,
         DateOnly targetDate,
@@ -234,8 +228,11 @@ public static class PlanEndpoints
         if (recipe is null)
             return Results.NotFound("Recipe not found.");
 
-        if (recipe.AuthorId != actorUserId)
-            return Results.BadRequest("Only your own recipes can be added to a plan right now.");
+        if (!await uow.HouseMembers.IsMemberAsync(plan.HouseId, actorUserId, ct))
+            return Results.Forbid();
+
+        if (!await uow.HouseMembers.IsMemberAsync(plan.HouseId, recipe.AuthorId, ct))
+            return Results.BadRequest("Only recipes from the current house can be added to a plan.");
 
         return ValidatePlanRecipe(targetDate, mealTime, servings, plan);
     }

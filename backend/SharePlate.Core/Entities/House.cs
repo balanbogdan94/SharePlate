@@ -7,6 +7,15 @@ public sealed class House : BaseEntity
     private House() { }
 
     public static House Create(string name, Guid ownerId)
+        => CreateInternal(name, ownerId, isPersonal: false);
+
+    public static House CreatePersonal(string ownerName, Guid ownerId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(ownerName);
+        return CreateInternal($"{ownerName}'s House", ownerId, isPersonal: true);
+    }
+
+    private static House CreateInternal(string name, Guid ownerId, bool isPersonal)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
@@ -14,8 +23,8 @@ public sealed class House : BaseEntity
         {
             Id = Guid.NewGuid(),
             Name = name,
-            Code = GenerateCode(),  // 👈 Auto-generated, no longer a param
-            IsPersonal = false,
+            Code = GenerateCode(),
+            IsPersonal = isPersonal,
             OwnerId = ownerId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
