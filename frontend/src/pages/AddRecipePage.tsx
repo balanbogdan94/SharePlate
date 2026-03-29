@@ -120,6 +120,7 @@ function AddRecipeForm({ recipeId, initialData }: AddRecipeFormProps) {
 			setIngredients([]);
 			setIngredientsError(null);
 			void queryClient.invalidateQueries({ queryKey: ['recipes', 'my'] });
+			void queryClient.invalidateQueries({ queryKey: ['recipes', 'house'] });
 			if ('startViewTransition' in document) {
 				document.documentElement.dataset.navDirection = 'back';
 				(
@@ -169,6 +170,7 @@ function AddRecipeForm({ recipeId, initialData }: AddRecipeFormProps) {
 		},
 		onSuccess: async () => {
 			void queryClient.invalidateQueries({ queryKey: ['recipes', 'my'] });
+			void queryClient.invalidateQueries({ queryKey: ['recipes', 'house'] });
 			void queryClient.invalidateQueries({
 				queryKey: ['recipes', 'detail', recipeId],
 			});

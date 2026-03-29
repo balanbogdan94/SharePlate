@@ -42,6 +42,7 @@ export function HomeTabPage() {
 			}
 
 			void queryClient.invalidateQueries({ queryKey: ['recipes', 'my'] });
+			void queryClient.invalidateQueries({ queryKey: ['recipes', 'house'] });
 		},
 	});
 

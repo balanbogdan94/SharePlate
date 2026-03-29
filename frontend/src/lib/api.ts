@@ -14,6 +14,14 @@ export function configureApiAuth(config: ApiAuthConfig): void {
 	apiAuthConfig = config;
 }
 
+function getLocalDateHeaderValue(): string {
+	const now = new Date();
+	const year = now.getFullYear();
+	const month = String(now.getMonth() + 1).padStart(2, '0');
+	const day = String(now.getDate()).padStart(2, '0');
+	return `${year}-${month}-${day}`;
+}
+
 function normalizePath(path: string): string {
 	return path.startsWith('/') ? path : `/${path}`;
 }
@@ -33,6 +41,7 @@ export async function apiFetch<T>(
 			headers: {
 				...(isFormData ? {} : { 'Content-Type': 'application/json' }),
 				...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+				'X-Local-Date': getLocalDateHeaderValue(),
 				...(init?.headers ?? {}),
 			},
 			...init,

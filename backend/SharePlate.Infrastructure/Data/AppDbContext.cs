@@ -56,6 +56,17 @@ public class AppDbContext : DbContext
                 .IsRequired();
         });
 
+        modelBuilder.Entity<MealPlanRecipe>(b =>
+        {
+            b.HasIndex(mpr => new
+            {
+                mpr.MealPlanId,
+                mpr.PlannedDate,
+                mpr.CategoryType,
+                mpr.SortOrder
+            });
+        });
+
 
         modelBuilder.Entity<Unit>().HasData(
             new { Id = UnitType.Kilogram, Name = "Kilogram", Symbol = "kg", Category = UnitCategory.Weight, ToBaseUnitFactor = 1.0 },

@@ -6,9 +6,14 @@ public sealed class MealPlanRecipe : BaseEntity
 {
     private MealPlanRecipe() { }
 
-    public static MealPlanRecipe Create(Guid mealPlanId, Guid recipeId, DateOnly plannedDate, MealTime mealTime, int servings)
+    public static MealPlanRecipe Create(
+        Guid mealPlanId,
+        Guid recipeId,
+        DateOnly plannedDate,
+        CategoryType categoryType,
+        int sortOrder)
     {
-        if (servings <= 0) throw new ArgumentOutOfRangeException(nameof(servings), "Servings must be positive.");
+        if (sortOrder < 0) throw new ArgumentOutOfRangeException(nameof(sortOrder), "Sort order cannot be negative.");
 
         return new MealPlanRecipe
         {
@@ -16,8 +21,8 @@ public sealed class MealPlanRecipe : BaseEntity
             MealPlanId = mealPlanId,
             RecipeId = recipeId,
             PlannedDate = plannedDate,
-            MealTime = mealTime,
-            Servings = servings,
+            CategoryType = categoryType,
+            SortOrder = sortOrder,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -30,16 +35,6 @@ public sealed class MealPlanRecipe : BaseEntity
     public Recipe Recipe { get; private set; } = null!;
 
     public DateOnly PlannedDate { get; private set; }
-    public MealTime MealTime { get; private set; }
-    public int Servings { get; private set; }
-
-    public void Update(DateOnly plannedDate, MealTime mealTime, int servings)
-    {
-        if (servings <= 0) throw new ArgumentOutOfRangeException(nameof(servings), "Servings must be positive.");
-
-        PlannedDate = plannedDate;
-        MealTime = mealTime;
-        Servings = servings;
-        UpdatedAt = DateTime.UtcNow;
-    }
+    public CategoryType CategoryType { get; private set; }
+    public int SortOrder { get; private set; }
 }

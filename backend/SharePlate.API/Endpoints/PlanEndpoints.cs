@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Claims;
 using SharePlate.API.Contracts.Plans;
 using SharePlate.Core.Entities;
@@ -9,9 +10,12 @@ namespace SharePlate.API.Endpoints;
 
 public static class PlanEndpoints
 {
+    private const string LocalDateHeaderName = "X-Local-Date";
+    private static readonly CategoryType[] CategoryTypes = Enum.GetValues<CategoryType>();
+
     public static void MapPlanEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/plans").WithTags("Plans").RequireAuthorization();
+        var group = app.MapGroup("/plans").WithTags("Plans").RequireAuthorization();
 
         group.MapGet("/", async (ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
@@ -23,67 +27,16 @@ public static class PlanEndpoints
                 return Results.NotFound("You need to join or create a house before managing plans.");
 
             var plans = await uow.MealPlans.GetByHouseAsync(houseMembership.HouseId, ct);
-            return Results.Ok(plans.Select(ToResponse).ToList());
+            return Results.Ok(plans
+                .OrderBy(plan => plan.StartDate)
+                .ThenBy(plan => plan.EndDate)
+                .Select(ToListResponse)
+                .ToList());
         })
         .WithName("GetPlans")
         .WithSummary("Get all plans for the current house");
 
-        group.MapGet("/active", async (ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
-        {
-            if (!principal.TryGetUserId(out var actorUserId))
-                return Results.Unauthorized();
-
-            var houseMembership = await uow.HouseMembers.GetCurrentForUserAsync(actorUserId, ct);
-            if (houseMembership is null)
-                return Results.NotFound("You need to join or create a house before managing plans.");
-
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
-            var activePlan = await uow.MealPlans.GetActiveByHouseAsync(houseMembership.HouseId, today, ct);
-
-            return activePlan is null
-                ? Results.NotFound("No active plan found.")
-                : Results.Ok(ToResponse(activePlan));
-        })
-        .WithName("GetActivePlan")
-        .WithSummary("Get the active plan for the current house");
-
-        group.MapPost("/", async (CreatePlanRequest req, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
-        {
-            if (!principal.TryGetUserId(out var actorUserId))
-                return Results.Unauthorized();
-
-            var houseMembership = await uow.HouseMembers.GetCurrentForUserAsync(actorUserId, ct);
-            if (houseMembership is null)
-                return Results.NotFound("You need to join or create a house before managing plans.");
-
-            if (req.EndDate < req.StartDate)
-                return Results.BadRequest("End date must be on or after the start date.");
-
-            var hasOverlap = await uow.MealPlans.HasOverlappingRangeAsync(houseMembership.HouseId, req.StartDate, req.EndDate, ct: ct);
-            if (hasOverlap)
-                return Results.Conflict("Another plan already exists for the selected date range.");
-
-            var plan = MealPlan.Create(req.Name, req.StartDate, req.EndDate, houseMembership.HouseId, actorUserId);
-            await uow.MealPlans.AddAsync(plan, ct);
-
-            foreach (var item in req.Recipes)
-            {
-                var validationError = await ValidatePlanRecipeRequestAsync(item.RecipeId, item.TargetDate, item.MealTime, item.Servings, plan, actorUserId, uow, ct);
-                if (validationError is not null)
-                    return validationError;
-
-                plan.MealPlanRecipes.Add(MealPlanRecipe.Create(plan.Id, item.RecipeId, item.TargetDate, item.MealTime, item.Servings));
-            }
-
-            await uow.SaveChangesAsync(ct);
-
-            var createdPlan = await uow.MealPlans.GetWithRecipesAsync(plan.Id, ct) ?? plan;
-            return Results.Created($"/api/plans/{plan.Id}", ToResponse(createdPlan));
-        })
-        .WithName("CreatePlan")
-        .WithSummary("Create a new plan for the current house");
-
-        group.MapPut("/{id:guid}", async (Guid id, UpdatePlanRequest req, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
+        group.MapGet("/{id:guid}", async (Guid id, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
             if (!principal.TryGetUserId(out var actorUserId))
                 return Results.Unauthorized();
@@ -95,23 +48,145 @@ public static class PlanEndpoints
             if (!await uow.HouseMembers.IsMemberAsync(plan.HouseId, actorUserId, ct))
                 return Results.Forbid();
 
-            if (req.EndDate < req.StartDate)
-                return Results.BadRequest("End date must be on or after the start date.");
+            return Results.Ok(ToDetailsResponse(plan));
+        })
+        .WithName("GetPlanById")
+        .WithSummary("Get a plan with all dates and categories");
 
-            var hasOverlap = await uow.MealPlans.HasOverlappingRangeAsync(plan.HouseId, req.StartDate, req.EndDate, plan.Id, ct);
+        group.MapPost("/", async (
+            CreatePlanRequest req,
+            HttpRequest httpRequest,
+            ClaimsPrincipal principal,
+            IUnitOfWork uow,
+            CancellationToken ct) =>
+        {
+            if (!principal.TryGetUserId(out var actorUserId))
+                return Results.Unauthorized();
+
+            var houseMembership = await uow.HouseMembers.GetCurrentForUserAsync(actorUserId, ct);
+            if (houseMembership is null)
+                return Results.NotFound("You need to join or create a house before managing plans.");
+
+            var localDateError = TryGetLocalDate(httpRequest, out var localDate);
+            if (localDateError is not null)
+                return localDateError;
+
+            var dateRangeError = ValidatePlanDateRange(req.StartDate, req.EndDate, localDate);
+            if (dateRangeError is not null)
+                return dateRangeError;
+
+            var hasOverlap = await uow.MealPlans.HasOverlappingRangeAsync(
+                houseMembership.HouseId,
+                req.StartDate,
+                req.EndDate,
+                ct: ct);
             if (hasOverlap)
                 return Results.Conflict("Another plan already exists for the selected date range.");
 
-            if (plan.MealPlanRecipes.Any(item => item.PlannedDate < req.StartDate || item.PlannedDate > req.EndDate))
-                return Results.BadRequest("All planned recipes must stay within the updated date range.");
+            var flattenResult = FlattenDays(req.StartDate, req.EndDate, req.Days);
+            if (flattenResult.Error is not null)
+                return flattenResult.Error;
 
-            plan.UpdateDetails(req.Name, req.StartDate, req.EndDate);
+            var recipesValidationError = await ValidateRecipesBelongToHouseAsync(
+                flattenResult.Assignments.Select(item => item.RecipeId).Distinct(),
+                houseMembership.HouseId,
+                uow,
+                ct);
+            if (recipesValidationError is not null)
+                return recipesValidationError;
+
+            var plan = MealPlan.Create(null, req.StartDate, req.EndDate, houseMembership.HouseId, actorUserId);
+            await uow.MealPlans.AddAsync(plan, ct);
+
+            foreach (var item in flattenResult.Assignments)
+            {
+                plan.MealPlanRecipes.Add(MealPlanRecipe.Create(
+                    plan.Id,
+                    item.RecipeId,
+                    item.Date,
+                    item.CategoryType,
+                    item.SortOrder));
+            }
+
             await uow.SaveChangesAsync(ct);
+            var createdPlan = await uow.MealPlans.GetWithRecipesAsync(plan.Id, ct) ?? plan;
 
-            return Results.Ok(ToResponse(plan));
+            return Results.Created($"/api/plans/{plan.Id}", ToDetailsResponse(createdPlan));
+        })
+        .WithName("CreatePlan")
+        .WithSummary("Create a meal plan");
+
+        group.MapPut("/{id:guid}", async (
+            Guid id,
+            UpdatePlanRequest req,
+            HttpRequest httpRequest,
+            ClaimsPrincipal principal,
+            IUnitOfWork uow,
+            CancellationToken ct) =>
+        {
+            if (!principal.TryGetUserId(out var actorUserId))
+                return Results.Unauthorized();
+
+            var plan = await uow.MealPlans.GetWithRecipesAsync(id, ct);
+            if (plan is null)
+                return Results.NotFound();
+
+            if (!await uow.HouseMembers.IsMemberAsync(plan.HouseId, actorUserId, ct))
+                return Results.Forbid();
+
+            var localDateError = TryGetLocalDate(httpRequest, out var localDate);
+            if (localDateError is not null)
+                return localDateError;
+
+            if (req.StartDate != plan.StartDate || req.EndDate != plan.EndDate)
+                return Results.BadRequest("Start date and end date are immutable.");
+
+            var dateRangeError = ValidatePlanDateRange(req.StartDate, req.EndDate, localDate);
+            if (dateRangeError is not null)
+                return dateRangeError;
+
+            var hasOverlap = await uow.MealPlans.HasOverlappingRangeAsync(
+                plan.HouseId,
+                req.StartDate,
+                req.EndDate,
+                excludedMealPlanId: plan.Id,
+                ct: ct);
+            if (hasOverlap)
+                return Results.Conflict("Another plan already exists for the selected date range.");
+
+            var flattenResult = FlattenDays(req.StartDate, req.EndDate, req.Days);
+            if (flattenResult.Error is not null)
+                return flattenResult.Error;
+
+            var recipesValidationError = await ValidateRecipesBelongToHouseAsync(
+                flattenResult.Assignments.Select(item => item.RecipeId).Distinct(),
+                plan.HouseId,
+                uow,
+                ct);
+            if (recipesValidationError is not null)
+                return recipesValidationError;
+
+            foreach (var existing in plan.MealPlanRecipes.ToList())
+            {
+                plan.MealPlanRecipes.Remove(existing);
+            }
+
+            foreach (var item in flattenResult.Assignments)
+            {
+                plan.MealPlanRecipes.Add(MealPlanRecipe.Create(
+                    plan.Id,
+                    item.RecipeId,
+                    item.Date,
+                    item.CategoryType,
+                    item.SortOrder));
+            }
+
+            await uow.SaveChangesAsync(ct);
+            var updatedPlan = await uow.MealPlans.GetWithRecipesAsync(plan.Id, ct) ?? plan;
+            return Results.Ok(ToDetailsResponse(updatedPlan));
         })
         .WithName("UpdatePlan")
-        .WithSummary("Update a plan");
+        .WithSummary("Update a meal plan");
 
         group.MapDelete("/{id:guid}", async (Guid id, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
@@ -132,147 +207,153 @@ public static class PlanEndpoints
         })
         .WithName("DeletePlan")
         .WithSummary("Delete a plan");
-
-        group.MapPost("/{id:guid}/recipes", async (Guid id, CreatePlanRecipeRequest req, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
-        {
-            if (!principal.TryGetUserId(out var actorUserId))
-                return Results.Unauthorized();
-
-            var plan = await uow.MealPlans.GetWithRecipesAsync(id, ct);
-            if (plan is null)
-                return Results.NotFound();
-
-            if (!await uow.HouseMembers.IsMemberAsync(plan.HouseId, actorUserId, ct))
-                return Results.Forbid();
-
-            var validationError = await ValidatePlanRecipeRequestAsync(req.RecipeId, req.TargetDate, req.MealTime, req.Servings, plan, actorUserId, uow, ct);
-            if (validationError is not null)
-                return validationError;
-
-            var planRecipe = MealPlanRecipe.Create(plan.Id, req.RecipeId, req.TargetDate, req.MealTime, req.Servings);
-            plan.MealPlanRecipes.Add(planRecipe);
-            await uow.SaveChangesAsync(ct);
-
-            var savedPlan = await uow.MealPlans.GetWithRecipesAsync(plan.Id, ct);
-            var savedRecipe = savedPlan?.MealPlanRecipes.FirstOrDefault(item => item.Id == planRecipe.Id) ?? planRecipe;
-
-            return Results.Created($"/api/plans/{plan.Id}/recipes/{planRecipe.Id}", ToRecipeResponse(savedRecipe));
-        })
-        .WithName("AddPlanRecipe")
-        .WithSummary("Add a recipe to a plan");
-
-        group.MapPut("/{id:guid}/recipes/{planRecipeId:guid}", async (Guid id, Guid planRecipeId, UpdatePlanRecipeRequest req, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
-        {
-            if (!principal.TryGetUserId(out var actorUserId))
-                return Results.Unauthorized();
-
-            var plan = await uow.MealPlans.GetWithRecipesAsync(id, ct);
-            if (plan is null)
-                return Results.NotFound();
-
-            if (!await uow.HouseMembers.IsMemberAsync(plan.HouseId, actorUserId, ct))
-                return Results.Forbid();
-
-            var planRecipe = plan.MealPlanRecipes.FirstOrDefault(item => item.Id == planRecipeId);
-            if (planRecipe is null)
-                return Results.NotFound();
-
-            var validationError = ValidatePlanRecipe(req.TargetDate, req.MealTime, req.Servings, plan);
-            if (validationError is not null)
-                return validationError;
-
-            planRecipe.Update(req.TargetDate, req.MealTime, req.Servings);
-            await uow.SaveChangesAsync(ct);
-
-            return Results.Ok(ToRecipeResponse(planRecipe));
-        })
-        .WithName("UpdatePlanRecipe")
-        .WithSummary("Update a planned recipe");
-
-        group.MapDelete("/{id:guid}/recipes/{planRecipeId:guid}", async (Guid id, Guid planRecipeId, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
-        {
-            if (!principal.TryGetUserId(out var actorUserId))
-                return Results.Unauthorized();
-
-            var plan = await uow.MealPlans.GetWithRecipesAsync(id, ct);
-            if (plan is null)
-                return Results.NotFound();
-
-            if (!await uow.HouseMembers.IsMemberAsync(plan.HouseId, actorUserId, ct))
-                return Results.Forbid();
-
-            var planRecipe = plan.MealPlanRecipes.FirstOrDefault(item => item.Id == planRecipeId);
-            if (planRecipe is null)
-                return Results.NotFound();
-
-            plan.MealPlanRecipes.Remove(planRecipe);
-            await uow.SaveChangesAsync(ct);
-
-            return Results.NoContent();
-        })
-        .WithName("DeletePlanRecipe")
-        .WithSummary("Remove a recipe from a plan");
     }
 
-    private static async Task<IResult?> ValidatePlanRecipeRequestAsync(
-        Guid recipeId,
-        DateOnly targetDate,
-        MealTime mealTime,
-        int servings,
-        MealPlan plan,
-        Guid actorUserId,
-        IUnitOfWork uow,
-        CancellationToken ct)
+    private static IResult? TryGetLocalDate(HttpRequest request, out DateOnly localDate)
     {
-        var recipe = await uow.Recipes.GetByIdAsync(recipeId, ct);
-        if (recipe is null)
-            return Results.NotFound("Recipe not found.");
+        localDate = default;
 
-        if (!await uow.HouseMembers.IsMemberAsync(plan.HouseId, actorUserId, ct))
-            return Results.Forbid();
+        if (!request.Headers.TryGetValue(LocalDateHeaderName, out var values))
+            return Results.BadRequest($"{LocalDateHeaderName} header is required.");
 
-        if (!await uow.HouseMembers.IsMemberAsync(plan.HouseId, recipe.AuthorId, ct))
-            return Results.BadRequest("Only recipes from the current house can be added to a plan.");
+        var value = values.ToString();
+        if (string.IsNullOrWhiteSpace(value))
+            return Results.BadRequest($"{LocalDateHeaderName} header is required.");
 
-        return ValidatePlanRecipe(targetDate, mealTime, servings, plan);
-    }
-
-    private static IResult? ValidatePlanRecipe(DateOnly targetDate, MealTime mealTime, int servings, MealPlan plan)
-    {
-        if (!Enum.IsDefined(mealTime))
-            return Results.BadRequest("Meal time is invalid.");
-
-        if (servings <= 0)
-            return Results.BadRequest("Servings must be positive.");
-
-        if (targetDate < plan.StartDate || targetDate > plan.EndDate)
-            return Results.BadRequest("Target date must be within the plan date range.");
+        if (!DateOnly.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out localDate))
+            return Results.BadRequest($"{LocalDateHeaderName} must be in format yyyy-MM-dd.");
 
         return null;
     }
 
-    private static PlanResponse ToResponse(MealPlan plan) =>
+    private static IResult? ValidatePlanDateRange(DateOnly startDate, DateOnly endDate, DateOnly localDate)
+    {
+        if (startDate < localDate)
+            return Results.BadRequest("Start date must be on or after today.");
+
+        if (endDate < startDate)
+            return Results.BadRequest("End date must be on or after the start date.");
+
+        if (endDate.DayNumber - startDate.DayNumber > 6)
+            return Results.BadRequest("Plan range cannot exceed 7 days.");
+
+        return null;
+    }
+
+    private static async Task<IResult?> ValidateRecipesBelongToHouseAsync(
+        IEnumerable<Guid> recipeIds,
+        Guid houseId,
+        IUnitOfWork uow,
+        CancellationToken ct)
+    {
+        foreach (var recipeId in recipeIds)
+        {
+            var recipe = await uow.Recipes.GetByIdAsync(recipeId, ct);
+            if (recipe is null)
+                return Results.NotFound($"Recipe '{recipeId}' not found.");
+
+            if (!await uow.HouseMembers.IsMemberAsync(houseId, recipe.AuthorId, ct))
+                return Results.BadRequest("Only recipes from the current house can be added to a plan.");
+        }
+
+        return null;
+    }
+
+    private static (List<FlattenedAssignment> Assignments, IResult? Error) FlattenDays(
+        DateOnly startDate,
+        DateOnly endDate,
+        List<PlanDayRequest> days)
+    {
+        var expectedDates = GetDateRange(startDate, endDate).ToList();
+        var expectedDateSet = expectedDates.ToHashSet();
+        var seenDates = new HashSet<DateOnly>();
+        var assignments = new List<FlattenedAssignment>();
+
+        if (days.Count != expectedDates.Count)
+            return ([], Results.BadRequest("Days payload must include each date from startDate to endDate exactly once."));
+
+        foreach (var day in days)
+        {
+            if (!expectedDateSet.Contains(day.Date))
+                return ([], Results.BadRequest("All day dates must be inside the plan date range."));
+
+            if (!seenDates.Add(day.Date))
+                return ([], Results.BadRequest("Duplicate day date detected in payload."));
+
+            foreach (var categoryType in CategoryTypes)
+            {
+                if (!day.Categories.TryGetValue(categoryType, out var recipeIds))
+                    return ([], Results.BadRequest("Each day must include all fixed categories."));
+
+                if (recipeIds is null)
+                    return ([], Results.BadRequest("Category recipe arrays cannot be null."));
+
+                for (var index = 0; index < recipeIds.Count; index++)
+                {
+                    var recipeId = recipeIds[index];
+                    if (recipeId == Guid.Empty)
+                        return ([], Results.BadRequest("Recipe ids must be valid GUID values."));
+
+                    assignments.Add(new FlattenedAssignment(day.Date, categoryType, index, recipeId));
+                }
+            }
+        }
+
+        if (assignments.Count == 0)
+            return ([], Results.BadRequest("Plan must include at least one recipe."));
+
+        return (assignments, null);
+    }
+
+    private static IEnumerable<DateOnly> GetDateRange(DateOnly startDate, DateOnly endDate)
+    {
+        for (var current = startDate; current <= endDate; current = current.AddDays(1))
+        {
+            yield return current;
+        }
+    }
+
+    private static PlanListResponse ToListResponse(MealPlan plan) =>
         new(
             plan.Id,
-            plan.Name,
             plan.StartDate,
             plan.EndDate,
-            plan.HouseId,
+            plan.CreatedAt,
+            plan.UpdatedAt);
+
+    private static PlanDetailsResponse ToDetailsResponse(MealPlan plan)
+    {
+        var days = new List<PlanDayResponse>();
+
+        foreach (var date in GetDateRange(plan.StartDate, plan.EndDate))
+        {
+            var categories = new Dictionary<CategoryType, List<Guid>>();
+
+            foreach (var categoryType in CategoryTypes)
+            {
+                categories[categoryType] = plan.MealPlanRecipes
+                    .Where(item => item.PlannedDate == date && item.CategoryType == categoryType)
+                    .OrderBy(item => item.SortOrder)
+                    .Select(item => item.RecipeId)
+                    .ToList();
+            }
+
+            days.Add(new PlanDayResponse(date, categories));
+        }
+
+        return new PlanDetailsResponse(
+            plan.Id,
+            plan.StartDate,
+            plan.EndDate,
             plan.CreatedAt,
             plan.UpdatedAt,
-            plan.MealPlanRecipes
-                .OrderBy(item => item.PlannedDate)
-                .ThenBy(item => item.MealTime)
-                .Select(ToRecipeResponse)
-                .ToList());
+            days);
+    }
 
-    private static PlanRecipeResponse ToRecipeResponse(MealPlanRecipe item) =>
-        new(
-            item.Id,
-            item.RecipeId,
-            item.Recipe?.Title ?? string.Empty,
-            item.Recipe?.ImageUrl ?? string.Empty,
-            item.PlannedDate,
-            item.MealTime,
-            item.Servings);
+    private sealed record FlattenedAssignment(
+        DateOnly Date,
+        CategoryType CategoryType,
+        int SortOrder,
+        Guid RecipeId
+    );
 }

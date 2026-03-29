@@ -15,20 +15,21 @@ public static class RecipeEndpoints
         var group = app.MapGroup("/api/recipes").WithTags("Recipes").RequireAuthorization();
 
 
-        // GET /api/recipes?name=...
-        group.MapGet("/", async (string? name, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
+        // GET /api/recipes?search=...
+        group.MapGet("/", async (string? search, string? name, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
             if (!principal.TryGetUserId(out _))
                 return Results.Unauthorized();
 
-            var recipes = string.IsNullOrWhiteSpace(name)
+            var query = !string.IsNullOrWhiteSpace(search) ? search : name;
+            var recipes = string.IsNullOrWhiteSpace(query)
                 ? await uow.Recipes.GetAllWithAuthorAsync(ct)
-                : await uow.Recipes.SearchByNameAsync(name, ct);
+                : await uow.Recipes.SearchByNameAsync(query, ct);
 
             return Results.Ok(recipes.Select(ToResponse).ToList());
         })
         .WithName("SearchRecipes")
-        .WithSummary("Search all recipes by name, or list all if no query given");
+        .WithSummary("Search all recipes, or list all if no query given");
 
 
         // GET /api/recipes/my
@@ -44,7 +45,7 @@ public static class RecipeEndpoints
         .WithSummary("Get all recipes created by the current user");
 
         // GET /api/recipes/house
-        group.MapGet("/house", async (ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
+        group.MapGet("/house", async (string? search, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
             if (!principal.TryGetUserId(out var actorUserId))
                 return Results.Unauthorized();
@@ -56,7 +57,13 @@ public static class RecipeEndpoints
             var members = await uow.HouseMembers.GetByHouseAsync(membership.HouseId, ct);
             var recipes = await uow.Recipes.GetByAuthorIdsAsync(members.Select(member => member.UserId), ct);
 
-            return Results.Ok(recipes
+            var filteredRecipes = string.IsNullOrWhiteSpace(search)
+                ? recipes
+                : recipes.Where(recipe =>
+                    recipe.Title.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    (recipe.Author?.Name ?? string.Empty).Contains(search, StringComparison.OrdinalIgnoreCase));
+
+            return Results.Ok(filteredRecipes
                 .OrderBy(recipe => recipe.Title)
                 .ThenBy(recipe => recipe.Author!.Name)
                 .Select(ToResponse)

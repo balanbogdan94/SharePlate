@@ -10,8 +10,9 @@ import { AppShell } from '@/components/layout/AppShell';
 import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
 import { AddRecipePage } from '@/pages/AddRecipePage';
+import { CreatePlanPage } from '@/pages/CreatePlanPage';
 import { HomeTabPage } from '@/pages/tabs/HomeTabPage';
-import { SecondTabPage } from '@/pages/tabs/SecondTabPage';
+import { PlanTabPage } from '@/pages/tabs/PlanTabPage';
 import { ThirdTabPage } from '@/pages/tabs/ThirdTabPage';
 
 type RouterContext = {
@@ -26,7 +27,7 @@ const indexRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: '/',
 	beforeLoad: ({ context }) => {
-		throw redirect({ to: context.auth.isAuthenticated ? '/recipes' : '/login' });
+		throw redirect({ to: context.auth.isAuthenticated ? '/plans' : '/login' });
 	},
 });
 
@@ -64,10 +65,27 @@ const editRecipeRoute = createRoute({
 	component: AddRecipePage,
 });
 
-const secondTabRoute = createRoute({
+const planTabRoute = createRoute({
 	getParentRoute: () => appLayoutRoute,
-	path: '/tab-2',
-	component: SecondTabPage,
+	path: '/plans',
+	validateSearch: (
+		search: Record<string, unknown>,
+	): { expand?: string } => ({
+		expand: typeof search.expand === 'string' ? search.expand : undefined,
+	}),
+	component: PlanTabPage,
+});
+
+const createPlanRoute = createRoute({
+	getParentRoute: () => appLayoutRoute,
+	path: '/plans/create-plan',
+	component: CreatePlanPage,
+});
+
+const editPlanRoute = createRoute({
+	getParentRoute: () => appLayoutRoute,
+	path: '/plans/$planId/edit',
+	component: CreatePlanPage,
 });
 
 const thirdTabRoute = createRoute({
@@ -86,7 +104,7 @@ const loginRoute = createRoute({
 	}),
 	beforeLoad: ({ context }) => {
 		if (context.auth.isAuthenticated) {
-			throw redirect({ to: '/recipes' });
+			throw redirect({ to: '/plans' });
 		}
 	},
 	component: LoginPage,
@@ -97,7 +115,7 @@ const registerRoute = createRoute({
 	path: '/register',
 	beforeLoad: ({ context }) => {
 		if (context.auth.isAuthenticated) {
-			throw redirect({ to: '/recipes' });
+			throw redirect({ to: '/plans' });
 		}
 	},
 	component: RegisterPage,
@@ -109,7 +127,9 @@ const routeTree = rootRoute.addChildren([
 		homeTabRoute,
 		addRecipeRoute,
 		editRecipeRoute,
-		secondTabRoute,
+		planTabRoute,
+		createPlanRoute,
+		editPlanRoute,
 		thirdTabRoute,
 	]),
 	loginRoute,

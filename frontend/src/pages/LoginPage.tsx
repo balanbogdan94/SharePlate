@@ -57,7 +57,7 @@ export function LoginPage() {
 				return;
 			}
 
-			await navigate({ to: '/recipes' });
+			await navigate({ to: '/plans' });
 		},
 	});
 

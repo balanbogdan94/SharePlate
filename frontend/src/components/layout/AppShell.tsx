@@ -25,7 +25,7 @@ import {
 } from '@/settings/UserSettingsContext';
 
 type TabItem = {
-	to: '/recipes' | '/tab-2' | '/tab-3';
+	to: '/recipes' | '/plans' | '/tab-3';
 	label: string;
 	icon: typeof House;
 };
@@ -43,7 +43,7 @@ export function AppShell() {
 
 	const tabs: TabItem[] = [
 		{ to: '/recipes', label: t('tabs.home'), icon: House },
-		{ to: '/tab-2', label: t('tabs.board'), icon: Layers3 },
+		{ to: '/plans', label: t('tabs.plan'), icon: Layers3 },
 		{ to: '/tab-3', label: t('tabs.more'), icon: Settings2 },
 	];
 	const isMainRoute = tabs.some((tab) => tab.to === location.pathname);
