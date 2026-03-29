@@ -1,6 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearch } from '@tanstack/react-router';
+import {
+	ChevronDown,
+	ChevronUp,
+	PenLine,
+	Plus,
+	Sparkles,
+	Users,
+} from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/api';
@@ -29,7 +37,6 @@ function formatDisplayDate(value: string): string {
 	return new Intl.DateTimeFormat(undefined, {
 		month: 'short',
 		day: 'numeric',
-		year: 'numeric',
 	}).format(new Date(`${value}T00:00:00`));
 }
 
@@ -45,12 +52,22 @@ type SearchParams = {
 	expand?: string;
 };
 
+const CATEGORY_TINT: Record<CategoryType, string> = {
+	Unnamed: 'border-l-[#8df27b]/40',
+	Morning: 'border-l-[#99c3ff]/50',
+	Breakfast: 'border-l-[#8df27b]/50',
+	Lunch: 'border-l-[#ff9fbc]/50',
+	Dinner: 'border-l-[#5aa9ff]/40',
+};
+
 export function PlanTabPage() {
 	const navigate = useNavigate();
 	const search = useSearch({ from: '/app-layout/plans' }) as SearchParams;
 	const today = useMemo(() => formatDateInput(new Date()), []);
 	const pastCutoff = useMemo(() => addDays(today, -30), [today]);
+	const [segment, setSegment] = useState<'current' | 'other'>('current');
 	const [manualExpandedPlanId, setManualExpandedPlanId] = useState<string | null>(null);
+	const [expandedDayDate, setExpandedDayDate] = useState<string | null>(null);
 
 	const plansQuery = useQuery({
 		queryKey: ['plans'],
@@ -89,6 +106,9 @@ export function PlanTabPage() {
 		if (currentPlan) {
 			return currentPlan.id;
 		}
+		if (plans[0]) {
+			return plans[0].id;
+		}
 		return null;
 	}, [currentPlan, manualExpandedPlanId, plans, search.expand]);
 
@@ -98,7 +118,7 @@ export function PlanTabPage() {
 		enabled: Boolean(expandedPlanId),
 	});
 
-	const recipesById = useMemo(() => {
+	const recipeMap = useMemo(() => {
 		const map = new Map<string, RecipeSummary>();
 		for (const recipe of recipesQuery.data ?? []) {
 			map.set(recipe.id, recipe);
@@ -106,219 +126,260 @@ export function PlanTabPage() {
 		return map;
 	}, [recipesQuery.data]);
 
-	const renderPlanCard = (plan: PlanListItem, badge: string) => {
-		const isExpanded = expandedPlanId === plan.id;
-		return (
-				<button
-					key={plan.id}
-					type='button'
-					onClick={() => {
-						setManualExpandedPlanId(plan.id);
-						if (search.expand) {
-							void navigate({ to: '/plans', search: {} });
-						}
-					}}
-					className={`w-full rounded-2xl border p-4 text-left transition ${
-					isExpanded
-						? 'border-sky-500 bg-sky-50 dark:border-sky-500 dark:bg-sky-950/40'
-						: 'border-stone-200 hover:border-stone-300 dark:border-stone-800 dark:hover:border-stone-700'
-				}`}>
-				<div className='flex flex-wrap items-start justify-between gap-3'>
-					<div>
-						<p className='text-base font-semibold text-stone-900 dark:text-stone-100'>
-							{formatDisplayDate(plan.startDate)} - {formatDisplayDate(plan.endDate)}
-						</p>
-						<p className='mt-1 text-sm text-stone-600 dark:text-stone-300'>
-							Plan starts {formatDisplayDate(plan.startDate)}
-						</p>
-					</div>
-					<span className='rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold text-stone-700 dark:bg-stone-800 dark:text-stone-200'>
-						{badge}
-					</span>
-				</div>
-			</button>
-		);
+	const activePlanDays = expandedPlanQuery.data?.days ?? [];
+	const activeExpandedDayDate = expandedDayDate ?? activePlanDays[0]?.date ?? null;
+
+	const recipeCountForDay = (dayDate: string): number => {
+		const day = activePlanDays.find((item) => item.date === dayDate);
+		if (!day) {
+			return 0;
+		}
+		return CATEGORY_TYPES.reduce((count, categoryType) => count + day.categories[categoryType].length, 0);
 	};
 
-	const renderCategory = (categoryType: CategoryType, recipeIds: string[]) => (
-		<div key={categoryType} className='rounded-2xl border border-stone-200 p-3 dark:border-stone-800'>
-			<p className='text-sm font-semibold text-stone-800 dark:text-stone-100'>{categoryType}</p>
-			{recipeIds.length === 0 ? (
-				<p className='mt-2 text-sm text-stone-500 dark:text-stone-400'>No recipes</p>
-			) : (
-				<ul className='mt-2 space-y-1'>
-					{recipeIds.map((recipeId, recipeIndex) => {
-						const recipe = recipesById.get(recipeId);
-						return (
-							<li
-								key={`${categoryType}-${recipeId}-${recipeIndex}`}
-								className='truncate text-sm text-stone-700 dark:text-stone-200'>
-								{recipe?.title ?? recipeId}
-							</li>
-						);
-					})}
-				</ul>
-			)}
-		</div>
-	);
+	const showNoPlansState = plans.length === 0 && !plansQuery.isLoading && !plansQuery.isError;
 
 	return (
-		<section className='space-y-4 rounded-2xl border border-stone-200/70 bg-white/60 p-4 pb-24 dark:border-stone-700/70 dark:bg-stone-900/50'>
-			<div className='flex flex-col gap-3 rounded-2xl bg-gradient-to-br from-sky-100 via-white to-emerald-100 p-4 shadow-sm dark:from-sky-950 dark:via-stone-900 dark:to-emerald-950'>
-				<div className='flex items-start justify-between gap-3'>
-					<div>
-						<p className='text-sm font-semibold uppercase tracking-[0.18em] text-sky-700 dark:text-sky-300'>
-							Plans
-						</p>
-						<h1 className='mt-1 text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-50'>
-							Meal Plans
-						</h1>
-						<p className='mt-1 text-sm text-stone-600 dark:text-stone-300'>
-							View plans by current, future, and recent past windows.
-						</p>
-					</div>
-					<Button type='button' onClick={() => void navigate({ to: '/plans/create-plan' })}>
-						Create Plan
-					</Button>
+		<section className='relative overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_top,_rgba(38,52,84,0.26),_rgba(8,10,14,1)_45%)] p-5 pb-28 text-[#f5f5f5]'>
+			<div className='absolute -left-10 top-24 h-52 w-52 rounded-full bg-[#6fdb68]/10 blur-3xl' />
+			<div className='relative space-y-5'>
+				<div className='space-y-1'>
+					<p className='text-xs font-semibold uppercase tracking-[0.28em] text-[#9cc7ff]'>Weekly Journey</p>
+					<h1 className='text-[3.2rem] font-extrabold leading-none tracking-tight text-white'>Meal Plans</h1>
 				</div>
 
-				{!currentPlan && plans.length > 0 && (
-					<div className='rounded-2xl border border-dashed border-stone-300 bg-white/80 p-4 dark:border-stone-700 dark:bg-stone-950/60'>
-						<p className='text-lg font-semibold text-stone-900 dark:text-stone-100'>No active plan</p>
-						<p className='mt-1 text-sm text-stone-600 dark:text-stone-300'>
-							Create a new plan to cover today.
-						</p>
+				<div className='grid grid-cols-2 rounded-full border border-white/10 bg-[#1d2025] p-1'>
+					<button
+						type='button'
+						onClick={() => setSegment('current')}
+						className={`rounded-full px-4 py-3 text-lg font-semibold transition ${
+							segment === 'current'
+								? 'bg-[#2b2f35] text-[#7ce485]'
+								: 'text-[#808791]'
+						}`}>
+						Current Plan
+					</button>
+					<button
+						type='button'
+						onClick={() => setSegment('other')}
+						className={`rounded-full px-4 py-3 text-lg font-semibold transition ${
+							segment === 'other'
+								? 'bg-[#2b2f35] text-[#7ce485]'
+								: 'text-[#808791]'
+						}`}>
+						Other Plans
+					</button>
+				</div>
+
+				{plansQuery.isError && (
+					<Alert variant='destructive'>
+						<AlertTitle>Could not load plans</AlertTitle>
+						<AlertDescription>{toErrorMessage(plansQuery.error, 'Please try again.')}</AlertDescription>
+					</Alert>
+				)}
+
+				{showNoPlansState && (
+					<div className='space-y-8 rounded-[2.3rem] border border-white/10 bg-[#14161c]/80 p-5'>
+						<div className='mx-auto flex h-36 w-36 items-center justify-center rounded-[2.3rem] border border-white/10 bg-[#1d2026] shadow-[0_14px_40px_rgba(0,0,0,0.45)]'>
+							<span className='text-[3rem]'>🍽️</span>
+						</div>
+						<div className='text-center'>
+							<p className='text-xs font-semibold uppercase tracking-[0.3em] text-[#7ce485]'>Kitchen Status</p>
+							<h2 className='mt-2 text-5xl font-extrabold text-white'>No plans yet</h2>
+							<p className='mt-3 text-2xl leading-relaxed text-[#afb5be]'>
+								Start your culinary journey by creating a shared household meal plan.
+							</p>
+						</div>
+						<Button
+							type='button'
+							onClick={() => void navigate({ to: '/plans/create-plan' })}
+							className='h-16 w-full rounded-full bg-[#2f3338] text-2xl font-extrabold text-[#7ce485] hover:bg-[#3a3f45]'>
+							<Plus className='mr-2 h-6 w-6' />
+							Create Plan
+						</Button>
+						<div className='grid gap-3 sm:grid-cols-2'>
+							<div className='rounded-[1.9rem] border border-l-2 border-white/10 border-l-[#9cc7ff] bg-[#1a1c22] p-4'>
+								<Sparkles className='mb-2 h-6 w-6 text-[#9cc7ff]' />
+								<p className='text-xl font-extrabold text-white'>Smart Suggester</p>
+								<p className='mt-1 text-lg text-[#afb5be]'>AI-curated meals based on your pantry.</p>
+							</div>
+							<div className='rounded-[1.9rem] border border-l-2 border-white/10 border-l-[#ff9fbc] bg-[#1a1c22] p-4'>
+								<Users className='mb-2 h-6 w-6 text-[#ff9fbc]' />
+								<p className='text-xl font-extrabold text-white'>Family Sync</p>
+								<p className='mt-1 text-lg text-[#afb5be]'>Real-time updates for every member.</p>
+							</div>
+						</div>
+					</div>
+				)}
+
+				{plansQuery.isLoading && (
+					<div className='rounded-3xl border border-white/10 bg-[#171a1f] px-4 py-3 text-[#98a0aa]'>
+						Loading plans...
+					</div>
+				)}
+
+				{plans.length > 0 && segment === 'current' && expandedPlanQuery.data && (
+					<div className='space-y-4'>
+						<div className='rounded-[2.2rem] border border-white/10 bg-[#1a1c22] p-4 shadow-[0_18px_46px_rgba(0,0,0,0.5)]'>
+							<div className='mb-3 flex items-start justify-between gap-3'>
+								<div>
+									<h2 className='text-[2.5rem] font-extrabold text-white'>
+										{currentPlan ? 'Current Plan' : 'Active Preview'}
+									</h2>
+									<p className='text-2xl font-semibold text-[#9cc7ff]'>
+										{formatDisplayDate(expandedPlanQuery.data.startDate)} -{' '}
+										{formatDisplayDate(expandedPlanQuery.data.endDate)}
+									</p>
+								</div>
+								<button
+									type='button'
+									onClick={() =>
+										void navigate({
+											to: '/plans/$planId/edit',
+											params: { planId: expandedPlanQuery.data.id },
+										})
+									}
+									className='flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-[#2f3237] text-[#7ce485]'>
+									<PenLine className='h-5 w-5' />
+								</button>
+							</div>
+
+							<div className='space-y-3'>
+								{activePlanDays.map((day) => {
+									const isExpanded = activeExpandedDayDate === day.date;
+									return (
+										<div
+											key={day.date}
+											className='rounded-[1.8rem] border border-white/10 bg-[#15181d] p-3'>
+											<button
+												type='button'
+												onClick={() =>
+													setExpandedDayDate((current) => (current === day.date ? null : day.date))
+												}
+												className='flex w-full items-center justify-between gap-3 text-left'>
+												<div>
+													<p className='text-3xl font-bold text-white'>
+														{new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(
+															new Date(`${day.date}T00:00:00`),
+														)}
+													</p>
+													<p className='text-sm uppercase tracking-[0.2em] text-[#7ce485]'>
+														{recipeCountForDay(day.date)} recipes
+													</p>
+												</div>
+												{isExpanded ? (
+													<ChevronUp className='h-5 w-5 text-[#8a9098]' />
+												) : (
+													<ChevronDown className='h-5 w-5 text-[#8a9098]' />
+												)}
+											</button>
+
+											{isExpanded && (
+												<div className='mt-3 space-y-3'>
+													{CATEGORY_TYPES.map((categoryType) => {
+														const recipes = day.categories[categoryType] ?? [];
+														return (
+															<div
+																key={`${day.date}-${categoryType}`}
+																className={`rounded-[1.5rem] border border-white/10 border-l-2 bg-[#101217] p-3 ${CATEGORY_TINT[categoryType]}`}>
+																<p className='text-xs font-semibold uppercase tracking-[0.22em] text-[#7f858f]'>
+																	{categoryType}
+																</p>
+																{recipes.length === 0 ? (
+																	<button
+																		type='button'
+																		onClick={() =>
+																			void navigate({
+																				to: '/plans/$planId/edit',
+																				params: { planId: expandedPlanQuery.data.id },
+																			})
+																		}
+																		className='mt-2 rounded-full border border-white/10 bg-[#2b3034] px-4 py-2 text-lg font-semibold text-[#7ce485]'>
+																		+ Add Recipe
+																	</button>
+																) : (
+																	<div className='mt-2 space-y-2'>
+																		{recipes.map((recipeId, index) => {
+																			const recipe = recipeMap.get(recipeId);
+																			return (
+																				<div
+																					key={`${recipeId}-${index}`}
+																					className='flex items-center gap-3 rounded-full border border-white/10 bg-[#2c2f35] p-2'>
+																					<div className='h-16 w-16 overflow-hidden rounded-full bg-black/40'>
+																						{recipe?.imageUrl ? (
+																							<img
+																								src={recipe.imageUrl}
+																								alt={recipe.title}
+																								className='h-full w-full object-cover'
+																							/>
+																						) : (
+																							<div className='flex h-full w-full items-center justify-center text-lg font-bold text-[#7f848b]'>
+																								{(recipe?.title ?? 'R').slice(0, 1)}
+																							</div>
+																						)}
+																					</div>
+																					<div className='min-w-0'>
+																						<p className='truncate text-2xl font-bold text-white'>
+																							{recipe?.title ?? recipeId}
+																						</p>
+																					</div>
+																				</div>
+																			);
+																		})}
+																	</div>
+																)}
+															</div>
+														);
+													})}
+												</div>
+											)}
+										</div>
+									);
+								})}
+							</div>
+						</div>
+					</div>
+				)}
+
+				{plans.length > 0 && segment === 'other' && (
+					<div className='space-y-3'>
+						{[...groupedPlans.future, ...groupedPlans.past].length === 0 ? (
+							<div className='rounded-3xl border border-white/10 bg-[#171a1f] px-4 py-3 text-[#98a0aa]'>
+								No other plans yet.
+							</div>
+						) : (
+							[...groupedPlans.future, ...groupedPlans.past].map((plan) => (
+								<button
+									key={plan.id}
+									type='button'
+									onClick={() => {
+										setManualExpandedPlanId(plan.id);
+										setSegment('current');
+										if (search.expand) {
+											void navigate({ to: '/plans', search: {} });
+										}
+									}}
+									className='w-full rounded-[1.9rem] border border-white/10 bg-[#1a1c22] p-4 text-left'>
+									<p className='text-3xl font-bold text-white'>
+										{formatDisplayDate(plan.startDate)} - {formatDisplayDate(plan.endDate)}
+									</p>
+									<p className='text-sm uppercase tracking-[0.2em] text-[#7ce485]'>
+										{plan.startDate > today ? 'Future Plan' : 'Previous Plan'}
+									</p>
+								</button>
+							))
+						)}
 					</div>
 				)}
 			</div>
 
-			{plansQuery.isLoading && (
-				<p className='rounded-xl border border-stone-200 bg-white p-4 text-sm text-stone-600 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-300'>
-					Loading plans...
-				</p>
-			)}
-
-			{plansQuery.isError && (
-				<Alert variant='destructive'>
-					<AlertTitle>Could not load plans</AlertTitle>
-					<AlertDescription>{toErrorMessage(plansQuery.error, 'Please try again.')}</AlertDescription>
-				</Alert>
-			)}
-
-			{plans.length === 0 && !plansQuery.isLoading && !plansQuery.isError && (
-				<div className='rounded-2xl border border-dashed border-stone-300 bg-white p-6 text-center dark:border-stone-700 dark:bg-stone-950'>
-					<p className='text-lg font-semibold text-stone-900 dark:text-stone-100'>No plans yet</p>
-					<p className='mt-1 text-sm text-stone-600 dark:text-stone-300'>
-						Create your first plan to start assigning recipes.
-					</p>
-					<Button className='mt-4' type='button' onClick={() => void navigate({ to: '/plans/create-plan' })}>
-						Create Plan
-					</Button>
-				</div>
-			)}
-
 			{plans.length > 0 && (
-				<div className='grid gap-4 lg:grid-cols-[minmax(0,1.2fr),minmax(0,1fr)]'>
-					<div className='space-y-4'>
-						<div className='rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-950'>
-							<div className='flex items-center justify-between'>
-								<h2 className='text-lg font-semibold text-stone-900 dark:text-stone-100'>Current</h2>
-								<span className='text-xs text-stone-500 dark:text-stone-400'>{groupedPlans.current.length}</span>
-							</div>
-							<div className='mt-3 space-y-3'>
-								{groupedPlans.current.length === 0 ? (
-									<p className='text-sm text-stone-500 dark:text-stone-400'>No current plan</p>
-								) : (
-									groupedPlans.current.map((plan) => renderPlanCard(plan, 'Current'))
-								)}
-							</div>
-						</div>
-
-						<div className='rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-950'>
-							<div className='flex items-center justify-between'>
-								<h2 className='text-lg font-semibold text-stone-900 dark:text-stone-100'>Future</h2>
-								<span className='text-xs text-stone-500 dark:text-stone-400'>{groupedPlans.future.length}</span>
-							</div>
-							<div className='mt-3 space-y-3'>
-								{groupedPlans.future.length === 0 ? (
-									<p className='text-sm text-stone-500 dark:text-stone-400'>No future plans</p>
-								) : (
-									groupedPlans.future.map((plan) => renderPlanCard(plan, 'Future'))
-								)}
-							</div>
-						</div>
-
-						<div className='rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-950'>
-							<div className='flex items-center justify-between'>
-								<h2 className='text-lg font-semibold text-stone-900 dark:text-stone-100'>Past (last 30 days)</h2>
-								<span className='text-xs text-stone-500 dark:text-stone-400'>{groupedPlans.past.length}</span>
-							</div>
-							<div className='mt-3 space-y-3'>
-								{groupedPlans.past.length === 0 ? (
-									<p className='text-sm text-stone-500 dark:text-stone-400'>No recent past plans</p>
-								) : (
-									groupedPlans.past.map((plan) => renderPlanCard(plan, 'Past'))
-								)}
-							</div>
-						</div>
-					</div>
-
-					<aside className='space-y-4 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-950'>
-						<div className='flex items-center justify-between'>
-							<h2 className='text-lg font-semibold text-stone-900 dark:text-stone-100'>Expanded Plan</h2>
-							{expandedPlanId && (
-								<Button
-									type='button'
-									variant='outline'
-									size='sm'
-									onClick={() => void navigate({ to: '/plans/$planId/edit', params: { planId: expandedPlanId } })}>
-									Edit
-								</Button>
-							)}
-						</div>
-
-						{!expandedPlanId && (
-							<p className='text-sm text-stone-500 dark:text-stone-400'>Select a plan to inspect details.</p>
-						)}
-
-						{expandedPlanQuery.isLoading && expandedPlanId && (
-							<p className='text-sm text-stone-500 dark:text-stone-400'>Loading plan details...</p>
-						)}
-
-						{expandedPlanQuery.isError && expandedPlanId && (
-							<Alert variant='destructive'>
-								<AlertTitle>Could not load plan details</AlertTitle>
-								<AlertDescription>
-									{toErrorMessage(expandedPlanQuery.error, 'Please try again.')}
-								</AlertDescription>
-							</Alert>
-						)}
-
-						{expandedPlanQuery.data && (
-							<div className='space-y-4'>
-								<p className='text-sm text-stone-600 dark:text-stone-300'>
-									{formatDisplayDate(expandedPlanQuery.data.startDate)} -{' '}
-									{formatDisplayDate(expandedPlanQuery.data.endDate)}
-								</p>
-
-								{expandedPlanQuery.data.days.map((day) => (
-									<div
-										key={day.date}
-										className='space-y-3 rounded-2xl border border-stone-200 p-3 dark:border-stone-800'>
-										<h3 className='text-sm font-semibold uppercase tracking-[0.16em] text-stone-500 dark:text-stone-400'>
-											{formatDisplayDate(day.date)}
-										</h3>
-										<div className='grid gap-2'>
-											{CATEGORY_TYPES.map((categoryType) =>
-												renderCategory(categoryType, day.categories[categoryType] ?? []),
-											)}
-										</div>
-									</div>
-								))}
-							</div>
-						)}
-					</aside>
-				</div>
+				<button
+					type='button'
+					onClick={() => void navigate({ to: '/plans/create-plan' })}
+					className='fixed bottom-32 right-8 flex h-16 w-16 items-center justify-center rounded-full bg-[#6fdb68] text-[#05240f] shadow-[0_18px_30px_rgba(111,219,104,0.35)]'>
+					<Plus className='h-8 w-8' />
+				</button>
 			)}
 		</section>
 	);

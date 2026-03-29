@@ -1,10 +1,24 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from '@tanstack/react-router';
+import {
+	ArrowDown,
+	ArrowRight,
+	ArrowUp,
+	CalendarDays,
+	Check,
+	CirclePlus,
+	Coffee,
+	Loader2,
+	Sandwich,
+	Sunrise,
+	UtensilsCrossed,
+	X,
+	type LucideIcon,
+} from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { apiFetch } from '@/lib/api';
 import type { RecipeSummary } from '@/pages/tabs/home/types';
 import {
@@ -49,6 +63,16 @@ function getDayDifference(startDate: string, endDate: string): number {
 	return Math.floor((end - start) / (1000 * 60 * 60 * 24));
 }
 
+function formatDayChip(value: string): { weekday: string; day: string } {
+	const date = new Date(`${value}T00:00:00`);
+	return {
+		weekday: new Intl.DateTimeFormat(undefined, { weekday: 'short' })
+			.format(date)
+			.toUpperCase(),
+		day: String(date.getDate()),
+	};
+}
+
 function buildEmptyCategories(): Record<CategoryType, string[]> {
 	return {
 		Unnamed: [],
@@ -72,14 +96,6 @@ function normalizeDay(day: PlanDay): PlanDay {
 	};
 }
 
-function formatDisplayDate(value: string): string {
-	return new Intl.DateTimeFormat(undefined, {
-		month: 'short',
-		day: 'numeric',
-		year: 'numeric',
-	}).format(new Date(`${value}T00:00:00`));
-}
-
 function hasAtLeastOneRecipe(payload: PlanPayload): boolean {
 	return payload.days.some((day) =>
 		CATEGORY_TYPES.some((categoryType) => (day.categories[categoryType] ?? []).length > 0),
@@ -98,6 +114,47 @@ function toErrorMessage(error: unknown, fallback: string): string {
 	return fallback;
 }
 
+const CATEGORY_UI: Record<
+	CategoryType,
+	{
+		label: string;
+		icon: LucideIcon;
+		frameClass: string;
+		plusClass: string;
+	}
+> = {
+	Unnamed: {
+		label: 'General',
+		icon: UtensilsCrossed,
+		frameClass: 'border-l-[#8df27b]/40',
+		plusClass: 'text-[#8df27b]',
+	},
+	Morning: {
+		label: 'Morning',
+		icon: Sunrise,
+		frameClass: 'border-l-[#99c3ff]/50',
+		plusClass: 'text-[#99c3ff]',
+	},
+	Breakfast: {
+		label: 'Breakfast',
+		icon: Coffee,
+		frameClass: 'border-l-[#8df27b]/50',
+		plusClass: 'text-[#8df27b]',
+	},
+	Lunch: {
+		label: 'Lunch',
+		icon: Sandwich,
+		frameClass: 'border-l-[#ff9fbc]/50',
+		plusClass: 'text-[#ff9fbc]',
+	},
+	Dinner: {
+		label: 'Dinner',
+		icon: UtensilsCrossed,
+		frameClass: 'border-l-[#5aa9ff]/40',
+		plusClass: 'text-[#5aa9ff]',
+	},
+};
+
 export function CreatePlanPage() {
 	const params = useParams({ strict: false }) as { planId?: string };
 	const planId = params.planId;
@@ -113,6 +170,7 @@ export function CreatePlanPage() {
 	const [formError, setFormError] = useState<string | null>(null);
 	const [saveError, setSaveError] = useState<string | null>(null);
 
+	const [focusedDayIndex, setFocusedDayIndex] = useState(0);
 	const [modalOpen, setModalOpen] = useState(false);
 	const [modalDayIndex, setModalDayIndex] = useState<number | null>(null);
 	const [modalCategoryType, setModalCategoryType] = useState<CategoryType | null>(null);
@@ -138,9 +196,7 @@ export function CreatePlanPage() {
 	const recipeSearchQuery = useQuery({
 		queryKey: ['recipes', 'house', 'search', recipeSearch],
 		queryFn: () =>
-			apiFetch<RecipeSummary[]>(
-				`/api/recipes/house?search=${encodeURIComponent(recipeSearch)}`,
-			),
+			apiFetch<RecipeSummary[]>(`/api/recipes/house?search=${encodeURIComponent(recipeSearch)}`),
 		enabled: modalOpen,
 	});
 
@@ -148,15 +204,40 @@ export function CreatePlanPage() {
 		if (!planDetailQuery.data) {
 			return null;
 		}
-		const normalizedDays = planDetailQuery.data.days.map(normalizeDay);
 		return {
 			startDate: planDetailQuery.data.startDate,
 			endDate: planDetailQuery.data.endDate,
-			days: normalizedDays,
+			days: planDetailQuery.data.days.map(normalizeDay),
 		};
 	}, [planDetailQuery.data]);
 
 	const effectivePayload = isEditMode ? payload ?? hydratedEditPayload : payload;
+	const safeFocusedDayIndex = effectivePayload
+		? Math.min(focusedDayIndex, Math.max(0, effectivePayload.days.length - 1))
+		: 0;
+	const focusedDay = effectivePayload?.days[safeFocusedDayIndex];
+
+	const recipesById = useMemo(() => {
+		const map = new Map<string, RecipeSummary>();
+		for (const recipe of recipesQuery.data ?? []) {
+			map.set(recipe.id, recipe);
+		}
+		for (const recipe of recipeSearchQuery.data ?? []) {
+			map.set(recipe.id, recipe);
+		}
+		return map;
+	}, [recipesQuery.data, recipeSearchQuery.data]);
+
+	const totalRecipes = useMemo(() => {
+		if (!effectivePayload) {
+			return 0;
+		}
+		return effectivePayload.days.reduce(
+			(total, day) =>
+				total + CATEGORY_TYPES.reduce((categoryTotal, category) => categoryTotal + day.categories[category].length, 0),
+			0,
+		);
+	}, [effectivePayload]);
 
 	const closeModal = () => {
 		setModalOpen(false);
@@ -176,17 +257,6 @@ export function CreatePlanPage() {
 		});
 	};
 
-	const recipesById = useMemo(() => {
-		const map = new Map<string, RecipeSummary>();
-		for (const recipe of recipesQuery.data ?? []) {
-			map.set(recipe.id, recipe);
-		}
-		for (const recipe of recipeSearchQuery.data ?? []) {
-			map.set(recipe.id, recipe);
-		}
-		return map;
-	}, [recipesQuery.data, recipeSearchQuery.data]);
-
 	const createPlanMutation = useMutation({
 		mutationFn: (nextPayload: PlanPayload) =>
 			apiFetch<PlanDetails>('/plans', {
@@ -197,9 +267,7 @@ export function CreatePlanPage() {
 			await queryClient.invalidateQueries({ queryKey: ['plans'] });
 			await navigate({
 				to: '/plans',
-				search: {
-					expand: created.id,
-				},
+				search: { expand: created.id },
 			});
 		},
 	});
@@ -215,9 +283,7 @@ export function CreatePlanPage() {
 			await queryClient.invalidateQueries({ queryKey: ['plans', 'detail', planId] });
 			await navigate({
 				to: '/plans',
-				search: {
-					expand: updated.id,
-				},
+				search: { expand: updated.id },
 			});
 		},
 	});
@@ -227,32 +293,28 @@ export function CreatePlanPage() {
 			setFormError('Start date must be today or later.');
 			return;
 		}
-
 		if (endDate < startDate) {
 			setFormError('End date must be on or after start date.');
 			return;
 		}
-
 		if (getDayDifference(startDate, endDate) > 6) {
-			setFormError('Plan range cannot exceed 7 days.');
+			setFormError('Meal plans are optimized for a maximum of 7 days.');
 			return;
 		}
-
 		if (!isStrictNoOverlap(plansQuery.data ?? [], startDate, endDate)) {
 			setFormError('Selected date range overlaps an existing plan.');
 			return;
 		}
 
-		const days = getDatesInRange(startDate, endDate).map((date) => ({
-			date,
-			categories: buildEmptyCategories(),
-		}));
-
 		setPayload({
 			startDate,
 			endDate,
-			days,
+			days: getDatesInRange(startDate, endDate).map((date) => ({
+				date,
+				categories: buildEmptyCategories(),
+			})),
 		});
+		setFocusedDayIndex(0);
 		setFormError(null);
 		setStep(2);
 	};
@@ -267,9 +329,7 @@ export function CreatePlanPage() {
 
 	const toggleRecipeSelection = (recipeId: string) => {
 		setSelectedRecipeIds((current) =>
-			current.includes(recipeId)
-				? current.filter((id) => id !== recipeId)
-				: [...current, recipeId],
+			current.includes(recipeId) ? current.filter((id) => id !== recipeId) : [...current, recipeId],
 		);
 	};
 
@@ -279,44 +339,34 @@ export function CreatePlanPage() {
 			return;
 		}
 
-		updatePayload((current) => {
-			const nextDays = current.days.map((day, dayIndex) => {
-				if (dayIndex !== modalDayIndex) {
-					return day;
-				}
-
-				return {
-					...day,
-					categories: {
-						...day.categories,
-						[modalCategoryType]: [
-							...(day.categories[modalCategoryType] ?? []),
-							...selectedRecipeIds,
-						],
+		updatePayload((current) => ({
+			...current,
+			days: current.days.map((day, dayIndex) =>
+				dayIndex !== modalDayIndex
+					? day
+					: {
+						...day,
+						categories: {
+							...day.categories,
+							[modalCategoryType]: [...day.categories[modalCategoryType], ...selectedRecipeIds],
+						},
 					},
-				};
-			});
-
-			return {
-				...current,
-				days: nextDays,
-			};
-		});
+			),
+		}));
 
 		closeModal();
 		setSaveError(null);
 	};
 
 	const removeRecipe = (dayIndex: number, categoryType: CategoryType, recipeIndex: number) => {
-		updatePayload((current) => {
-			const nextDays = current.days.map((day, currentDayIndex) => {
+		updatePayload((current) => ({
+			...current,
+			days: current.days.map((day, currentDayIndex) => {
 				if (currentDayIndex !== dayIndex) {
 					return day;
 				}
-
 				const nextRecipes = [...day.categories[categoryType]];
 				nextRecipes.splice(recipeIndex, 1);
-
 				return {
 					...day,
 					categories: {
@@ -324,13 +374,8 @@ export function CreatePlanPage() {
 						[categoryType]: nextRecipes,
 					},
 				};
-			});
-
-			return {
-				...current,
-				days: nextDays,
-			};
-		});
+			}),
+		}));
 	};
 
 	const reorderRecipe = (
@@ -339,20 +384,18 @@ export function CreatePlanPage() {
 		fromIndex: number,
 		toIndex: number,
 	) => {
-		updatePayload((current) => {
-			const nextDays = current.days.map((day, currentDayIndex) => {
+		updatePayload((current) => ({
+			...current,
+			days: current.days.map((day, currentDayIndex) => {
 				if (currentDayIndex !== dayIndex) {
 					return day;
 				}
-
 				const nextRecipes = [...day.categories[categoryType]];
 				if (toIndex < 0 || toIndex >= nextRecipes.length) {
 					return day;
 				}
-
 				const [moved] = nextRecipes.splice(fromIndex, 1);
 				nextRecipes.splice(toIndex, 0, moved);
-
 				return {
 					...day,
 					categories: {
@@ -360,32 +403,24 @@ export function CreatePlanPage() {
 						[categoryType]: nextRecipes,
 					},
 				};
-			});
-
-			return {
-				...current,
-				days: nextDays,
-			};
-		});
+			}),
+		}));
 	};
 
 	const onSave = () => {
 		if (!effectivePayload) {
 			return;
 		}
-
 		if (!hasAtLeastOneRecipe(effectivePayload)) {
-			setSaveError('Add at least one recipe before saving.');
+			setSaveError('Add at least one recipe to save the plan.');
 			return;
 		}
-
 		setSaveError(null);
 		if (isEditMode) {
 			updatePlanMutation.reset();
 			updatePlanMutation.mutate(effectivePayload);
 			return;
 		}
-
 		createPlanMutation.reset();
 		createPlanMutation.mutate(effectivePayload);
 	};
@@ -396,310 +431,405 @@ export function CreatePlanPage() {
 			? toErrorMessage(updatePlanMutation.error, 'Could not update plan.')
 			: null;
 
-	const recipesForModal = recipeSearchQuery.data ?? [];
 	const isSaving = createPlanMutation.isPending || updatePlanMutation.isPending;
+	const recipesForModal = recipeSearchQuery.data ?? [];
 
 	if (isEditMode && planDetailQuery.isLoading) {
 		return (
-			<section className='space-y-4 rounded-2xl border border-stone-200/70 bg-white/60 p-4 pb-24 dark:border-stone-700/70 dark:bg-stone-900/50'>
-				<p className='text-sm text-stone-600 dark:text-stone-300'>Loading plan...</p>
+			<section className='rounded-[2rem] bg-[#090b0f] p-5 pb-28 text-[#f2f2f2]'>
+				<div className='flex items-center gap-3 text-sm text-[#8c949f]'>
+					<Loader2 className='h-4 w-4 animate-spin' />
+					Loading plan...
+				</div>
 			</section>
 		);
 	}
 
 	return (
-		<section className='space-y-4 rounded-2xl border border-stone-200/70 bg-white/60 p-4 pb-24 dark:border-stone-700/70 dark:bg-stone-900/50'>
-			<div className='rounded-2xl bg-gradient-to-br from-amber-100 via-white to-sky-100 p-4 shadow-sm dark:from-amber-950 dark:via-stone-900 dark:to-sky-950'>
-				<p className='text-sm font-semibold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300'>
-					Plans
-				</p>
-				<h1 className='mt-1 text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-50'>
-					{isEditMode ? 'Edit Plan' : 'Create Plan'}
-				</h1>
-				<p className='mt-1 text-sm text-stone-600 dark:text-stone-300'>
-					{isEditMode
-						? 'Update recipes by day and category.'
-						: step === 1
-							? 'Step 1: pick a valid date range.'
-							: 'Step 2: assign recipes to days and categories.'}
-				</p>
-			</div>
-
-			{plansQuery.isError && !isEditMode && (
-				<Alert variant='destructive'>
-					<AlertTitle>Could not load plans</AlertTitle>
-					<AlertDescription>{toErrorMessage(plansQuery.error, 'Please try again.')}</AlertDescription>
-				</Alert>
-			)}
-
-			{planDetailQuery.isError && isEditMode && (
-				<Alert variant='destructive'>
-					<AlertTitle>Could not load plan</AlertTitle>
-					<AlertDescription>{toErrorMessage(planDetailQuery.error, 'Please try again.')}</AlertDescription>
-				</Alert>
-			)}
-
-			{mutationError && (
-				<Alert variant='destructive'>
-					<AlertTitle>Save failed</AlertTitle>
-					<AlertDescription>{mutationError}</AlertDescription>
-				</Alert>
-			)}
-
-			{step === 1 && !isEditMode && (
-				<div className='space-y-4 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-950'>
-					<div className='grid gap-4 sm:grid-cols-2'>
-						<div className='space-y-2'>
-							<Label htmlFor='create-plan-start'>Start date</Label>
-							<Input
-								id='create-plan-start'
-								type='date'
-								value={startDate}
-								min={today}
-								onChange={(event) => setStartDate(event.target.value)}
-							/>
-						</div>
-
-						<div className='space-y-2'>
-							<Label htmlFor='create-plan-end'>End date</Label>
-							<Input
-								id='create-plan-end'
-								type='date'
-								value={endDate}
-								min={startDate}
-								onChange={(event) => setEndDate(event.target.value)}
-							/>
-						</div>
-					</div>
-
-					{formError && (
-						<p className='text-sm font-medium text-red-600 dark:text-red-400'>{formError}</p>
-					)}
-
-					<div className='flex flex-wrap justify-end gap-2'>
-						<Button type='button' variant='ghost' onClick={() => void navigate({ to: '/plans' })}>
-							Cancel
-						</Button>
-						<Button type='button' onClick={onContinueToStepTwo}>
-							Continue
-						</Button>
+		<section className='relative overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_top,_rgba(38,52,84,0.28),_rgba(8,10,14,1)_42%)] p-5 pb-28 text-[#f5f5f5]'>
+			<div className='absolute -right-12 top-10 h-40 w-40 rounded-full bg-[#8df27b]/10 blur-3xl' />
+			<div className='relative space-y-5'>
+				<div className='flex items-start justify-between gap-3'>
+					<div>
+						<h1 className='text-[2.1rem] font-extrabold tracking-tight text-[#f7f7f7]'>
+							{isEditMode ? 'Build Plan' : 'Create Plan'}
+						</h1>
+						<p className='mt-1 text-sm uppercase tracking-[0.28em] text-[#7ce485]'>
+							Step {isEditMode ? '2 / 2' : `${step} / 2`}
+						</p>
 					</div>
 				</div>
-			)}
 
-			{step === 2 && effectivePayload && (
-				<div className='space-y-4'>
-					<div className='rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-950'>
-						<p className='text-sm text-stone-600 dark:text-stone-300'>
-							Range: <strong>{formatDisplayDate(effectivePayload.startDate)}</strong> to{' '}
-							<strong>{formatDisplayDate(effectivePayload.endDate)}</strong>
-						</p>
-						{isEditMode && (
-							<p className='mt-2 text-sm text-stone-500 dark:text-stone-400'>
-								Date range is immutable during edit.
+				{!isEditMode && (
+					<div className='grid grid-cols-2 gap-2'>
+						<div className={`h-2 rounded-full ${step >= 1 ? 'bg-[#6fdb68]' : 'bg-white/10'}`} />
+						<div className={`h-2 rounded-full ${step >= 2 ? 'bg-[#6fdb68]' : 'bg-white/10'}`} />
+					</div>
+				)}
+
+				{plansQuery.isError && !isEditMode && (
+					<Alert variant='destructive'>
+						<AlertTitle>Could not load plans</AlertTitle>
+						<AlertDescription>{toErrorMessage(plansQuery.error, 'Please try again.')}</AlertDescription>
+					</Alert>
+				)}
+
+				{planDetailQuery.isError && isEditMode && (
+					<Alert variant='destructive'>
+						<AlertTitle>Could not load plan</AlertTitle>
+						<AlertDescription>{toErrorMessage(planDetailQuery.error, 'Please try again.')}</AlertDescription>
+					</Alert>
+				)}
+
+				{mutationError && (
+					<Alert variant='destructive'>
+						<AlertTitle>Save failed</AlertTitle>
+						<AlertDescription>{mutationError}</AlertDescription>
+					</Alert>
+				)}
+
+				{step === 1 && !isEditMode && (
+					<div className='space-y-5'>
+						<div className='relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#17181d] p-5'>
+							<div className='absolute -right-12 top-6 h-40 w-40 rounded-full bg-[#8fd8ff]/20 blur-2xl' />
+							<h2 className='relative text-[2rem] font-bold leading-tight text-white'>
+								When are we{' '}
+								<span className='italic text-[#7ce485]'>
+									cooking?
+								</span>
+							</h2>
+							<p className='relative mt-2 text-base text-[#b0b3b7]'>
+								Select the duration for your weekly nutrition cycle.
+							</p>
+						</div>
+
+						<div className='space-y-4'>
+							<label className='block text-xs font-semibold uppercase tracking-[0.22em] text-[#9aa0a6]'>
+								Start Date
+								<div className='mt-2 flex items-center gap-3 rounded-3xl border border-white/10 bg-black/55 px-4 py-4'>
+									<CalendarDays className='h-5 w-5 text-[#7ce485]' />
+									<Input
+										id='create-plan-start'
+										type='date'
+										value={startDate}
+										min={today}
+										onChange={(event) => setStartDate(event.target.value)}
+										className='h-auto border-0 bg-transparent px-0 text-lg font-semibold text-white'
+									/>
+								</div>
+							</label>
+
+							<label className='block text-xs font-semibold uppercase tracking-[0.22em] text-[#9aa0a6]'>
+								End Date
+								<div className='mt-2 flex items-center gap-3 rounded-3xl border border-[#63cf76]/60 bg-black/55 px-4 py-4'>
+									<CalendarDays className='h-5 w-5 text-[#9cc7ff]' />
+									<Input
+										id='create-plan-end'
+										type='date'
+										value={endDate}
+										min={startDate}
+										onChange={(event) => setEndDate(event.target.value)}
+										className='h-auto border-0 bg-transparent px-0 text-lg font-semibold text-white'
+									/>
+								</div>
+							</label>
+						</div>
+
+						<div className='rounded-3xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-[#c7cad0]'>
+							Meal plans are optimized for a maximum of 7 days.
+						</div>
+
+						{formError && (
+							<p className='rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200'>
+								{formError}
 							</p>
 						)}
+
+						<div className='space-y-3'>
+							<Button
+								type='button'
+								onClick={onContinueToStepTwo}
+								className='h-16 w-full rounded-full bg-[#66cf63] text-2xl font-extrabold text-[#062510] hover:bg-[#73de70]'>
+								Continue
+								<ArrowRight className='ml-2 h-6 w-6' />
+							</Button>
+							<Button
+								type='button'
+								variant='ghost'
+								onClick={() => void navigate({ to: '/plans' })}
+								className='w-full rounded-full border border-white/10 text-[#bfc4cd] hover:bg-white/10 hover:text-white'>
+								Cancel
+							</Button>
+						</div>
 					</div>
+				)}
 
-					{effectivePayload.days.map((day, dayIndex) => (
-						<div
-							key={day.date}
-							className='space-y-4 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-950'>
-							<h2 className='text-lg font-semibold text-stone-900 dark:text-stone-100'>
-								{formatDisplayDate(day.date)}
-							</h2>
+				{step === 2 && effectivePayload && focusedDay && (
+					<div className='space-y-5'>
+						<div className='flex gap-3 overflow-x-auto pb-1'>
+							{effectivePayload.days.map((day, dayIndex) => {
+								const chip = formatDayChip(day.date);
+								const active = dayIndex === safeFocusedDayIndex;
+								return (
+									<button
+										key={day.date}
+										type='button'
+										onClick={() => setFocusedDayIndex(dayIndex)}
+										className={`min-w-24 rounded-[1.8rem] border px-3 py-3 text-left transition ${
+											active
+												? 'border-[#6bd56b] bg-[#1f2128] shadow-[0_12px_30px_rgba(110,214,114,0.18)]'
+												: 'border-white/10 bg-[#15171d]'
+										}`}>
+										<p className={`text-xs font-semibold tracking-[0.2em] ${active ? 'text-[#7ce485]' : 'text-[#8c9097]'}`}>
+											{chip.weekday}
+										</p>
+										<p className='mt-1 text-4xl font-black leading-none text-white'>{chip.day}</p>
+									</button>
+								);
+							})}
+						</div>
 
-							<div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3'>
-								{CATEGORY_TYPES.map((categoryType) => {
-									const recipeIds = day.categories[categoryType] ?? [];
-
-									return (
-										<div
-											key={categoryType}
-											className='rounded-2xl border border-stone-200 p-3 dark:border-stone-800'>
-											<div className='mb-2 flex items-center justify-between gap-2'>
-												<p className='text-sm font-semibold text-stone-800 dark:text-stone-100'>
-													{categoryType}
-												</p>
-												<Button
-													type='button'
-													size='sm'
-													variant='outline'
-													onClick={() => openRecipeModal(dayIndex, categoryType)}>
-													+ Add Recipe
-												</Button>
-											</div>
-
-											{recipeIds.length === 0 ? (
-												<p className='text-sm text-stone-500 dark:text-stone-400'>No recipes</p>
-											) : (
-												<div className='space-y-2'>
-													{recipeIds.map((recipeId, recipeIndex) => {
-														const recipe = recipesById.get(recipeId);
-														return (
-															<div
-																key={`${recipeId}-${recipeIndex}`}
-																className='rounded-xl border border-stone-200 p-2 text-sm dark:border-stone-700'>
-																<p className='truncate font-medium text-stone-900 dark:text-stone-100'>
-																	{recipe?.title ?? recipeId}
-																</p>
-																<div className='mt-2 flex gap-2'>
-																	<Button
-																		type='button'
-																		size='sm'
-																		variant='ghost'
-																		onClick={() =>
-																			reorderRecipe(
-																				dayIndex,
-																				categoryType,
-																				recipeIndex,
-																				recipeIndex - 1,
-																			)
-																		}>
-																		↑
-																	</Button>
-																	<Button
-																		type='button'
-																		size='sm'
-																		variant='ghost'
-																		onClick={() =>
-																			reorderRecipe(
-																				dayIndex,
-																				categoryType,
-																				recipeIndex,
-																				recipeIndex + 1,
-																			)
-																		}>
-																		↓
-																	</Button>
-																	<Button
-																		type='button'
-																		size='sm'
-																		variant='ghost'
-																		onClick={() =>
-																			removeRecipe(dayIndex, categoryType, recipeIndex)
-																		}>
-																		Remove
-																	</Button>
-																</div>
-															</div>
-														);
-													})}
-												</div>
-											)}
-										</div>
-									);
-								})}
+						<div className='flex items-end justify-between'>
+							<div>
+								<p className='text-xs font-semibold uppercase tracking-[0.28em] text-[#f4a8bf]'>Current Focus</p>
+								<h2 className='mt-1 text-5xl font-extrabold tracking-tight text-white'>
+									{new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(
+										new Date(`${focusedDay.date}T00:00:00`),
+									)}
+								</h2>
+							</div>
+							<div className='rounded-full border border-white/10 bg-[#2a2d30] px-4 py-2 text-sm font-bold text-[#7ce485]'>
+								{totalRecipes} RECIPES
 							</div>
 						</div>
-					))}
 
-					{saveError && (
-						<p className='text-sm font-medium text-red-600 dark:text-red-400'>{saveError}</p>
-					)}
+						<div className='space-y-4'>
+							{CATEGORY_TYPES.map((categoryType) => {
+								const config = CATEGORY_UI[categoryType];
+								const CategoryIcon = config.icon;
+								const recipeIds = focusedDay.categories[categoryType] ?? [];
 
-					<div className='flex flex-wrap justify-end gap-2'>
-						<Button type='button' variant='ghost' onClick={() => void navigate({ to: '/plans' })}>
-							Cancel
-						</Button>
-						<Button type='button' onClick={onSave} disabled={isSaving}>
-							{isSaving ? 'Saving...' : isEditMode ? 'Update Plan' : 'Create Plan'}
-						</Button>
+								return (
+									<div
+										key={categoryType}
+										className={`rounded-[2.1rem] border border-white/10 border-l-2 bg-[#1b1c22] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.45)] ${config.frameClass}`}>
+										<div className='mb-3 flex items-center justify-between gap-3'>
+											<div className='flex items-center gap-3'>
+												<div className='rounded-full border border-white/10 bg-black/20 p-2'>
+													<CategoryIcon className={`h-5 w-5 ${config.plusClass}`} />
+												</div>
+												<h3 className='text-4xl font-semibold text-white'>{config.label}</h3>
+											</div>
+											<button
+												type='button'
+												onClick={() => openRecipeModal(safeFocusedDayIndex, categoryType)}
+												className='flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-[#2f3237] shadow-[0_12px_24px_rgba(0,0,0,0.45)]'>
+												<CirclePlus className={`h-6 w-6 ${config.plusClass}`} />
+											</button>
+										</div>
+
+										{recipeIds.length === 0 ? (
+											<button
+												type='button'
+												onClick={() => openRecipeModal(safeFocusedDayIndex, categoryType)}
+												className='w-full rounded-[1.8rem] border border-dashed border-white/10 bg-black/20 py-6 text-center text-2xl font-semibold text-[#6e727a]'>
+												+ Add Recipe
+											</button>
+										) : (
+											<div className='space-y-3'>
+												{recipeIds.map((recipeId, recipeIndex) => {
+													const recipe = recipesById.get(recipeId);
+													return (
+														<div
+															key={`${recipeId}-${recipeIndex}`}
+															className='flex items-center gap-3 rounded-[1.7rem] border border-white/10 bg-[#2b2d33] p-3'>
+															<div className='h-20 w-20 overflow-hidden rounded-2xl bg-black/40'>
+																{recipe?.imageUrl ? (
+																	<img
+																		src={recipe.imageUrl}
+																		alt={recipe.title}
+																		className='h-full w-full object-cover'
+																	/>
+																) : (
+																	<div className='flex h-full w-full items-center justify-center text-2xl font-bold text-[#6f7379]'>
+																		{(recipe?.title ?? 'R').slice(0, 1)}
+																	</div>
+																)}
+															</div>
+															<div className='min-w-0 flex-1'>
+																<p className='truncate text-3xl font-bold text-white'>
+																	{recipe?.title ?? recipeId}
+																</p>
+																<p className='mt-1 text-sm uppercase tracking-[0.2em] text-[#7ce485]'>
+																	{recipe?.authorName ?? 'House Recipe'}
+																</p>
+															</div>
+															<div className='flex flex-col gap-2'>
+																<button
+																	type='button'
+																	onClick={() =>
+																		reorderRecipe(
+																			safeFocusedDayIndex,
+																			categoryType,
+																			recipeIndex,
+																			recipeIndex - 1,
+																		)
+																	}
+																	className='rounded-full border border-white/10 bg-[#1b1d22] p-2 text-[#9aa0a8]'>
+																	<ArrowUp className='h-4 w-4' />
+																</button>
+																<button
+																	type='button'
+																	onClick={() =>
+																		reorderRecipe(
+																			safeFocusedDayIndex,
+																			categoryType,
+																			recipeIndex,
+																			recipeIndex + 1,
+																		)
+																	}
+																	className='rounded-full border border-white/10 bg-[#1b1d22] p-2 text-[#9aa0a8]'>
+																	<ArrowDown className='h-4 w-4' />
+																</button>
+																<button
+																	type='button'
+																	onClick={() => removeRecipe(safeFocusedDayIndex, categoryType, recipeIndex)}
+																	className='rounded-full border border-white/10 bg-[#1b1d22] p-2 text-[#f4a8bf]'>
+																	<X className='h-4 w-4' />
+																</button>
+															</div>
+														</div>
+													);
+												})}
+											</div>
+										)}
+									</div>
+								);
+							})}
+						</div>
+
+						{saveError && (
+							<div className='rounded-3xl border border-[#f4a8bf]/30 bg-[#2d2a2c] px-4 py-3 text-lg text-[#ffd1de]'>
+								{saveError}
+							</div>
+						)}
+
+						<div className='space-y-3'>
+							<Button
+								type='button'
+								disabled={isSaving}
+								onClick={onSave}
+								className='h-16 w-full rounded-full bg-[#66cf63] text-2xl font-extrabold text-[#062510] hover:bg-[#73de70] disabled:bg-[#3a3d42] disabled:text-[#8d939b]'>
+								{isSaving ? (
+									<>
+										<Loader2 className='mr-2 h-5 w-5 animate-spin' />
+										Saving...
+									</>
+								) : isEditMode ? (
+									'Save Plan'
+								) : (
+									'Save Plan'
+								)}
+							</Button>
+							<Button
+								type='button'
+								variant='ghost'
+								onClick={() => void navigate({ to: '/plans' })}
+								className='w-full rounded-full border border-white/10 text-[#bfc4cd] hover:bg-white/10 hover:text-white'>
+								Cancel
+							</Button>
+						</div>
 					</div>
-				</div>
-			)}
+				)}
+			</div>
 
 			<div
 				className={`fixed inset-0 z-40 transition-all duration-200 ${
 					modalOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
 				}`}
 				aria-hidden={!modalOpen}>
-				<div
-					className='absolute inset-0 bg-stone-950/45 backdrop-blur-[3px]'
+				<div className='absolute inset-0 bg-black/70 backdrop-blur-sm' onClick={closeModal} />
+				<div className='absolute inset-x-3 bottom-3 top-[20%] rounded-[2.2rem] border border-white/10 bg-[#1a1b20] p-4 shadow-[0_20px_60px_rgba(0,0,0,0.65)]'>
+					<div className='flex h-full flex-col'>
+						<div className='mb-4 flex items-center justify-between'>
+							<h3 className='text-5xl font-extrabold text-white'>Add Recipes</h3>
+							<button
+								type='button'
 								onClick={closeModal}
-				/>
-
-				<div className='absolute inset-0 flex items-end justify-center p-0 sm:items-center sm:p-6'>
-					<div
-						onClick={(event) => event.stopPropagation()}
-						className='flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[28px] border border-stone-200/70 bg-white shadow-2xl dark:border-stone-700/70 dark:bg-stone-950 sm:rounded-[28px]'>
-						<div className='border-b border-stone-200/80 px-4 py-3 dark:border-stone-800 sm:px-6'>
-							<p className='text-sm font-semibold text-stone-900 dark:text-stone-100'>
-								Select Recipes
-							</p>
-							<p className='text-xs text-stone-500 dark:text-stone-400'>
-								Choose one or more recipes to add.
-							</p>
+								className='flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-[#2f3237] text-[#d6d9df]'>
+								<X className='h-6 w-6' />
+							</button>
 						</div>
 
-						<div className='space-y-4 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6'>
-							<div className='space-y-2'>
-								<Label htmlFor='plan-recipe-search'>Search</Label>
-								<Input
-									id='plan-recipe-search'
-									value={recipeSearch}
-									onChange={(event) => setRecipeSearch(event.target.value)}
-									placeholder='Find recipes'
-								/>
-							</div>
+						<div className='mb-4 rounded-3xl border border-white/10 bg-black/40 px-4 py-3'>
+							<Input
+								value={recipeSearch}
+								onChange={(event) => setRecipeSearch(event.target.value)}
+								placeholder='Search your kitchen...'
+								className='h-auto border-0 bg-transparent px-0 text-2xl text-white placeholder:text-[#6f747c]'
+							/>
+						</div>
 
-							{recipeSearchQuery.isLoading && (
-								<p className='text-sm text-stone-600 dark:text-stone-300'>Loading recipes...</p>
+						<div className='min-h-0 flex-1 overflow-y-auto rounded-[1.8rem] border border-white/10 bg-black/25 p-3'>
+							{recipeSearchQuery.isLoading ? (
+								<div className='flex items-center gap-2 px-2 py-3 text-[#9ca2ab]'>
+									<Loader2 className='h-4 w-4 animate-spin' />
+									Loading recipes...
+								</div>
+							) : recipesForModal.length === 0 ? (
+								<p className='px-2 py-4 text-[#7d828a]'>No recipes found.</p>
+							) : (
+								<div className='space-y-3'>
+									{recipesForModal.map((recipe) => {
+										const selected = selectedRecipeIds.includes(recipe.id);
+										return (
+											<button
+												key={recipe.id}
+												type='button'
+												onClick={() => toggleRecipeSelection(recipe.id)}
+												className={`flex w-full items-center gap-3 rounded-[1.8rem] border p-3 text-left transition ${
+													selected
+														? 'border-[#6fdb68]/70 bg-[#262d26]'
+														: 'border-white/10 bg-[#1f2127]'
+												}`}>
+												<div className='h-14 w-14 overflow-hidden rounded-full bg-black/40'>
+													{recipe.imageUrl ? (
+														<img src={recipe.imageUrl} alt={recipe.title} className='h-full w-full object-cover' />
+													) : (
+														<div className='flex h-full w-full items-center justify-center text-xl font-bold text-[#7e838b]'>
+															{recipe.title.slice(0, 1)}
+														</div>
+													)}
+												</div>
+												<div className='min-w-0 flex-1'>
+													<p className='truncate text-3xl font-bold text-white'>{recipe.title}</p>
+													<p className='truncate text-sm uppercase tracking-[0.22em] text-[#7ce485]'>
+														{recipe.authorName}
+													</p>
+												</div>
+												<div
+													className={`flex h-11 w-11 items-center justify-center rounded-xl border ${
+														selected
+															? 'border-[#6fdb68] bg-[#6fdb68] text-[#05240f]'
+															: 'border-[#4d5a4e] bg-transparent text-transparent'
+													}`}>
+													<Check className='h-5 w-5' />
+												</div>
+											</button>
+										);
+									})}
+								</div>
 							)}
-
-							{recipeSearchQuery.isError && (
-								<Alert variant='destructive'>
-									<AlertTitle>Could not load recipes</AlertTitle>
-									<AlertDescription>
-										{toErrorMessage(recipeSearchQuery.error, 'Please try again.')}
-									</AlertDescription>
-								</Alert>
-							)}
-
-							<div className='max-h-80 space-y-2 overflow-y-auto rounded-2xl border border-stone-200 p-2 dark:border-stone-800'>
-								{recipesForModal.map((recipe) => {
-									const isSelected = selectedRecipeIds.includes(recipe.id);
-									return (
-										<label
-											key={recipe.id}
-											className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 ${
-												isSelected
-													? 'border-sky-500 bg-sky-50 dark:border-sky-500 dark:bg-sky-950/40'
-													: 'border-stone-200 dark:border-stone-700'
-											}`}>
-											<input
-												type='checkbox'
-												checked={isSelected}
-												onChange={() => toggleRecipeSelection(recipe.id)}
-											/>
-											<div className='min-w-0'>
-												<p className='truncate text-sm font-semibold text-stone-900 dark:text-stone-100'>
-													{recipe.title}
-												</p>
-												<p className='truncate text-xs text-stone-500 dark:text-stone-400'>
-													{recipe.authorName}
-												</p>
-											</div>
-										</label>
-									);
-								})}
-
-								{!recipeSearchQuery.isLoading && recipesForModal.length === 0 && (
-									<p className='rounded-xl border border-dashed border-stone-300 p-4 text-sm text-stone-600 dark:border-stone-700 dark:text-stone-300'>
-										No recipes found.
-									</p>
-								)}
-							</div>
 						</div>
 
-						<div className='flex flex-wrap justify-end gap-2 border-t border-stone-200/80 px-4 py-3 dark:border-stone-800 sm:px-6'>
-							<Button type='button' variant='ghost' onClick={closeModal}>
-								Cancel
-							</Button>
-							<Button type='button' onClick={addSelectedRecipes} disabled={selectedRecipeIds.length === 0}>
-								Add Selected
-							</Button>
-						</div>
+						<Button
+							type='button'
+							disabled={selectedRecipeIds.length === 0}
+							onClick={addSelectedRecipes}
+							className='mt-4 h-16 rounded-full bg-[#66cf63] text-2xl font-extrabold text-[#062510] hover:bg-[#73de70] disabled:bg-[#3a3d42] disabled:text-[#8d939b]'>
+							Add Selected ({selectedRecipeIds.length})
+							<CirclePlus className='ml-2 h-5 w-5' />
+						</Button>
 					</div>
 				</div>
 			</div>
