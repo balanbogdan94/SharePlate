@@ -8,4 +8,6 @@ public interface IMealPlanRepository : IRepository<MealPlan>
     Task<IReadOnlyList<MealPlan>> GetByHouseAsync(Guid houseId, CancellationToken ct = default);
     Task<MealPlan?> GetActiveByHouseAsync(Guid houseId, DateOnly date, CancellationToken ct = default);
     Task<bool> HasOverlappingRangeAsync(Guid houseId, DateOnly startDate, DateOnly endDate, Guid? excludedMealPlanId = null, CancellationToken ct = default);
+    void RemoveRecipes(IEnumerable<MealPlanRecipe> recipes);
+    void AddRecipes(IEnumerable<MealPlanRecipe> recipes);
 }

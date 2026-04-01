@@ -166,20 +166,12 @@ public static class PlanEndpoints
             if (recipesValidationError is not null)
                 return recipesValidationError;
 
-            foreach (var existing in plan.MealPlanRecipes.ToList())
-            {
-                plan.MealPlanRecipes.Remove(existing);
-            }
+            uow.MealPlans.RemoveRecipes(plan.MealPlanRecipes.ToList());
 
-            foreach (var item in flattenResult.Assignments)
-            {
-                plan.MealPlanRecipes.Add(MealPlanRecipe.Create(
-                    plan.Id,
-                    item.RecipeId,
-                    item.Date,
-                    item.CategoryType,
-                    item.SortOrder));
-            }
+            var newRecipes = flattenResult.Assignments
+                .Select(item => MealPlanRecipe.Create(plan.Id, item.RecipeId, item.Date, item.CategoryType, item.SortOrder))
+                .ToList();
+            uow.MealPlans.AddRecipes(newRecipes);
 
             await uow.SaveChangesAsync(ct);
             var updatedPlan = await uow.MealPlans.GetWithRecipesAsync(plan.Id, ct) ?? plan;

@@ -39,4 +39,10 @@ public class MealPlanRepository : Repository<MealPlan>, IMealPlanRepository
             && mp.StartDate <= endDate
             && mp.EndDate >= startDate,
             ct);
+
+    public void RemoveRecipes(IEnumerable<MealPlanRecipe> recipes)
+        => Context.Set<MealPlanRecipe>().RemoveRange(recipes);
+
+    public void AddRecipes(IEnumerable<MealPlanRecipe> recipes)
+        => Context.Set<MealPlanRecipe>().AddRange(recipes);
 }
