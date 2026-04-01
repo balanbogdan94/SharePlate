@@ -10,6 +10,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
 import { AddRecipePage } from '@/pages/AddRecipePage';
+import { RecipeDetailsPage } from '@/pages/RecipeDetailsPage';
 import { CreatePlanPage } from '@/pages/CreatePlanPage';
 import { HomeTabPage } from '@/pages/tabs/HomeTabPage';
 import { PlanTabPage } from '@/pages/tabs/PlanTabPage';
@@ -50,6 +51,11 @@ const appLayoutRoute = createRoute({
 const homeTabRoute = createRoute({
 	getParentRoute: () => appLayoutRoute,
 	path: '/recipes',
+	validateSearch: (
+		search: Record<string, unknown>,
+	): { expand?: string } => ({
+		expand: typeof search.expand === 'string' ? search.expand : undefined,
+	}),
 	component: HomeTabPage,
 });
 
@@ -57,6 +63,12 @@ const addRecipeRoute = createRoute({
 	getParentRoute: () => appLayoutRoute,
 	path: '/recipes/add',
 	component: AddRecipePage,
+});
+
+const recipeDetailsRoute = createRoute({
+	getParentRoute: () => appLayoutRoute,
+	path: '/recipes/$recipeId',
+	component: RecipeDetailsPage,
 });
 
 const editRecipeRoute = createRoute({
@@ -126,6 +138,7 @@ const routeTree = rootRoute.addChildren([
 	appLayoutRoute.addChildren([
 		homeTabRoute,
 		addRecipeRoute,
+		recipeDetailsRoute,
 		editRecipeRoute,
 		planTabRoute,
 		createPlanRoute,

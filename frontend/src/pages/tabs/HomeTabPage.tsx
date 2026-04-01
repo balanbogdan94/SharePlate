@@ -1,10 +1,14 @@
 import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
+import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { apiFetch } from '@/lib/api';
 import { RecipeCard } from './home/RecipeCard';
 import type { RecipeDetail, RecipeSummary } from './home/types';
+
+type SearchParams = {
+	expand?: string;
+};
 
 function toErrorMessage(error: unknown, fallback: string): string {
 	if (error instanceof Error && error.message.trim()) {
@@ -15,10 +19,10 @@ function toErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function HomeTabPage() {
-	const queryClient = useQueryClient();
 	const navigate = useNavigate();
-	const [openRecipeId, setOpenRecipeId] = useState<string | null>(null);
+	const searchParams = useSearch({ strict: false }) as SearchParams;
 	const [search, setSearch] = useState('');
+	const openRecipeId = searchParams.expand ?? null;
 
 	const recipesQuery = useQuery({
 		queryKey: ['recipes', 'my'],
@@ -31,45 +35,20 @@ export function HomeTabPage() {
 		queryFn: () => apiFetch<RecipeDetail>(`/api/recipes/${openRecipeId}`),
 	});
 
-	const deleteRecipeMutation = useMutation({
-		mutationFn: (id: string) =>
-			apiFetch<void>(`/api/recipes/${id}`, {
-				method: 'DELETE',
-			}),
-		onSuccess: (_, id) => {
-			if (openRecipeId === id) {
-				setOpenRecipeId(null);
-			}
-
-			void queryClient.invalidateQueries({ queryKey: ['recipes', 'my'] });
-			void queryClient.invalidateQueries({ queryKey: ['recipes', 'house'] });
-		},
-	});
-
 	const currentOpenRecipe =
 		openRecipeId && openRecipeQuery.data?.id === openRecipeId
 			? openRecipeQuery.data
 			: null;
 
-	const onEditRecipe = (recipe: RecipeSummary) => {
+	const onToggleRecipe = (id: string) => {
+		const nextExpand = openRecipeId === id ? undefined : id;
 		void navigate({
-			to: '/recipes/$recipeId/edit',
-			params: { recipeId: recipe.id },
+			to: '/recipes',
+			search: { expand: nextExpand },
+			replace: true,
 		});
 	};
 
-	const onDeleteRecipe = (recipe: RecipeSummary) => {
-		if (!window.confirm(`Delete recipe "${recipe.title}"?`)) {
-			return;
-		}
-
-		deleteRecipeMutation.reset();
-		deleteRecipeMutation.mutate(recipe.id);
-	};
-
-	const onToggleRecipe = (id: string) => {
-		setOpenRecipeId((prev) => (prev === id ? null : id));
-	};
 	const openRecipeErrorMessage = openRecipeQuery.isError
 		? toErrorMessage(openRecipeQuery.error, 'Could not load recipe details.')
 		: null;
@@ -165,9 +144,6 @@ export function HomeTabPage() {
 							recipe={recipe}
 							isOpen={isOpen}
 							onToggle={onToggleRecipe}
-							onEdit={onEditRecipe}
-							onDelete={onDeleteRecipe}
-							deletePending={deleteRecipeMutation.isPending}
 							openRecipe={isOpen ? currentOpenRecipe : null}
 							openRecipeLoading={openRecipeQuery.isLoading && isOpen}
 							openRecipeErrorMessage={isOpen ? openRecipeErrorMessage : null}

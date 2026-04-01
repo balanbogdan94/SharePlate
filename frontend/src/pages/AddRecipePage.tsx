@@ -121,24 +121,6 @@ function AddRecipeForm({ recipeId, initialData }: AddRecipeFormProps) {
 			setIngredientsError(null);
 			void queryClient.invalidateQueries({ queryKey: ['recipes', 'my'] });
 			void queryClient.invalidateQueries({ queryKey: ['recipes', 'house'] });
-			if ('startViewTransition' in document) {
-				document.documentElement.dataset.navDirection = 'back';
-				(
-					document as Document & {
-						startViewTransition: (callback: () => void | Promise<void>) => {
-							finished: Promise<void>;
-						};
-					}
-				).startViewTransition(() => {
-					if (canGoBack) {
-						router.history.back();
-						return;
-					}
-					void navigate({ to: '/recipes' });
-				});
-				return;
-			}
-
 			if (canGoBack) {
 				router.history.back();
 				return;
@@ -174,24 +156,6 @@ function AddRecipeForm({ recipeId, initialData }: AddRecipeFormProps) {
 			void queryClient.invalidateQueries({
 				queryKey: ['recipes', 'detail', recipeId],
 			});
-			if ('startViewTransition' in document) {
-				document.documentElement.dataset.navDirection = 'back';
-				(
-					document as Document & {
-						startViewTransition: (callback: () => void | Promise<void>) => {
-							finished: Promise<void>;
-						};
-					}
-				).startViewTransition(() => {
-					if (canGoBack) {
-						router.history.back();
-						return;
-					}
-					void navigate({ to: '/recipes' });
-				});
-				return;
-			}
-
 			if (canGoBack) {
 				router.history.back();
 				return;

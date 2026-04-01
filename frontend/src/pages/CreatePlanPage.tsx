@@ -436,7 +436,7 @@ export function CreatePlanPage() {
 
 	if (isEditMode && planDetailQuery.isLoading) {
 		return (
-			<section className='rounded-[2rem] bg-[#090b0f] p-5 pb-28 text-[#f2f2f2]'>
+			<section className='rounded-2xl bg-[#090b0f] p-3 pb-24 text-[#f2f2f2] sm:rounded-[2rem] sm:p-5 sm:pb-28'>
 				<div className='flex items-center gap-3 text-sm text-[#8c949f]'>
 					<Loader2 className='h-4 w-4 animate-spin' />
 					Loading plan...
@@ -446,15 +446,15 @@ export function CreatePlanPage() {
 	}
 
 	return (
-		<section className='relative overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_top,_rgba(38,52,84,0.28),_rgba(8,10,14,1)_42%)] p-5 pb-28 text-[#f5f5f5]'>
-			<div className='absolute -right-12 top-10 h-40 w-40 rounded-full bg-[#8df27b]/10 blur-3xl' />
-			<div className='relative space-y-5'>
+		<section className='relative overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_top,_rgba(38,52,84,0.28),_rgba(8,10,14,1)_42%)] p-3 pb-24 text-[#f5f5f5] sm:rounded-[2rem] sm:p-5 sm:pb-28'>
+			<div className='absolute -right-12 top-8 h-32 w-32 rounded-full bg-[#8df27b]/10 blur-3xl sm:top-10 sm:h-40 sm:w-40' />
+			<div className='relative space-y-4 sm:space-y-5'>
 				<div className='flex items-start justify-between gap-3'>
 					<div>
-						<h1 className='text-[2.1rem] font-extrabold tracking-tight text-[#f7f7f7]'>
+						<h1 className='text-[2rem] font-extrabold tracking-tight text-[#f7f7f7] sm:text-[2.1rem]'>
 							{isEditMode ? 'Build Plan' : 'Create Plan'}
 						</h1>
-						<p className='mt-1 text-sm uppercase tracking-[0.28em] text-[#7ce485]'>
+						<p className='mt-1 text-[0.7rem] uppercase tracking-[0.2em] text-[#7ce485] sm:text-xs sm:tracking-[0.28em]'>
 							Step {isEditMode ? '2 / 2' : `${step} / 2`}
 						</p>
 					</div>
@@ -489,47 +489,47 @@ export function CreatePlanPage() {
 				)}
 
 				{step === 1 && !isEditMode && (
-					<div className='space-y-5'>
-						<div className='relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#17181d] p-5'>
-							<div className='absolute -right-12 top-6 h-40 w-40 rounded-full bg-[#8fd8ff]/20 blur-2xl' />
-							<h2 className='relative text-[2rem] font-bold leading-tight text-white'>
+					<div className='space-y-4 sm:space-y-5'>
+						<div className='relative overflow-hidden rounded-2xl border border-white/10 bg-[#17181d] p-4 sm:rounded-[2rem] sm:p-5'>
+							<div className='absolute -right-12 top-6 h-32 w-32 rounded-full bg-[#8fd8ff]/20 blur-2xl sm:h-40 sm:w-40' />
+							<h2 className='relative text-[1.75rem] font-bold leading-tight text-white sm:text-[2rem]'>
 								When are we{' '}
 								<span className='italic text-[#7ce485]'>
 									cooking?
 								</span>
 							</h2>
-							<p className='relative mt-2 text-base text-[#b0b3b7]'>
+							<p className='relative mt-2 text-sm text-[#b0b3b7] sm:text-base'>
 								Select the duration for your weekly nutrition cycle.
 							</p>
 						</div>
 
 						<div className='space-y-4'>
-							<label className='block text-xs font-semibold uppercase tracking-[0.22em] text-[#9aa0a6]'>
+							<label className='block text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-[#9aa0a6] sm:text-xs sm:tracking-[0.22em]'>
 								Start Date
-								<div className='mt-2 flex items-center gap-3 rounded-3xl border border-white/10 bg-black/55 px-4 py-4'>
-									<CalendarDays className='h-5 w-5 text-[#7ce485]' />
+								<div className='mt-2 flex min-h-11 items-center gap-3 rounded-2xl border border-white/10 bg-black/55 px-3 py-3 sm:rounded-3xl sm:px-4 sm:py-4'>
+									<CalendarDays className='h-4 w-4 text-[#7ce485] sm:h-5 sm:w-5' />
 									<Input
 										id='create-plan-start'
 										type='date'
 										value={startDate}
 										min={today}
 										onChange={(event) => setStartDate(event.target.value)}
-										className='h-auto border-0 bg-transparent px-0 text-lg font-semibold text-white'
+										className='h-auto border-0 bg-transparent px-0 text-sm font-semibold text-white sm:text-base'
 									/>
 								</div>
 							</label>
 
-							<label className='block text-xs font-semibold uppercase tracking-[0.22em] text-[#9aa0a6]'>
+							<label className='block text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-[#9aa0a6] sm:text-xs sm:tracking-[0.22em]'>
 								End Date
-								<div className='mt-2 flex items-center gap-3 rounded-3xl border border-[#63cf76]/60 bg-black/55 px-4 py-4'>
-									<CalendarDays className='h-5 w-5 text-[#9cc7ff]' />
+								<div className='mt-2 flex min-h-11 items-center gap-3 rounded-2xl border border-[#63cf76]/60 bg-black/55 px-3 py-3 sm:rounded-3xl sm:px-4 sm:py-4'>
+									<CalendarDays className='h-4 w-4 text-[#9cc7ff] sm:h-5 sm:w-5' />
 									<Input
 										id='create-plan-end'
 										type='date'
 										value={endDate}
 										min={startDate}
 										onChange={(event) => setEndDate(event.target.value)}
-										className='h-auto border-0 bg-transparent px-0 text-lg font-semibold text-white'
+										className='h-auto border-0 bg-transparent px-0 text-sm font-semibold text-white sm:text-base'
 									/>
 								</div>
 							</label>
@@ -549,15 +549,15 @@ export function CreatePlanPage() {
 							<Button
 								type='button'
 								onClick={onContinueToStepTwo}
-								className='h-16 w-full rounded-full bg-[#66cf63] text-2xl font-extrabold text-[#062510] hover:bg-[#73de70]'>
+								className='h-12 w-full rounded-full bg-[#66cf63] text-base font-extrabold text-[#062510] hover:bg-[#73de70] sm:h-14 sm:text-lg'>
 								Continue
-								<ArrowRight className='ml-2 h-6 w-6' />
+								<ArrowRight className='ml-2 h-5 w-5' />
 							</Button>
 							<Button
 								type='button'
 								variant='ghost'
 								onClick={() => void navigate({ to: '/plans' })}
-								className='w-full rounded-full border border-white/10 text-[#bfc4cd] hover:bg-white/10 hover:text-white'>
+								className='h-11 w-full rounded-full border border-white/10 text-sm text-[#bfc4cd] hover:bg-white/10 hover:text-white'>
 								Cancel
 							</Button>
 						</div>
@@ -565,8 +565,8 @@ export function CreatePlanPage() {
 				)}
 
 				{step === 2 && effectivePayload && focusedDay && (
-					<div className='space-y-5'>
-						<div className='flex gap-3 overflow-x-auto pb-1'>
+					<div className='space-y-4 sm:space-y-5'>
+						<div className='flex gap-2 overflow-x-auto pb-1 sm:gap-3'>
 							{effectivePayload.days.map((day, dayIndex) => {
 								const chip = formatDayChip(day.date);
 								const active = dayIndex === safeFocusedDayIndex;
@@ -575,35 +575,37 @@ export function CreatePlanPage() {
 										key={day.date}
 										type='button'
 										onClick={() => setFocusedDayIndex(dayIndex)}
-										className={`min-w-24 rounded-[1.8rem] border px-3 py-3 text-left transition ${
+										className={`min-w-20 rounded-2xl border px-3 py-2 text-left transition sm:min-w-24 sm:rounded-[1.8rem] sm:py-3 ${
 											active
 												? 'border-[#6bd56b] bg-[#1f2128] shadow-[0_12px_30px_rgba(110,214,114,0.18)]'
 												: 'border-white/10 bg-[#15171d]'
 										}`}>
-										<p className={`text-xs font-semibold tracking-[0.2em] ${active ? 'text-[#7ce485]' : 'text-[#8c9097]'}`}>
+										<p className={`text-[0.68rem] font-semibold tracking-[0.16em] sm:text-xs sm:tracking-[0.2em] ${active ? 'text-[#7ce485]' : 'text-[#8c9097]'}`}>
 											{chip.weekday}
 										</p>
-										<p className='mt-1 text-4xl font-black leading-none text-white'>{chip.day}</p>
+										<p className='mt-1 text-[1.6rem] font-black leading-none text-white sm:text-[2rem]'>{chip.day}</p>
 									</button>
 								);
 							})}
 						</div>
 
-						<div className='flex items-end justify-between'>
-							<div>
-								<p className='text-xs font-semibold uppercase tracking-[0.28em] text-[#f4a8bf]'>Current Focus</p>
-								<h2 className='mt-1 text-5xl font-extrabold tracking-tight text-white'>
+						<div className='flex items-end justify-between gap-3'>
+							<div className='min-w-0'>
+								<p className='text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[#f4a8bf] sm:text-xs sm:tracking-[0.28em]'>
+									Current Focus
+								</p>
+								<h2 className='mt-1 line-clamp-1 text-[1.75rem] font-extrabold tracking-tight text-white sm:text-[2rem]'>
 									{new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(
 										new Date(`${focusedDay.date}T00:00:00`),
 									)}
 								</h2>
 							</div>
-							<div className='rounded-full border border-white/10 bg-[#2a2d30] px-4 py-2 text-sm font-bold text-[#7ce485]'>
+							<div className='shrink-0 rounded-full border border-white/10 bg-[#2a2d30] px-3 py-2 text-[0.7rem] font-bold text-[#7ce485] sm:px-4 sm:text-sm'>
 								{totalRecipes} RECIPES
 							</div>
 						</div>
 
-						<div className='space-y-4'>
+						<div className='space-y-3 sm:space-y-4'>
 							{CATEGORY_TYPES.map((categoryType) => {
 								const config = CATEGORY_UI[categoryType];
 								const CategoryIcon = config.icon;
@@ -612,19 +614,19 @@ export function CreatePlanPage() {
 								return (
 									<div
 										key={categoryType}
-										className={`rounded-[2.1rem] border border-white/10 border-l-2 bg-[#1b1c22] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.45)] ${config.frameClass}`}>
-										<div className='mb-3 flex items-center justify-between gap-3'>
-											<div className='flex items-center gap-3'>
-												<div className='rounded-full border border-white/10 bg-black/20 p-2'>
-													<CategoryIcon className={`h-5 w-5 ${config.plusClass}`} />
+										className={`rounded-2xl border border-white/10 border-l-2 bg-[#1b1c22] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.45)] sm:rounded-[2.1rem] sm:p-4 ${config.frameClass}`}>
+										<div className='mb-3 flex items-center justify-between gap-2 sm:gap-3'>
+											<div className='flex min-w-0 items-center gap-2 sm:gap-3'>
+												<div className='rounded-full border border-white/10 bg-black/20 p-1.5 sm:p-2'>
+													<CategoryIcon className={`h-4 w-4 sm:h-5 sm:w-5 ${config.plusClass}`} />
 												</div>
-												<h3 className='text-4xl font-semibold text-white'>{config.label}</h3>
+												<h3 className='line-clamp-1 text-lg font-semibold text-white sm:text-2xl'>{config.label}</h3>
 											</div>
 											<button
 												type='button'
 												onClick={() => openRecipeModal(safeFocusedDayIndex, categoryType)}
-												className='flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-[#2f3237] shadow-[0_12px_24px_rgba(0,0,0,0.45)]'>
-												<CirclePlus className={`h-6 w-6 ${config.plusClass}`} />
+												className='flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[#2f3237] shadow-[0_12px_24px_rgba(0,0,0,0.45)]'>
+												<CirclePlus className={`h-5 w-5 ${config.plusClass}`} />
 											</button>
 										</div>
 
@@ -632,18 +634,18 @@ export function CreatePlanPage() {
 											<button
 												type='button'
 												onClick={() => openRecipeModal(safeFocusedDayIndex, categoryType)}
-												className='w-full rounded-[1.8rem] border border-dashed border-white/10 bg-black/20 py-6 text-center text-2xl font-semibold text-[#6e727a]'>
+												className='min-h-11 w-full rounded-2xl border border-dashed border-white/10 bg-black/20 py-4 text-center text-sm font-semibold text-[#6e727a] sm:rounded-[1.8rem] sm:py-5 sm:text-base'>
 												+ Add Recipe
 											</button>
 										) : (
-											<div className='space-y-3'>
+											<div className='space-y-2 sm:space-y-3'>
 												{recipeIds.map((recipeId, recipeIndex) => {
 													const recipe = recipesById.get(recipeId);
 													return (
 														<div
 															key={`${recipeId}-${recipeIndex}`}
-															className='flex items-center gap-3 rounded-[1.7rem] border border-white/10 bg-[#2b2d33] p-3'>
-															<div className='h-20 w-20 overflow-hidden rounded-2xl bg-black/40'>
+															className='flex items-center gap-2 rounded-2xl border border-white/10 bg-[#2b2d33] p-2.5 sm:gap-3 sm:rounded-[1.7rem] sm:p-3'>
+															<div className='h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-black/40 sm:h-16 sm:w-16 sm:rounded-2xl'>
 																{recipe?.imageUrl ? (
 																	<img
 																		src={recipe.imageUrl}
@@ -651,20 +653,20 @@ export function CreatePlanPage() {
 																		className='h-full w-full object-cover'
 																	/>
 																) : (
-																	<div className='flex h-full w-full items-center justify-center text-2xl font-bold text-[#6f7379]'>
+																	<div className='flex h-full w-full items-center justify-center text-lg font-bold text-[#6f7379] sm:text-xl'>
 																		{(recipe?.title ?? 'R').slice(0, 1)}
 																	</div>
 																)}
 															</div>
 															<div className='min-w-0 flex-1'>
-																<p className='truncate text-3xl font-bold text-white'>
+																<p className='line-clamp-1 text-base font-bold text-white sm:text-lg'>
 																	{recipe?.title ?? recipeId}
 																</p>
-																<p className='mt-1 text-sm uppercase tracking-[0.2em] text-[#7ce485]'>
+																<p className='mt-1 text-[0.68rem] uppercase tracking-[0.16em] text-[#7ce485] sm:text-xs sm:tracking-[0.2em]'>
 																	{recipe?.authorName ?? 'House Recipe'}
 																</p>
 															</div>
-															<div className='flex flex-col gap-2'>
+															<div className='flex flex-col gap-1.5 sm:gap-2'>
 																<button
 																	type='button'
 																	onClick={() =>
@@ -675,8 +677,8 @@ export function CreatePlanPage() {
 																			recipeIndex - 1,
 																		)
 																	}
-																	className='rounded-full border border-white/10 bg-[#1b1d22] p-2 text-[#9aa0a8]'>
-																	<ArrowUp className='h-4 w-4' />
+																	className='flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-[#1b1d22] text-[#9aa0a8]'>
+																	<ArrowUp className='h-3.5 w-3.5 sm:h-4 sm:w-4' />
 																</button>
 																<button
 																	type='button'
@@ -688,14 +690,14 @@ export function CreatePlanPage() {
 																			recipeIndex + 1,
 																		)
 																	}
-																	className='rounded-full border border-white/10 bg-[#1b1d22] p-2 text-[#9aa0a8]'>
-																	<ArrowDown className='h-4 w-4' />
+																	className='flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-[#1b1d22] text-[#9aa0a8]'>
+																	<ArrowDown className='h-3.5 w-3.5 sm:h-4 sm:w-4' />
 																</button>
 																<button
 																	type='button'
 																	onClick={() => removeRecipe(safeFocusedDayIndex, categoryType, recipeIndex)}
-																	className='rounded-full border border-white/10 bg-[#1b1d22] p-2 text-[#f4a8bf]'>
-																	<X className='h-4 w-4' />
+																	className='flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-[#1b1d22] text-[#f4a8bf]'>
+																	<X className='h-3.5 w-3.5 sm:h-4 sm:w-4' />
 																</button>
 															</div>
 														</div>
@@ -709,7 +711,7 @@ export function CreatePlanPage() {
 						</div>
 
 						{saveError && (
-							<div className='rounded-3xl border border-[#f4a8bf]/30 bg-[#2d2a2c] px-4 py-3 text-lg text-[#ffd1de]'>
+							<div className='rounded-2xl border border-[#f4a8bf]/30 bg-[#2d2a2c] px-4 py-3 text-sm text-[#ffd1de] sm:text-base'>
 								{saveError}
 							</div>
 						)}
@@ -719,7 +721,7 @@ export function CreatePlanPage() {
 								type='button'
 								disabled={isSaving}
 								onClick={onSave}
-								className='h-16 w-full rounded-full bg-[#66cf63] text-2xl font-extrabold text-[#062510] hover:bg-[#73de70] disabled:bg-[#3a3d42] disabled:text-[#8d939b]'>
+								className='h-12 w-full rounded-full bg-[#66cf63] text-base font-extrabold text-[#062510] hover:bg-[#73de70] disabled:bg-[#3a3d42] disabled:text-[#8d939b] sm:h-14 sm:text-lg'>
 								{isSaving ? (
 									<>
 										<Loader2 className='mr-2 h-5 w-5 animate-spin' />
@@ -735,7 +737,7 @@ export function CreatePlanPage() {
 								type='button'
 								variant='ghost'
 								onClick={() => void navigate({ to: '/plans' })}
-								className='w-full rounded-full border border-white/10 text-[#bfc4cd] hover:bg-white/10 hover:text-white'>
+								className='h-11 w-full rounded-full border border-white/10 text-sm text-[#bfc4cd] hover:bg-white/10 hover:text-white'>
 								Cancel
 							</Button>
 						</div>
@@ -749,28 +751,30 @@ export function CreatePlanPage() {
 				}`}
 				aria-hidden={!modalOpen}>
 				<div className='absolute inset-0 bg-black/70 backdrop-blur-sm' onClick={closeModal} />
-				<div className='absolute inset-x-3 bottom-3 top-[20%] rounded-[2.2rem] border border-white/10 bg-[#1a1b20] p-4 shadow-[0_20px_60px_rgba(0,0,0,0.65)]'>
-					<div className='flex h-full flex-col'>
-						<div className='mb-4 flex items-center justify-between'>
-							<h3 className='text-5xl font-extrabold text-white'>Add Recipes</h3>
-							<button
-								type='button'
-								onClick={closeModal}
-								className='flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-[#2f3237] text-[#d6d9df]'>
-								<X className='h-6 w-6' />
-							</button>
+				<div className='absolute inset-x-0 bottom-0 max-h-[92dvh] rounded-t-[1.6rem] border border-white/10 bg-[#1a1b20] p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_20px_60px_rgba(0,0,0,0.65)] sm:inset-x-3 sm:bottom-3 sm:top-[10%] sm:max-h-none sm:rounded-[2.2rem] sm:p-4'>
+					<div className='flex h-full flex-col overflow-hidden'>
+						<div className='sticky top-0 z-10 -mx-3 border-b border-white/10 bg-[#1a1b20]/95 px-3 pb-3 pt-1 backdrop-blur sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pb-4 sm:pt-0'>
+							<div className='mb-3 flex items-center justify-between'>
+								<h3 className='text-[1.75rem] font-extrabold text-white sm:text-[2rem]'>Add Recipes</h3>
+								<button
+									type='button'
+									onClick={closeModal}
+									className='flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[#2f3237] text-[#d6d9df]'>
+									<X className='h-5 w-5' />
+								</button>
+							</div>
+
+							<div className='rounded-2xl border border-white/10 bg-black/40 px-3 py-2.5 sm:rounded-3xl sm:px-4 sm:py-3'>
+								<Input
+									value={recipeSearch}
+									onChange={(event) => setRecipeSearch(event.target.value)}
+									placeholder='Search your kitchen...'
+									className='h-auto border-0 bg-transparent px-0 text-sm text-white placeholder:text-[#6f747c] sm:text-base'
+								/>
+							</div>
 						</div>
 
-						<div className='mb-4 rounded-3xl border border-white/10 bg-black/40 px-4 py-3'>
-							<Input
-								value={recipeSearch}
-								onChange={(event) => setRecipeSearch(event.target.value)}
-								placeholder='Search your kitchen...'
-								className='h-auto border-0 bg-transparent px-0 text-2xl text-white placeholder:text-[#6f747c]'
-							/>
-						</div>
-
-						<div className='min-h-0 flex-1 overflow-y-auto rounded-[1.8rem] border border-white/10 bg-black/25 p-3'>
+						<div className='min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-black/25 p-2.5 sm:rounded-[1.8rem] sm:p-3'>
 							{recipeSearchQuery.isLoading ? (
 								<div className='flex items-center gap-2 px-2 py-3 text-[#9ca2ab]'>
 									<Loader2 className='h-4 w-4 animate-spin' />
@@ -779,7 +783,7 @@ export function CreatePlanPage() {
 							) : recipesForModal.length === 0 ? (
 								<p className='px-2 py-4 text-[#7d828a]'>No recipes found.</p>
 							) : (
-								<div className='space-y-3'>
+								<div className='space-y-2.5 sm:space-y-3'>
 									{recipesForModal.map((recipe) => {
 										const selected = selectedRecipeIds.includes(recipe.id);
 										return (
@@ -787,23 +791,23 @@ export function CreatePlanPage() {
 												key={recipe.id}
 												type='button'
 												onClick={() => toggleRecipeSelection(recipe.id)}
-												className={`flex w-full items-center gap-3 rounded-[1.8rem] border p-3 text-left transition ${
+												className={`flex w-full items-center gap-2 rounded-2xl border p-2.5 text-left transition sm:gap-3 sm:rounded-[1.8rem] sm:p-3 ${
 													selected
 														? 'border-[#6fdb68]/70 bg-[#262d26]'
 														: 'border-white/10 bg-[#1f2127]'
 												}`}>
-												<div className='h-14 w-14 overflow-hidden rounded-full bg-black/40'>
+												<div className='h-12 w-12 shrink-0 overflow-hidden rounded-full bg-black/40 sm:h-14 sm:w-14'>
 													{recipe.imageUrl ? (
 														<img src={recipe.imageUrl} alt={recipe.title} className='h-full w-full object-cover' />
 													) : (
-														<div className='flex h-full w-full items-center justify-center text-xl font-bold text-[#7e838b]'>
+														<div className='flex h-full w-full items-center justify-center text-base font-bold text-[#7e838b] sm:text-lg'>
 															{recipe.title.slice(0, 1)}
 														</div>
 													)}
 												</div>
 												<div className='min-w-0 flex-1'>
-													<p className='truncate text-3xl font-bold text-white'>{recipe.title}</p>
-													<p className='truncate text-sm uppercase tracking-[0.22em] text-[#7ce485]'>
+													<p className='line-clamp-1 text-base font-bold text-white sm:text-lg'>{recipe.title}</p>
+													<p className='truncate text-[0.68rem] uppercase tracking-[0.16em] text-[#7ce485] sm:text-xs sm:tracking-[0.22em]'>
 														{recipe.authorName}
 													</p>
 												</div>
@@ -822,14 +826,16 @@ export function CreatePlanPage() {
 							)}
 						</div>
 
-						<Button
-							type='button'
-							disabled={selectedRecipeIds.length === 0}
-							onClick={addSelectedRecipes}
-							className='mt-4 h-16 rounded-full bg-[#66cf63] text-2xl font-extrabold text-[#062510] hover:bg-[#73de70] disabled:bg-[#3a3d42] disabled:text-[#8d939b]'>
-							Add Selected ({selectedRecipeIds.length})
-							<CirclePlus className='ml-2 h-5 w-5' />
-						</Button>
+						<div className='sticky bottom-0 z-10 mt-3 -mx-3 border-t border-white/10 bg-[#1a1b20]/95 px-3 pt-3 backdrop-blur sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pt-4'>
+							<Button
+								type='button'
+								disabled={selectedRecipeIds.length === 0}
+								onClick={addSelectedRecipes}
+								className='h-12 w-full rounded-full bg-[#66cf63] text-base font-extrabold text-[#062510] hover:bg-[#73de70] disabled:bg-[#3a3d42] disabled:text-[#8d939b] sm:h-14 sm:text-lg'>
+								Add Selected ({selectedRecipeIds.length})
+								<CirclePlus className='ml-2 h-5 w-5' />
+							</Button>
+						</div>
 					</div>
 				</div>
 			</div>

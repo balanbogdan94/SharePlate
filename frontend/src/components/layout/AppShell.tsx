@@ -79,25 +79,6 @@ export function AppShell() {
 	};
 
 	const handleBack = () => {
-		if ('startViewTransition' in document) {
-			document.documentElement.dataset.navDirection = 'back';
-			(
-				document as Document & {
-					startViewTransition: (callback: () => void | Promise<void>) => {
-						finished: Promise<void>;
-					};
-				}
-			).startViewTransition(() => {
-				if (canGoBack) {
-					router.history.back();
-					return;
-				}
-
-				void navigate({ to: '/recipes' });
-			});
-			return;
-		}
-
 		if (canGoBack) {
 			router.history.back();
 			return;

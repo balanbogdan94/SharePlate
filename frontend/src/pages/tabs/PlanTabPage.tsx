@@ -140,19 +140,23 @@ export function PlanTabPage() {
 	const showNoPlansState = plans.length === 0 && !plansQuery.isLoading && !plansQuery.isError;
 
 	return (
-		<section className='relative overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_top,_rgba(38,52,84,0.26),_rgba(8,10,14,1)_45%)] p-5 pb-28 text-[#f5f5f5]'>
-			<div className='absolute -left-10 top-24 h-52 w-52 rounded-full bg-[#6fdb68]/10 blur-3xl' />
-			<div className='relative space-y-5'>
+		<section className='relative overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_top,_rgba(38,52,84,0.26),_rgba(8,10,14,1)_45%)] p-3 pb-24 text-[#f5f5f5] sm:rounded-[2rem] sm:p-5 sm:pb-28'>
+			<div className='absolute -left-10 top-20 h-40 w-40 rounded-full bg-[#6fdb68]/10 blur-3xl sm:top-24 sm:h-52 sm:w-52' />
+			<div className='relative space-y-4 sm:space-y-5'>
 				<div className='space-y-1'>
-					<p className='text-xs font-semibold uppercase tracking-[0.28em] text-[#9cc7ff]'>Weekly Journey</p>
-					<h1 className='text-[3.2rem] font-extrabold leading-none tracking-tight text-white'>Meal Plans</h1>
+					<p className='text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-[#9cc7ff] sm:text-xs sm:tracking-[0.28em]'>
+						Weekly Journey
+					</p>
+					<h1 className='text-[2rem] font-extrabold leading-none tracking-tight text-white sm:text-[2.8rem]'>
+						Meal Plans
+					</h1>
 				</div>
 
 				<div className='grid grid-cols-2 rounded-full border border-white/10 bg-[#1d2025] p-1'>
 					<button
 						type='button'
 						onClick={() => setSegment('current')}
-						className={`rounded-full px-4 py-3 text-lg font-semibold transition ${
+						className={`min-h-11 rounded-full px-3 py-2 text-sm font-semibold transition sm:px-4 sm:py-3 sm:text-base ${
 							segment === 'current'
 								? 'bg-[#2b2f35] text-[#7ce485]'
 								: 'text-[#808791]'
@@ -162,7 +166,7 @@ export function PlanTabPage() {
 					<button
 						type='button'
 						onClick={() => setSegment('other')}
-						className={`rounded-full px-4 py-3 text-lg font-semibold transition ${
+						className={`min-h-11 rounded-full px-3 py-2 text-sm font-semibold transition sm:px-4 sm:py-3 sm:text-base ${
 							segment === 'other'
 								? 'bg-[#2b2f35] text-[#7ce485]'
 								: 'text-[#808791]'
@@ -179,34 +183,38 @@ export function PlanTabPage() {
 				)}
 
 				{showNoPlansState && (
-					<div className='space-y-8 rounded-[2.3rem] border border-white/10 bg-[#14161c]/80 p-5'>
-						<div className='mx-auto flex h-36 w-36 items-center justify-center rounded-[2.3rem] border border-white/10 bg-[#1d2026] shadow-[0_14px_40px_rgba(0,0,0,0.45)]'>
-							<span className='text-[3rem]'>🍽️</span>
+					<div className='space-y-5 rounded-2xl border border-white/10 bg-[#14161c]/80 p-4 sm:space-y-8 sm:rounded-[2.3rem] sm:p-5'>
+						<div className='mx-auto flex h-24 w-24 items-center justify-center rounded-2xl border border-white/10 bg-[#1d2026] shadow-[0_14px_40px_rgba(0,0,0,0.45)] sm:h-32 sm:w-32 sm:rounded-[2.3rem]'>
+							<span className='text-[2.2rem] sm:text-[2.8rem]'>🍽️</span>
 						</div>
 						<div className='text-center'>
-							<p className='text-xs font-semibold uppercase tracking-[0.3em] text-[#7ce485]'>Kitchen Status</p>
-							<h2 className='mt-2 text-5xl font-extrabold text-white'>No plans yet</h2>
-							<p className='mt-3 text-2xl leading-relaxed text-[#afb5be]'>
+							<p className='text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-[#7ce485] sm:text-xs sm:tracking-[0.3em]'>
+								Kitchen Status
+							</p>
+							<h2 className='mt-2 text-[1.75rem] font-extrabold leading-tight text-white sm:text-5xl'>
+								No plans yet
+							</h2>
+							<p className='mt-2 text-sm leading-relaxed text-[#afb5be] sm:mt-3 sm:text-lg'>
 								Start your culinary journey by creating a shared household meal plan.
 							</p>
 						</div>
 						<Button
 							type='button'
 							onClick={() => void navigate({ to: '/plans/create-plan' })}
-							className='h-16 w-full rounded-full bg-[#2f3338] text-2xl font-extrabold text-[#7ce485] hover:bg-[#3a3f45]'>
-							<Plus className='mr-2 h-6 w-6' />
+							className='h-12 w-full rounded-full bg-[#2f3338] text-base font-extrabold text-[#7ce485] hover:bg-[#3a3f45] sm:h-14 sm:text-xl'>
+							<Plus className='mr-2 h-5 w-5 sm:h-6 sm:w-6' />
 							Create Plan
 						</Button>
 						<div className='grid gap-3 sm:grid-cols-2'>
-							<div className='rounded-[1.9rem] border border-l-2 border-white/10 border-l-[#9cc7ff] bg-[#1a1c22] p-4'>
-								<Sparkles className='mb-2 h-6 w-6 text-[#9cc7ff]' />
-								<p className='text-xl font-extrabold text-white'>Smart Suggester</p>
-								<p className='mt-1 text-lg text-[#afb5be]'>AI-curated meals based on your pantry.</p>
+							<div className='rounded-2xl border border-l-2 border-white/10 border-l-[#9cc7ff] bg-[#1a1c22] p-3 sm:rounded-[1.9rem] sm:p-4'>
+								<Sparkles className='mb-2 h-5 w-5 text-[#9cc7ff] sm:h-6 sm:w-6' />
+								<p className='text-base font-extrabold text-white sm:text-lg'>Smart Suggester</p>
+								<p className='mt-1 text-sm text-[#afb5be] sm:text-base'>AI-curated meals based on your pantry.</p>
 							</div>
-							<div className='rounded-[1.9rem] border border-l-2 border-white/10 border-l-[#ff9fbc] bg-[#1a1c22] p-4'>
-								<Users className='mb-2 h-6 w-6 text-[#ff9fbc]' />
-								<p className='text-xl font-extrabold text-white'>Family Sync</p>
-								<p className='mt-1 text-lg text-[#afb5be]'>Real-time updates for every member.</p>
+							<div className='rounded-2xl border border-l-2 border-white/10 border-l-[#ff9fbc] bg-[#1a1c22] p-3 sm:rounded-[1.9rem] sm:p-4'>
+								<Users className='mb-2 h-5 w-5 text-[#ff9fbc] sm:h-6 sm:w-6' />
+								<p className='text-base font-extrabold text-white sm:text-lg'>Family Sync</p>
+								<p className='mt-1 text-sm text-[#afb5be] sm:text-base'>Real-time updates for every member.</p>
 							</div>
 						</div>
 					</div>
@@ -220,13 +228,13 @@ export function PlanTabPage() {
 
 				{plans.length > 0 && segment === 'current' && expandedPlanQuery.data && (
 					<div className='space-y-4'>
-						<div className='rounded-[2.2rem] border border-white/10 bg-[#1a1c22] p-4 shadow-[0_18px_46px_rgba(0,0,0,0.5)]'>
-							<div className='mb-3 flex items-start justify-between gap-3'>
+						<div className='rounded-2xl border border-white/10 bg-[#1a1c22] p-3 shadow-[0_18px_46px_rgba(0,0,0,0.5)] sm:rounded-[2.2rem] sm:p-4'>
+							<div className='mb-3 flex items-start justify-between gap-2 sm:gap-3'>
 								<div>
-									<h2 className='text-[2.5rem] font-extrabold text-white'>
+									<h2 className='text-xl font-extrabold text-white sm:text-[2rem]'>
 										{currentPlan ? 'Current Plan' : 'Active Preview'}
 									</h2>
-									<p className='text-2xl font-semibold text-[#9cc7ff]'>
+									<p className='text-sm font-semibold text-[#9cc7ff] sm:text-xl'>
 										{formatDisplayDate(expandedPlanQuery.data.startDate)} -{' '}
 										{formatDisplayDate(expandedPlanQuery.data.endDate)}
 									</p>
@@ -239,50 +247,50 @@ export function PlanTabPage() {
 											params: { planId: expandedPlanQuery.data.id },
 										})
 									}
-									className='flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-[#2f3237] text-[#7ce485]'>
-									<PenLine className='h-5 w-5' />
+									className='flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[#2f3237] text-[#7ce485] sm:h-12 sm:w-12'>
+									<PenLine className='h-4 w-4 sm:h-5 sm:w-5' />
 								</button>
 							</div>
 
-							<div className='space-y-3'>
+							<div className='space-y-2 sm:space-y-3'>
 								{activePlanDays.map((day) => {
 									const isExpanded = activeExpandedDayDate === day.date;
 									return (
 										<div
 											key={day.date}
-											className='rounded-[1.8rem] border border-white/10 bg-[#15181d] p-3'>
+											className='rounded-xl border border-white/10 bg-[#15181d] p-3 sm:rounded-[1.8rem]'>
 											<button
 												type='button'
 												onClick={() =>
 													setExpandedDayDate((current) => (current === day.date ? null : day.date))
 												}
 												className='flex w-full items-center justify-between gap-3 text-left'>
-												<div>
-													<p className='text-3xl font-bold text-white'>
+												<div className='min-w-0'>
+													<p className='line-clamp-1 text-lg font-bold text-white sm:text-2xl'>
 														{new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(
 															new Date(`${day.date}T00:00:00`),
 														)}
 													</p>
-													<p className='text-sm uppercase tracking-[0.2em] text-[#7ce485]'>
+													<p className='text-xs uppercase tracking-[0.16em] text-[#7ce485] sm:text-sm sm:tracking-[0.2em]'>
 														{recipeCountForDay(day.date)} recipes
 													</p>
 												</div>
 												{isExpanded ? (
-													<ChevronUp className='h-5 w-5 text-[#8a9098]' />
+													<ChevronUp className='h-4 w-4 text-[#8a9098] sm:h-5 sm:w-5' />
 												) : (
-													<ChevronDown className='h-5 w-5 text-[#8a9098]' />
+													<ChevronDown className='h-4 w-4 text-[#8a9098] sm:h-5 sm:w-5' />
 												)}
 											</button>
 
 											{isExpanded && (
-												<div className='mt-3 space-y-3'>
+												<div className='mt-2 space-y-2 sm:mt-3 sm:space-y-3'>
 													{CATEGORY_TYPES.map((categoryType) => {
 														const recipes = day.categories[categoryType] ?? [];
 														return (
 															<div
 																key={`${day.date}-${categoryType}`}
-																className={`rounded-[1.5rem] border border-white/10 border-l-2 bg-[#101217] p-3 ${CATEGORY_TINT[categoryType]}`}>
-																<p className='text-xs font-semibold uppercase tracking-[0.22em] text-[#7f858f]'>
+																className={`rounded-xl border border-white/10 border-l-2 bg-[#101217] p-3 sm:rounded-[1.5rem] ${CATEGORY_TINT[categoryType]}`}>
+																<p className='text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#7f858f] sm:text-xs sm:tracking-[0.22em]'>
 																	{categoryType}
 																</p>
 																{recipes.length === 0 ? (
@@ -294,7 +302,7 @@ export function PlanTabPage() {
 																				params: { planId: expandedPlanQuery.data.id },
 																			})
 																		}
-																		className='mt-2 rounded-full border border-white/10 bg-[#2b3034] px-4 py-2 text-lg font-semibold text-[#7ce485]'>
+																		className='mt-2 min-h-11 rounded-full border border-white/10 bg-[#2b3034] px-3 py-2 text-sm font-semibold text-[#7ce485] sm:px-4 sm:text-base'>
 																		+ Add Recipe
 																	</button>
 																) : (
@@ -304,8 +312,8 @@ export function PlanTabPage() {
 																			return (
 																				<div
 																					key={`${recipeId}-${index}`}
-																					className='flex items-center gap-3 rounded-full border border-white/10 bg-[#2c2f35] p-2'>
-																					<div className='h-16 w-16 overflow-hidden rounded-full bg-black/40'>
+																					className='flex items-center gap-2 rounded-2xl border border-white/10 bg-[#2c2f35] p-2 sm:gap-3 sm:rounded-full'>
+																					<div className='h-12 w-12 shrink-0 overflow-hidden rounded-full bg-black/40 sm:h-14 sm:w-14'>
 																						{recipe?.imageUrl ? (
 																							<img
 																								src={recipe.imageUrl}
@@ -313,13 +321,13 @@ export function PlanTabPage() {
 																								className='h-full w-full object-cover'
 																							/>
 																						) : (
-																							<div className='flex h-full w-full items-center justify-center text-lg font-bold text-[#7f848b]'>
+																							<div className='flex h-full w-full items-center justify-center text-sm font-bold text-[#7f848b] sm:text-base'>
 																								{(recipe?.title ?? 'R').slice(0, 1)}
 																							</div>
 																						)}
 																					</div>
-																					<div className='min-w-0'>
-																						<p className='truncate text-2xl font-bold text-white'>
+																					<div className='min-w-0 flex-1'>
+																						<p className='line-clamp-1 text-base font-bold text-white sm:text-lg'>
 																							{recipe?.title ?? recipeId}
 																						</p>
 																					</div>
@@ -359,11 +367,11 @@ export function PlanTabPage() {
 											void navigate({ to: '/plans', search: {} });
 										}
 									}}
-									className='w-full rounded-[1.9rem] border border-white/10 bg-[#1a1c22] p-4 text-left'>
-									<p className='text-3xl font-bold text-white'>
+									className='w-full rounded-2xl border border-white/10 bg-[#1a1c22] p-3 text-left sm:rounded-[1.9rem] sm:p-4'>
+									<p className='text-lg font-bold text-white sm:text-2xl'>
 										{formatDisplayDate(plan.startDate)} - {formatDisplayDate(plan.endDate)}
 									</p>
-									<p className='text-sm uppercase tracking-[0.2em] text-[#7ce485]'>
+									<p className='text-xs uppercase tracking-[0.16em] text-[#7ce485] sm:text-sm sm:tracking-[0.2em]'>
 										{plan.startDate > today ? 'Future Plan' : 'Previous Plan'}
 									</p>
 								</button>
@@ -377,8 +385,8 @@ export function PlanTabPage() {
 				<button
 					type='button'
 					onClick={() => void navigate({ to: '/plans/create-plan' })}
-					className='fixed bottom-32 right-8 flex h-16 w-16 items-center justify-center rounded-full bg-[#6fdb68] text-[#05240f] shadow-[0_18px_30px_rgba(111,219,104,0.35)]'>
-					<Plus className='h-8 w-8' />
+					className='fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#6fdb68] text-[#05240f] shadow-[0_18px_30px_rgba(111,219,104,0.35)] sm:bottom-32 sm:right-8 sm:h-14 sm:w-14'>
+					<Plus className='h-6 w-6 sm:h-7 sm:w-7' />
 				</button>
 			)}
 		</section>
