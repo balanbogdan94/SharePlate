@@ -312,7 +312,24 @@ export function PlanTabPage() {
 																			return (
 																				<div
 																					key={`${recipeId}-${index}`}
-																					className='flex items-center gap-2 rounded-2xl border border-white/10 bg-[#2c2f35] p-2 sm:gap-3 sm:rounded-full'>
+																					role='button'
+																					tabIndex={0}
+																					onClick={() =>
+																						void navigate({
+																							to: '/recipes/$recipeId',
+																							params: { recipeId },
+																						})
+																					}
+																					onKeyDown={(event) => {
+																						if (event.key === 'Enter' || event.key === ' ') {
+																							event.preventDefault();
+																							void navigate({
+																								to: '/recipes/$recipeId',
+																								params: { recipeId },
+																							});
+																						}
+																					}}
+																					className='flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 bg-[#2c2f35] p-2 transition hover:border-white/20 hover:bg-[#353942] sm:gap-3 sm:rounded-full'>
 																					<div className='h-12 w-12 shrink-0 overflow-hidden rounded-full bg-black/40 sm:h-14 sm:w-14'>
 																						{recipe?.imageUrl ? (
 																							<img
