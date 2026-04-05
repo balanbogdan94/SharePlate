@@ -1,7 +1,6 @@
-const DEFAULT_API_BASE = 'http://localhost:5211/api';
+import { env } from '@/lib/env';
 
-export const apiBaseUrl =
-	import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? DEFAULT_API_BASE;
+export const apiBaseUrl = env.apiBaseUrl;
 
 type ApiAuthConfig = {
 	getAccessToken: () => string | null;
@@ -26,10 +25,7 @@ function normalizePath(path: string): string {
 	return path.startsWith('/') ? path : `/${path}`;
 }
 
-export async function apiFetch<T>(
-	path: string,
-	init?: RequestInit,
-): Promise<T> {
+export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 	const normalizedPath = normalizePath(path);
 	const isRefreshRequest = normalizedPath === '/auth/refresh';
 	const isFormData = init?.body instanceof FormData;
