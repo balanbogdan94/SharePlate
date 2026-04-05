@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
+import { useAuth } from '@/auth/AuthContext';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/api';
@@ -13,7 +14,40 @@ function toErrorMessage(error: unknown, fallback: string): string {
 	return fallback;
 }
 
+function getUserIdFromAccessToken(token: string | null): string | null {
+	if (!token) {
+		return null;
+	}
+
+	const parts = token.split('.');
+	if (parts.length < 2) {
+		return null;
+	}
+
+	try {
+		const base64 = parts[1]
+			.replace(/-/g, '+')
+			.replace(/_/g, '/')
+			.padEnd(Math.ceil(parts[1].length / 4) * 4, '=');
+		const payload = JSON.parse(atob(base64)) as {
+			sub?: string;
+			nameid?: string;
+			'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'?: string;
+		};
+
+		return (
+			payload.sub ??
+			payload.nameid ??
+			payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ??
+			null
+		);
+	} catch {
+		return null;
+	}
+}
+
 export function RecipeDetailsPage() {
+	const auth = useAuth();
 	const { recipeId } = useParams({ from: '/app-layout/recipes/$recipeId' });
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
@@ -74,28 +108,34 @@ export function RecipeDetailsPage() {
 	}
 
 	const recipe = recipeQuery.data;
+	const actorUserId = getUserIdFromAccessToken(auth.tokens?.accessToken ?? null);
+	const canManageRecipe =
+		Boolean(actorUserId) &&
+		actorUserId?.toLowerCase() === recipe.authorId.toLowerCase();
 
 	return (
 		<section className='relative mx-auto flex h-full w-full max-w-2xl flex-col overflow-hidden pb-24'>
 			<div className='space-y-4 rounded-3xl border border-stone-200/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm dark:border-stone-700/80 dark:bg-stone-900/70'>
-				<div className='flex flex-wrap items-center justify-end gap-2'>
-					<Button
-						asChild
-						variant='outline'
-						className='h-11 min-w-24 rounded-full px-4 text-sm font-semibold'>
-						<Link to='/recipes/$recipeId/edit' params={{ recipeId }}>
-							Edit
-						</Link>
-					</Button>
-					<Button
-						type='button'
-						variant='destructive'
-						onClick={onDeleteRecipe}
-						disabled={deleteRecipeMutation.isPending}
-						className='h-11 min-w-24 rounded-full px-4 text-sm font-semibold'>
-						{deleteRecipeMutation.isPending ? 'Deleting...' : 'Delete'}
-					</Button>
-				</div>
+				{canManageRecipe && (
+					<div className='flex flex-wrap items-center justify-end gap-2'>
+						<Button
+							asChild
+							variant='outline'
+							className='h-11 min-w-24 rounded-full px-4 text-sm font-semibold'>
+							<Link to='/recipes/$recipeId/edit' params={{ recipeId }}>
+								Edit
+							</Link>
+						</Button>
+						<Button
+							type='button'
+							variant='destructive'
+							onClick={onDeleteRecipe}
+							disabled={deleteRecipeMutation.isPending}
+							className='h-11 min-w-24 rounded-full px-4 text-sm font-semibold'>
+							{deleteRecipeMutation.isPending ? 'Deleting...' : 'Delete'}
+						</Button>
+					</div>
+				)}
 
 				{deleteRecipeMutation.isError && (
 					<Alert variant='destructive'>
