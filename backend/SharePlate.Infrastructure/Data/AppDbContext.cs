@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<House> Houses => Set<House>();
     public DbSet<HouseMember> HouseMembers => Set<HouseMember>();
+    public DbSet<HouseJoinRequest> HouseJoinRequests => Set<HouseJoinRequest>();
     public DbSet<Unit> Units => Set<Unit>();
     public DbSet<Ingredient> Ingredients => Set<Ingredient>();
     public DbSet<Recipe> Recipes => Set<Recipe>();
@@ -45,6 +46,36 @@ public class AppDbContext : DbContext
                 .WithOne(rt => rt.User)
                 .HasForeignKey(rt => rt.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasMany(u => u.RequestedHouseJoinRequests)
+                .WithOne(r => r.Requester)
+                .HasForeignKey(r => r.RequesterId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasMany(u => u.ReviewedHouseJoinRequests)
+                .WithOne(r => r.ReviewedBy)
+                .HasForeignKey(r => r.ReviewedById)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<House>(b =>
+        {
+            b.HasIndex(h => h.Code).IsUnique();
+        });
+
+        modelBuilder.Entity<HouseMember>(b =>
+        {
+            b.HasIndex(m => new { m.HouseId, m.UserId }).IsUnique();
+            b.HasIndex(m => m.UserId).IsUnique();
+        });
+
+        modelBuilder.Entity<HouseJoinRequest>(b =>
+        {
+            b.HasIndex(r => r.RequesterId)
+                .IsUnique()
+                .HasFilter("\"Status\" = 1");
+
+            b.HasIndex(r => new { r.HouseId, r.Status });
         });
 
         modelBuilder.Entity<RefreshToken>(b =>

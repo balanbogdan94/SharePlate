@@ -43,8 +43,22 @@ public sealed class House : BaseEntity
     public Guid OwnerId { get; private set; }
 
     public ICollection<HouseMember> HouseMembers { get; private set; } = new List<HouseMember>();
+    public ICollection<HouseJoinRequest> JoinRequests { get; private set; } = new List<HouseJoinRequest>();
     public ICollection<MealPlan> MealPlans { get; private set; } = new List<MealPlan>();
     public ICollection<ShoppingItem> ShoppingItems { get; private set; } = new List<ShoppingItem>();
+
+    public void Rename(string name)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        Name = name;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void MarkAsShared()
+    {
+        IsPersonal = false;
+        UpdatedAt = DateTime.UtcNow;
+    }
 
     public void AddMember(Guid userId)
     {

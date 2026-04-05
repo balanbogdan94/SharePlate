@@ -18,18 +18,27 @@ public static class RecipeEndpoints
         // GET /api/recipes?search=...
         group.MapGet("/", async (string? search, string? name, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
-            if (!principal.TryGetUserId(out _))
+            if (!principal.TryGetUserId(out var actorUserId))
                 return Results.Unauthorized();
 
-            var query = !string.IsNullOrWhiteSpace(search) ? search : name;
-            var recipes = string.IsNullOrWhiteSpace(query)
-                ? await uow.Recipes.GetAllWithAuthorAsync(ct)
-                : await uow.Recipes.SearchByNameAsync(query, ct);
+            var membership = await uow.HouseMembers.GetCurrentForUserAsync(actorUserId, ct);
+            if (membership is null)
+                return Results.NotFound("You need to join or create a house before viewing shared recipes.");
 
-            return Results.Ok(recipes.Select(ToResponse).ToList());
+            var members = await uow.HouseMembers.GetByHouseAsync(membership.HouseId, ct);
+            var recipes = await uow.Recipes.GetByAuthorIdsAsync(members.Select(member => member.UserId), ct);
+
+            var query = !string.IsNullOrWhiteSpace(search) ? search : name;
+            var filteredRecipes = string.IsNullOrWhiteSpace(query)
+                ? recipes
+                : recipes.Where(recipe =>
+                    recipe.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                    (recipe.Author?.Name ?? string.Empty).Contains(query, StringComparison.OrdinalIgnoreCase));
+
+            return Results.Ok(filteredRecipes.Select(ToResponse).ToList());
         })
         .WithName("SearchRecipes")
-        .WithSummary("Search all recipes, or list all if no query given");
+        .WithSummary("Search shared house recipes, or list all if no query given");
 
 
         // GET /api/recipes/my
@@ -78,14 +87,28 @@ public static class RecipeEndpoints
         // GET /api/recipes/{id}
         group.MapGet("/{id:guid}", async (Guid id, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
-            if (!principal.TryGetUserId(out _))
+            if (!principal.TryGetUserId(out var actorUserId))
                 return Results.Unauthorized();
 
             var recipe = await uow.Recipes.GetWithIngredientsAsync(id, ct);
-            return recipe is null ? Results.NotFound() : Results.Ok(ToDetailResponse(recipe));
+            if (recipe is null)
+                return Results.NotFound();
+
+            if (recipe.AuthorId == actorUserId)
+                return Results.Ok(ToDetailResponse(recipe));
+
+            var actorMembership = await uow.HouseMembers.GetCurrentForUserAsync(actorUserId, ct);
+            if (actorMembership is null)
+                return Results.Forbid();
+
+            var authorMembership = await uow.HouseMembers.GetCurrentForUserAsync(recipe.AuthorId, ct);
+            if (authorMembership is null || authorMembership.HouseId != actorMembership.HouseId)
+                return Results.Forbid();
+
+            return Results.Ok(ToDetailResponse(recipe));
         })
         .WithName("GetRecipeById")
-        .WithSummary("Get a recipe with its ingredients");
+        .WithSummary("Get a recipe with its ingredients (author or same-house members)");
 
 
 

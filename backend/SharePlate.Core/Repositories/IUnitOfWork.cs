@@ -6,6 +6,7 @@ public interface IUnitOfWork : IAsyncDisposable
     IRefreshTokenRepository RefreshTokens { get; }
     IHouseRepository Houses { get; }
     IHouseMemberRepository HouseMembers { get; }
+    IHouseJoinRequestRepository HouseJoinRequests { get; }
     IUnitRepository Units { get; }
     IIngredientRepository Ingredients { get; }
     IRecipeRepository Recipes { get; }

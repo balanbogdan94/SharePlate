@@ -40,6 +40,8 @@ public sealed class User : BaseEntity
     public DateTime? PasswordUpdatedAt { get; private set; }
 
     public ICollection<HouseMember> HouseMembers { get; private set; } = new List<HouseMember>();
+    public ICollection<HouseJoinRequest> RequestedHouseJoinRequests { get; private set; } = new List<HouseJoinRequest>();
+    public ICollection<HouseJoinRequest> ReviewedHouseJoinRequests { get; private set; } = new List<HouseJoinRequest>();
     public ICollection<RefreshToken> RefreshTokens { get; private set; } = new List<RefreshToken>();
 
     public void UpdateName(string name)

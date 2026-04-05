@@ -39,10 +39,8 @@ public class AuthService : IAuthService
 
         var passwordHash = _passwordHashingService.HashPassword(email, password);
         var user = User.Create(name, email, passwordHash.Hash, passwordHash.Algorithm);
-        var personalHouse = House.CreatePersonal(name, user.Id);
 
         await _uow.Users.AddAsync(user, ct);
-        await _uow.Houses.AddAsync(personalHouse, ct);
         await _uow.SaveChangesAsync(ct);
 
         return RegisterUserResult.Success(user.Id);
