@@ -14,7 +14,7 @@ import { RecipeDetailsPage } from '@/pages/RecipeDetailsPage';
 import { CreatePlanPage } from '@/pages/CreatePlanPage';
 import { HomeTabPage } from '@/pages/tabs/HomeTabPage';
 import { PlanTabPage } from '@/pages/tabs/PlanTabPage';
-import { ThirdTabPage } from '@/pages/tabs/ThirdTabPage';
+import { HouseTabPage } from '@/pages/tabs/HouseTabPage';
 
 type RouterContext = {
 	auth: AuthContextValue;
@@ -102,8 +102,8 @@ const editPlanRoute = createRoute({
 
 const thirdTabRoute = createRoute({
 	getParentRoute: () => appLayoutRoute,
-	path: '/tab-3',
-	component: ThirdTabPage,
+	path: '/house',
+	component: HouseTabPage,
 });
 
 const loginRoute = createRoute({

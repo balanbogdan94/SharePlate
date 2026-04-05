@@ -9,10 +9,10 @@ import {
 } from '@tanstack/react-router';
 import {
 	ChevronLeft,
-	House,
-	Layers3,
-	Settings2,
+	CalendarDays,
 	UserCircle2,
+	Users,
+	UtensilsCrossed,
 } from 'lucide-react';
 import { useAuth } from '@/auth/AuthContext';
 import { useI18n } from '@/i18n/I18nContext';
@@ -25,9 +25,9 @@ import {
 } from '@/settings/UserSettingsContext';
 
 type TabItem = {
-	to: '/recipes' | '/plans' | '/tab-3';
+	to: '/recipes' | '/plans' | '/house';
 	label: string;
-	icon: typeof House;
+	icon: typeof UtensilsCrossed;
 };
 
 export function AppShell() {
@@ -42,9 +42,9 @@ export function AppShell() {
 	const menuRef = useRef<HTMLDivElement | null>(null);
 
 	const tabs: TabItem[] = [
-		{ to: '/recipes', label: t('tabs.home'), icon: House },
-		{ to: '/plans', label: t('tabs.plan'), icon: Layers3 },
-		{ to: '/tab-3', label: t('tabs.more'), icon: Settings2 },
+		{ to: '/recipes', label: t('tabs.home'), icon: UtensilsCrossed },
+		{ to: '/plans', label: t('tabs.plan'), icon: CalendarDays },
+		{ to: '/house', label: t('tabs.house'), icon: Users },
 	];
 	const isMainRoute = tabs.some((tab) => tab.to === location.pathname);
 
