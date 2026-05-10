@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import {
@@ -12,7 +12,8 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/api';
-import type { RecipeSummary } from '@/pages/tabs/home/types';
+import { PlanRemindersExport } from '@/pages/tabs/plan/PlanRemindersExport';
+import type { RecipeDetail, RecipeSummary } from '@/pages/tabs/home/types';
 import {
 	CATEGORY_TYPES,
 	type CategoryType,
@@ -20,6 +21,11 @@ import {
 	type PlanDetails,
 	type PlanListItem,
 } from '@/pages/tabs/plan/types';
+import {
+	buildReminderExportPayload,
+	buildShortcutUrl,
+	extractRecipeIdsFromPlan,
+} from '@/pages/tabs/plan/remindersExport';
 
 function formatDateInput(date: Date): string {
 	const year = date.getFullYear();
@@ -57,6 +63,13 @@ function isFuturePlan(plan: PlanListItem, date: string): boolean {
 	return plan.startDate > date;
 }
 
+function supportsAppleShortcutsBridge(): boolean {
+	if (typeof navigator === 'undefined') {
+		return false;
+	}
+	return /iPad|iPhone|iPod|Macintosh/iu.test(navigator.userAgent);
+}
+
 type SearchParams = {
 	expand?: string;
 };
@@ -78,6 +91,9 @@ export function PlanTabPage() {
 	const [expandedDayDate, setExpandedDayDate] = useState<string | null>(null);
 	const [manualExpandedOtherPlanId, setManualExpandedOtherPlanId] = useState<string | null>(null);
 	const [expandedOtherDayDate, setExpandedOtherDayDate] = useState<string | null>(null);
+	const [exportingPlanId, setExportingPlanId] = useState<string | null>(null);
+	const [exportErrorByPlanId, setExportErrorByPlanId] = useState<Record<string, string | null>>({});
+	const [fallbackTextByPlanId, setFallbackTextByPlanId] = useState<Record<string, string>>({});
 
 	const plansQuery = useQuery({
 		queryKey: ['plans'],
@@ -160,6 +176,50 @@ export function PlanTabPage() {
 	};
 	const recipeCountForPlanDay = (day: PlanDay): number =>
 		CATEGORY_TYPES.reduce((count, categoryType) => count + day.categories[categoryType].length, 0);
+	const exportPlanIngredients = useCallback(async (plan: PlanDetails) => {
+		setExportErrorByPlanId((current) => ({ ...current, [plan.id]: null }));
+		setFallbackTextByPlanId((current) => {
+			if (!current[plan.id]) {
+				return current;
+			}
+			const next = { ...current };
+			delete next[plan.id];
+			return next;
+		});
+		setExportingPlanId(plan.id);
+		try {
+			const recipeIds = extractRecipeIdsFromPlan(plan);
+			if (recipeIds.length === 0) {
+				throw new Error('No recipes found in this plan.');
+			}
+			const settledRecipes = await Promise.allSettled(
+				recipeIds.map((recipeId) => apiFetch<RecipeDetail>(`/api/recipes/${recipeId}`)),
+			);
+			const failedFetches = settledRecipes.filter((result) => result.status === 'rejected');
+			if (failedFetches.length > 0) {
+				throw new Error('Could not fetch all recipe ingredients.');
+			}
+			const recipes = settledRecipes
+				.filter((result): result is PromiseFulfilledResult<RecipeDetail> => result.status === 'fulfilled')
+				.map((result) => result.value);
+			const payload = buildReminderExportPayload(recipes);
+			if (!payload.text.trim()) {
+				throw new Error('No ingredients found for this plan.');
+			}
+			if (supportsAppleShortcutsBridge()) {
+				window.open(buildShortcutUrl(payload.text), '_self');
+				return;
+			}
+			setFallbackTextByPlanId((current) => ({ ...current, [plan.id]: payload.text }));
+		} catch (error) {
+			setExportErrorByPlanId((current) => ({
+				...current,
+				[plan.id]: toErrorMessage(error, 'Could not export ingredients to reminders.'),
+			}));
+		} finally {
+			setExportingPlanId((current) => (current === plan.id ? null : current));
+		}
+	}, []);
 
 	const showNoPlansState = plans.length === 0 && !plansQuery.isLoading && !plansQuery.isError;
 	const showNoActivePlanState =
@@ -289,17 +349,26 @@ export function PlanTabPage() {
 										{formatDisplayDate(expandedPlanQuery.data.endDate)}
 									</p>
 								</div>
-								<button
-									type='button'
-									onClick={() =>
-										void navigate({
-											to: '/plans/$planId/edit',
-											params: { planId: expandedPlanQuery.data.id },
-										})
-									}
-									className='flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[#2f3237] text-[#7ce485] sm:h-12 sm:w-12'>
-									<PenLine className='h-4 w-4 sm:h-5 sm:w-5' />
-								</button>
+								<div className='flex flex-col items-end gap-2'>
+									<PlanRemindersExport
+										planId={expandedPlanQuery.data.id}
+										onExport={() => exportPlanIngredients(expandedPlanQuery.data)}
+										isExporting={exportingPlanId === expandedPlanQuery.data.id}
+										errorMessage={exportErrorByPlanId[expandedPlanQuery.data.id] ?? null}
+										fallbackText={fallbackTextByPlanId[expandedPlanQuery.data.id] ?? null}
+									/>
+									<button
+										type='button'
+										onClick={() =>
+											void navigate({
+												to: '/plans/$planId/edit',
+												params: { planId: expandedPlanQuery.data.id },
+											})
+										}
+										className='flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[#2f3237] text-[#7ce485] sm:h-12 sm:w-12'>
+										<PenLine className='h-4 w-4 sm:h-5 sm:w-5' />
+									</button>
+								</div>
 							</div>
 
 							<div className='space-y-2 sm:space-y-3'>
@@ -479,6 +548,13 @@ export function PlanTabPage() {
 											)}
 											{expandedOtherPlanQuery.data && (
 												<div className='space-y-2 sm:space-y-3'>
+													<PlanRemindersExport
+														planId={expandedOtherPlanQuery.data.id}
+														onExport={() => exportPlanIngredients(expandedOtherPlanQuery.data)}
+														isExporting={exportingPlanId === expandedOtherPlanQuery.data.id}
+														errorMessage={exportErrorByPlanId[expandedOtherPlanQuery.data.id] ?? null}
+														fallbackText={fallbackTextByPlanId[expandedOtherPlanQuery.data.id] ?? null}
+													/>
 													{isFuturePlan(plan, today) && (
 														<div className='flex justify-end'>
 															<button
