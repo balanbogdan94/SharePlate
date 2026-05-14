@@ -25,8 +25,8 @@ export function HomeTabPage() {
 	const openRecipeId = searchParams.expand ?? null;
 
 	const recipesQuery = useQuery({
-		queryKey: ['recipes', 'my'],
-		queryFn: () => apiFetch<RecipeSummary[]>('/api/recipes/my'),
+		queryKey: ['recipes', 'house'],
+		queryFn: () => apiFetch<RecipeSummary[]>('/api/recipes/house'),
 	});
 
 	const openRecipeQuery = useQuery({
@@ -121,7 +121,7 @@ export function HomeTabPage() {
 				!recipesQuery.isError &&
 				recipesQuery.data?.length === 0 && (
 					<p className='rounded-xl border border-stone-200 bg-white p-4 text-sm text-stone-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300'>
-						You have no recipes yet. Tap + to add one.
+						No house recipes yet. Tap + to add one.
 					</p>
 				)}
 
