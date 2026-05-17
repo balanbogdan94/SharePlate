@@ -1,10 +1,4 @@
-export type UnitType =
-	| 'Kilogram'
-	| 'Gram'
-	| 'Liter'
-	| 'Milliliter'
-	| 'Piece'
-	| 'Portion';
+export type UnitType = 'Kilogram' | 'Gram' | 'Liter' | 'Milliliter' | 'Piece' | 'Portion';
 
 export type Unit = {
 	id: UnitType;
@@ -40,6 +34,7 @@ export type IngredientSearchItem = {
 
 export type RecipeDetail = RecipeSummary & {
 	ingredients: RecipeIngredient[];
+	categories?: string[];
 };
 
 export type CreateRecipePayload = {
