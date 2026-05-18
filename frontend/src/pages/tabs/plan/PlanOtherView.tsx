@@ -50,7 +50,7 @@ function ExpandedPlanContent({ plan, details, detailsLoading, detailsError, expa
 						)}
 					</div>
 					{details.days.map((day) => (
-						<PlanDaySection key={day.date} day={day} isExpanded={activeDayDate === day.date} onToggle={() => onToggleDay(day.date)} recipeMap={recipeMap} canAddRecipe={isFuturePlan(plan, today)} planId={plan.id} />
+						<PlanDaySection key={day.date} day={day} isExpanded={activeDayDate === day.date} onToggle={() => onToggleDay(day.date)} recipeMap={recipeMap} planId={plan.id} />
 					))}
 				</>
 			)}

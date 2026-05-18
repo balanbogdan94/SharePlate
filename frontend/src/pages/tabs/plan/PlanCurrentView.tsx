@@ -62,7 +62,6 @@ export function PlanCurrentView({
 						isExpanded={activeExpandedDayDate === day.date}
 						onToggle={() => onToggleDay(day.date)}
 						recipeMap={recipeMap}
-						canAddRecipe={true}
 						planId={plan.id}
 					/>
 				))}
