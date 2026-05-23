@@ -123,11 +123,11 @@ function toErrorMessage(error: unknown, fallback: string): string {
 }
 
 const CATEGORY_UI: Record<CategoryType, { label: string; plusClass: string }> = {
-	Unnamed: { label: 'Recipes', plusClass: 'text-[#8df27b]' },
-	Morning: { label: 'Morning', plusClass: 'text-[#99c3ff]' },
-	Breakfast: { label: 'Breakfast', plusClass: 'text-[#8df27b]' },
-	Lunch: { label: 'Lunch', plusClass: 'text-[#ff9fbc]' },
-	Dinner: { label: 'Dinner', plusClass: 'text-[#5aa9ff]' },
+	Unnamed: { label: 'Recipes', plusClass: 'text-[#7ce485]' },
+	Morning: { label: 'Morning', plusClass: 'text-[#7ce485]' },
+	Breakfast: { label: 'Breakfast', plusClass: 'text-[#7ce485]' },
+	Lunch: { label: 'Lunch', plusClass: 'text-[#7ce485]' },
+	Dinner: { label: 'Dinner', plusClass: 'text-[#7ce485]' },
 };
 
 export function CreatePlanPage() {
@@ -544,7 +544,7 @@ export function CreatePlanPage() {
 										key={day.date}
 										type="button"
 										onClick={() => setFocusedDayIndex(dayIndex)}
-										className={`min-w-20 rounded-full border px-3 py-2 text-left transition-all duration-200 sm:min-w-24 sm:py-3 ${
+										className={`min-w-20 rounded-full border px-3 py-2 text-center transition-all duration-200 sm:min-w-24 sm:py-3 ${
 											active
 												? 'border-[#6bd56b] bg-[#1d2221] shadow-[0_10px_24px_rgba(108,214,107,0.24)]'
 												: 'border-white/10 bg-[#1a1d23]'
@@ -563,7 +563,7 @@ export function CreatePlanPage() {
 							})}
 						</div>
 
-						<div className="space-y-1">
+						<div className="space-y-0.5">
 							{CATEGORY_TYPES.filter((cat) => cat !== 'Morning').map((categoryType) => {
 								const config = CATEGORY_UI[categoryType];
 								const recipeIds = focusedDay.categories[categoryType] ?? [];
@@ -575,9 +575,9 @@ export function CreatePlanPage() {
 											onClick={() => openRecipeModal(safeFocusedDayIndex, categoryType)}
 											className="flex items-center gap-2 py-2.5"
 										>
-											<CirclePlus className={`h-5 w-5 ${config.plusClass}`} />
+											<CirclePlus className={`h-4 w-4 ${config.plusClass}`} />
 											<span
-												className={`text-sm font-bold uppercase tracking-[0.16em] ${config.plusClass}`}
+												className={`text-xs font-bold uppercase tracking-[0.16em] ${config.plusClass}`}
 											>
 												{config.label}
 											</span>
