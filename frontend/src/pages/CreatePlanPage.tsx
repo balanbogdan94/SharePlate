@@ -544,10 +544,10 @@ export function CreatePlanPage() {
 										key={day.date}
 										type="button"
 										onClick={() => setFocusedDayIndex(dayIndex)}
-										className={`min-w-20 rounded-full border px-3 py-2 text-center transition-all duration-200 sm:min-w-24 sm:py-3 ${
+										className={`flex w-20 shrink-0 flex-col items-center justify-center rounded-full border transition-all duration-200 sm:w-24 ${
 											active
-												? 'border-[#6bd56b] bg-[#1d2221] shadow-[0_10px_24px_rgba(108,214,107,0.24)]'
-												: 'border-white/10 bg-[#1a1d23]'
+												? 'aspect-square border-[#6bd56b] bg-[#1d2221]'
+												: 'aspect-square border-white/10 bg-[#1a1d23]'
 										}`}
 									>
 										<p
@@ -555,7 +555,7 @@ export function CreatePlanPage() {
 										>
 											{chip.weekday}
 										</p>
-										<p className="mt-1 text-[1.6rem] font-black leading-none text-white sm:text-[1.9rem]">
+										<p className="text-[1.6rem] font-black leading-none text-white sm:text-[1.9rem]">
 											{chip.day}
 										</p>
 									</button>
