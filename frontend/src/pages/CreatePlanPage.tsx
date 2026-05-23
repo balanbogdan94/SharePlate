@@ -8,13 +8,9 @@ import {
 	CalendarDays,
 	Check,
 	CirclePlus,
-	Coffee,
 	Loader2,
-	Sandwich,
-	Sunrise,
-	UtensilsCrossed,
+	UserCircle2,
 	X,
-	type LucideIcon,
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -73,6 +69,20 @@ function formatDayChip(value: string): { weekday: string; day: string } {
 	};
 }
 
+function formatRangeLabel(startDate: string, endDate: string): string {
+	const start = new Date(`${startDate}T00:00:00`);
+	const end = new Date(`${endDate}T00:00:00`);
+	const monthFormatter = new Intl.DateTimeFormat(undefined, { month: 'short' });
+	const startMonth = monthFormatter.format(start);
+	const endMonth = monthFormatter.format(end);
+
+	if (startMonth === endMonth) {
+		return `${start.getDate()} ${startMonth} - ${end.getDate()} ${endMonth}`;
+	}
+
+	return `${start.getDate()} ${startMonth} - ${end.getDate()} ${endMonth}`;
+}
+
 function buildEmptyCategories(): Record<CategoryType, string[]> {
 	return {
 		Unnamed: [],
@@ -114,45 +124,12 @@ function toErrorMessage(error: unknown, fallback: string): string {
 	return fallback;
 }
 
-const CATEGORY_UI: Record<
-	CategoryType,
-	{
-		label: string;
-		icon: LucideIcon;
-		frameClass: string;
-		plusClass: string;
-	}
-> = {
-	Unnamed: {
-		label: 'General',
-		icon: UtensilsCrossed,
-		frameClass: 'border-l-[#8df27b]/40',
-		plusClass: 'text-[#8df27b]',
-	},
-	Morning: {
-		label: 'Morning',
-		icon: Sunrise,
-		frameClass: 'border-l-[#99c3ff]/50',
-		plusClass: 'text-[#99c3ff]',
-	},
-	Breakfast: {
-		label: 'Breakfast',
-		icon: Coffee,
-		frameClass: 'border-l-[#8df27b]/50',
-		plusClass: 'text-[#8df27b]',
-	},
-	Lunch: {
-		label: 'Lunch',
-		icon: Sandwich,
-		frameClass: 'border-l-[#ff9fbc]/50',
-		plusClass: 'text-[#ff9fbc]',
-	},
-	Dinner: {
-		label: 'Dinner',
-		icon: UtensilsCrossed,
-		frameClass: 'border-l-[#5aa9ff]/40',
-		plusClass: 'text-[#5aa9ff]',
-	},
+const CATEGORY_UI: Record<CategoryType, { label: string; plusClass: string }> = {
+	Unnamed: { label: 'Recipes', plusClass: 'text-[#8df27b]' },
+	Morning: { label: 'Morning', plusClass: 'text-[#99c3ff]' },
+	Breakfast: { label: 'Breakfast', plusClass: 'text-[#8df27b]' },
+	Lunch: { label: 'Lunch', plusClass: 'text-[#ff9fbc]' },
+	Dinner: { label: 'Dinner', plusClass: 'text-[#5aa9ff]' },
 };
 
 export function CreatePlanPage() {
@@ -163,12 +140,12 @@ export function CreatePlanPage() {
 	const queryClient = useQueryClient();
 
 	const today = useMemo(() => formatDateInput(new Date()), []);
-	const [step, setStep] = useState<1 | 2>(isEditMode ? 2 : 1);
 	const [startDate, setStartDate] = useState(today);
 	const [endDate, setEndDate] = useState(addDays(today, 6));
 	const [payload, setPayload] = useState<PlanPayload | null>(null);
-	const [formError, setFormError] = useState<string | null>(null);
+	const [dateError, setDateError] = useState<string | null>(null);
 	const [saveError, setSaveError] = useState<string | null>(null);
+	const [datePanelOpen, setDatePanelOpen] = useState(false);
 
 	const [focusedDayIndex, setFocusedDayIndex] = useState(0);
 	const [modalOpen, setModalOpen] = useState(false);
@@ -176,6 +153,7 @@ export function CreatePlanPage() {
 	const [modalCategoryType, setModalCategoryType] = useState<CategoryType | null>(null);
 	const [recipeSearch, setRecipeSearch] = useState('');
 	const [selectedRecipeIds, setSelectedRecipeIds] = useState<string[]>([]);
+	const [expandedRecipeKey, setExpandedRecipeKey] = useState<string | null>(null);
 
 	const plansQuery = useQuery({
 		queryKey: ['plans'],
@@ -212,6 +190,12 @@ export function CreatePlanPage() {
 	}, [planDetailQuery.data]);
 
 	const effectivePayload = isEditMode ? payload ?? hydratedEditPayload : payload;
+	const hasUnappliedDateRangeChange =
+		!isEditMode &&
+		Boolean(
+			effectivePayload &&
+				(effectivePayload.startDate !== startDate || effectivePayload.endDate !== endDate),
+		);
 	const safeFocusedDayIndex = effectivePayload
 		? Math.min(focusedDayIndex, Math.max(0, effectivePayload.days.length - 1))
 		: 0;
@@ -245,6 +229,38 @@ export function CreatePlanPage() {
 		setSelectedRecipeIds([]);
 		setModalDayIndex(null);
 		setModalCategoryType(null);
+	};
+
+	const applyDateRange = () => {
+		if (startDate < today) {
+			setDateError('Start date must be today or later.');
+			return;
+		}
+		if (endDate < startDate) {
+			setDateError('End date must be on or after start date.');
+			return;
+		}
+		if (getDayDifference(startDate, endDate) > 6) {
+			setDateError('Meal plans are optimized for a maximum of 7 days.');
+			return;
+		}
+		if (!isStrictNoOverlap(plansQuery.data ?? [], startDate, endDate)) {
+			setDateError('Selected date range overlaps an existing plan.');
+			return;
+		}
+
+		setPayload({
+			startDate,
+			endDate,
+			days: getDatesInRange(startDate, endDate).map((date) => ({
+				date,
+				categories: buildEmptyCategories(),
+			})),
+		});
+		setFocusedDayIndex(0);
+		setDateError(null);
+		setSaveError(null);
+		setDatePanelOpen(false);
 	};
 
 	const updatePayload = (updater: (current: PlanPayload) => PlanPayload) => {
@@ -287,37 +303,6 @@ export function CreatePlanPage() {
 			});
 		},
 	});
-
-	const onContinueToStepTwo = () => {
-		if (startDate < today) {
-			setFormError('Start date must be today or later.');
-			return;
-		}
-		if (endDate < startDate) {
-			setFormError('End date must be on or after start date.');
-			return;
-		}
-		if (getDayDifference(startDate, endDate) > 6) {
-			setFormError('Meal plans are optimized for a maximum of 7 days.');
-			return;
-		}
-		if (!isStrictNoOverlap(plansQuery.data ?? [], startDate, endDate)) {
-			setFormError('Selected date range overlaps an existing plan.');
-			return;
-		}
-
-		setPayload({
-			startDate,
-			endDate,
-			days: getDatesInRange(startDate, endDate).map((date) => ({
-				date,
-				categories: buildEmptyCategories(),
-			})),
-		});
-		setFocusedDayIndex(0);
-		setFormError(null);
-		setStep(2);
-	};
 
 	const openRecipeModal = (dayIndex: number, categoryType: CategoryType) => {
 		setModalDayIndex(dayIndex);
@@ -376,6 +361,7 @@ export function CreatePlanPage() {
 				};
 			}),
 		}));
+		setExpandedRecipeKey(null);
 	};
 
 	const reorderRecipe = (
@@ -409,6 +395,11 @@ export function CreatePlanPage() {
 
 	const onSave = () => {
 		if (!effectivePayload) {
+			setSaveError('Select a date range to start building your plan.');
+			return;
+		}
+		if (hasUnappliedDateRangeChange) {
+			setSaveError('Apply your updated date range before saving.');
 			return;
 		}
 		if (!hasAtLeastOneRecipe(effectivePayload)) {
@@ -432,7 +423,7 @@ export function CreatePlanPage() {
 			: null;
 
 	const isSaving = createPlanMutation.isPending || updatePlanMutation.isPending;
-	const recipesForModal = recipeSearchQuery.data ?? [];
+	const recipesForModal = recipeSearchQuery.data ?? recipesQuery.data ?? [];
 
 	if (isEditMode && planDetailQuery.isLoading) {
 		return (
@@ -446,26 +437,81 @@ export function CreatePlanPage() {
 	}
 
 	return (
-		<section className='relative overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_top,_rgba(38,52,84,0.28),_rgba(8,10,14,1)_42%)] p-3 pb-24 text-[#f5f5f5] sm:rounded-[2rem] sm:p-5 sm:pb-28'>
-			<div className='absolute -right-12 top-8 h-32 w-32 rounded-full bg-[#8df27b]/10 blur-3xl sm:top-10 sm:h-40 sm:w-40' />
+		<section className='relative overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_12%_8%,rgba(42,58,90,0.28),rgba(8,10,14,1)_40%)] p-3 pb-24 text-[#f5f5f5] sm:rounded-[2rem] sm:p-5 sm:pb-28'>
+			<div className='absolute -left-8 top-20 h-28 w-28 rounded-full bg-[#76dc6e]/10 blur-3xl sm:h-36 sm:w-36' />
+			<div className='absolute -right-12 top-6 h-36 w-36 rounded-full bg-[#5aa9ff]/10 blur-3xl sm:h-44 sm:w-44' />
 			<div className='relative space-y-4 sm:space-y-5'>
-				<div className='flex items-start justify-between gap-3'>
-					<div>
-						<h1 className='text-[2rem] font-extrabold tracking-tight text-[#f7f7f7] sm:text-[2.1rem]'>
-							{isEditMode ? 'Build Plan' : 'Create Plan'}
-						</h1>
-						<p className='mt-1 text-[0.7rem] uppercase tracking-[0.2em] text-[#7ce485] sm:text-xs sm:tracking-[0.28em]'>
-							Step {isEditMode ? '2 / 2' : `${step} / 2`}
-						</p>
-					</div>
+				<div>
+					<h1 className='text-[2.2rem] font-black leading-none tracking-tight text-[#f8f8f9] sm:text-[2.4rem]'>
+						{isEditMode ? 'Edit plan' : 'Create plan'}
+					</h1>
 				</div>
 
-				{!isEditMode && (
-					<div className='grid grid-cols-2 gap-2'>
-						<div className={`h-2 rounded-full ${step >= 1 ? 'bg-[#6fdb68]' : 'bg-white/10'}`} />
-						<div className={`h-2 rounded-full ${step >= 2 ? 'bg-[#6fdb68]' : 'bg-white/10'}`} />
-					</div>
-				)}
+				<div className='rounded-2xl border border-white/10 bg-[#15171c]/95 p-3 shadow-[0_14px_40px_rgba(0,0,0,0.45)] sm:rounded-[1.9rem] sm:p-4'>
+					<p className='text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#97a1aa] sm:text-[0.68rem]'>
+						Select dates
+					</p>
+					<button
+						type='button'
+						onClick={() => !isEditMode && setDatePanelOpen((value) => !value)}
+						className={`mt-2 flex min-h-12 w-full items-center gap-2 rounded-2xl border px-3 py-3 text-left transition sm:min-h-14 sm:rounded-3xl sm:px-4 ${
+							datePanelOpen && !isEditMode
+								? 'border-[#6fdb68]/60 bg-[#21252a]'
+								: 'border-white/10 bg-[#1d2025]'
+						}`}
+						aria-expanded={datePanelOpen}>
+						<CalendarDays className='h-4 w-4 shrink-0 text-[#6fdb68] sm:h-5 sm:w-5' />
+						<span className='min-w-0 flex-1 truncate text-sm font-semibold text-[#e8eaee] sm:text-base'>
+							{effectivePayload
+								? formatRangeLabel(effectivePayload.startDate, effectivePayload.endDate)
+								: formatRangeLabel(startDate, endDate)}
+						</span>
+						<ArrowDown
+							className={`h-4 w-4 shrink-0 text-[#8f97a1] transition-transform ${
+								datePanelOpen ? 'rotate-180' : ''
+							}`}
+						/>
+					</button>
+
+					{datePanelOpen && !isEditMode && (
+						<div className='mt-3 space-y-3 rounded-2xl border border-white/10 bg-black/25 p-3 sm:rounded-3xl sm:p-4'>
+							<div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+								<label className='text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[#95a0aa] sm:text-[0.68rem]'>
+									Start
+									<Input
+										type='date'
+										value={startDate}
+										min={today}
+										onChange={(event) => setStartDate(event.target.value)}
+										className='mt-1 h-11 rounded-xl border-white/10 bg-[#14161a] text-sm font-semibold text-white'
+									/>
+								</label>
+								<label className='text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[#95a0aa] sm:text-[0.68rem]'>
+									End
+									<Input
+										type='date'
+										value={endDate}
+										min={startDate}
+										onChange={(event) => setEndDate(event.target.value)}
+										className='mt-1 h-11 rounded-xl border-white/10 bg-[#14161a] text-sm font-semibold text-white'
+									/>
+								</label>
+							</div>
+							<Button
+								type='button'
+								onClick={applyDateRange}
+								className='h-11 w-full rounded-full bg-[#68d461] text-sm font-extrabold text-[#09240f] hover:bg-[#79de73] sm:text-base'>
+								Apply dates
+							</Button>
+						</div>
+					)}
+
+					{dateError && (
+						<p className='mt-3 rounded-2xl border border-[#f4a8bf]/35 bg-[#35262d] px-3 py-2 text-sm text-[#ffd2df]'>
+							{dateError}
+						</p>
+					)}
+				</div>
 
 				{plansQuery.isError && !isEditMode && (
 					<Alert variant='destructive'>
@@ -488,83 +534,7 @@ export function CreatePlanPage() {
 					</Alert>
 				)}
 
-				{step === 1 && !isEditMode && (
-					<div className='space-y-4 sm:space-y-5'>
-						<div className='relative overflow-hidden rounded-2xl border border-white/10 bg-[#17181d] p-4 sm:rounded-[2rem] sm:p-5'>
-							<div className='absolute -right-12 top-6 h-32 w-32 rounded-full bg-[#8fd8ff]/20 blur-2xl sm:h-40 sm:w-40' />
-							<h2 className='relative text-[1.75rem] font-bold leading-tight text-white sm:text-[2rem]'>
-								When are we{' '}
-								<span className='italic text-[#7ce485]'>
-									cooking?
-								</span>
-							</h2>
-							<p className='relative mt-2 text-sm text-[#b0b3b7] sm:text-base'>
-								Select the duration for your weekly nutrition cycle.
-							</p>
-						</div>
-
-						<div className='space-y-4'>
-							<label className='block text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-[#9aa0a6] sm:text-xs sm:tracking-[0.22em]'>
-								Start Date
-								<div className='mt-2 flex min-h-11 items-center gap-3 rounded-2xl border border-white/10 bg-black/55 px-3 py-3 sm:rounded-3xl sm:px-4 sm:py-4'>
-									<CalendarDays className='h-4 w-4 text-[#7ce485] sm:h-5 sm:w-5' />
-									<Input
-										id='create-plan-start'
-										type='date'
-										value={startDate}
-										min={today}
-										onChange={(event) => setStartDate(event.target.value)}
-										className='h-auto border-0 bg-transparent px-0 text-sm font-semibold text-white sm:text-base'
-									/>
-								</div>
-							</label>
-
-							<label className='block text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-[#9aa0a6] sm:text-xs sm:tracking-[0.22em]'>
-								End Date
-								<div className='mt-2 flex min-h-11 items-center gap-3 rounded-2xl border border-[#63cf76]/60 bg-black/55 px-3 py-3 sm:rounded-3xl sm:px-4 sm:py-4'>
-									<CalendarDays className='h-4 w-4 text-[#9cc7ff] sm:h-5 sm:w-5' />
-									<Input
-										id='create-plan-end'
-										type='date'
-										value={endDate}
-										min={startDate}
-										onChange={(event) => setEndDate(event.target.value)}
-										className='h-auto border-0 bg-transparent px-0 text-sm font-semibold text-white sm:text-base'
-									/>
-								</div>
-							</label>
-						</div>
-
-						<div className='rounded-3xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-[#c7cad0]'>
-							Meal plans are optimized for a maximum of 7 days.
-						</div>
-
-						{formError && (
-							<p className='rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200'>
-								{formError}
-							</p>
-						)}
-
-						<div className='space-y-3'>
-							<Button
-								type='button'
-								onClick={onContinueToStepTwo}
-								className='h-12 w-full rounded-full bg-[#66cf63] text-base font-extrabold text-[#062510] hover:bg-[#73de70] sm:h-14 sm:text-lg'>
-								Continue
-								<ArrowRight className='ml-2 h-5 w-5' />
-							</Button>
-							<Button
-								type='button'
-								variant='ghost'
-								onClick={() => void navigate({ to: '/plans' })}
-								className='h-11 w-full rounded-full border border-white/10 text-sm text-[#bfc4cd] hover:bg-white/10 hover:text-white'>
-								Cancel
-							</Button>
-						</div>
-					</div>
-				)}
-
-				{step === 2 && effectivePayload && focusedDay && (
+				{effectivePayload && focusedDay ? (
 					<div className='space-y-4 sm:space-y-5'>
 						<div className='flex gap-2 overflow-x-auto pb-1 sm:gap-3'>
 							{effectivePayload.days.map((day, dayIndex) => {
@@ -575,15 +545,15 @@ export function CreatePlanPage() {
 										key={day.date}
 										type='button'
 										onClick={() => setFocusedDayIndex(dayIndex)}
-										className={`min-w-20 rounded-2xl border px-3 py-2 text-left transition sm:min-w-24 sm:rounded-[1.8rem] sm:py-3 ${
+										className={`min-w-20 rounded-full border px-3 py-2 text-left transition-all duration-200 sm:min-w-24 sm:py-3 ${
 											active
-												? 'border-[#6bd56b] bg-[#1f2128] shadow-[0_12px_30px_rgba(110,214,114,0.18)]'
-												: 'border-white/10 bg-[#15171d]'
+												? 'border-[#6bd56b] bg-[#1d2221] shadow-[0_10px_24px_rgba(108,214,107,0.24)]'
+												: 'border-white/10 bg-[#1a1d23]'
 										}`}>
-										<p className={`text-[0.68rem] font-semibold tracking-[0.16em] sm:text-xs sm:tracking-[0.2em] ${active ? 'text-[#7ce485]' : 'text-[#8c9097]'}`}>
+										<p className={`text-[0.62rem] font-semibold tracking-[0.15em] sm:text-xs sm:tracking-[0.2em] ${active ? 'text-[#7ce485]' : 'text-[#8c9097]'}`}>
 											{chip.weekday}
 										</p>
-										<p className='mt-1 text-[1.6rem] font-black leading-none text-white sm:text-[2rem]'>{chip.day}</p>
+										<p className='mt-1 text-[1.6rem] font-black leading-none text-white sm:text-[1.9rem]'>{chip.day}</p>
 									</button>
 								);
 							})}
@@ -591,61 +561,52 @@ export function CreatePlanPage() {
 
 						<div className='flex items-end justify-between gap-3'>
 							<div className='min-w-0'>
-								<p className='text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[#f4a8bf] sm:text-xs sm:tracking-[0.28em]'>
-									Current Focus
+								<p className='text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[#83dc7b] sm:text-xs sm:tracking-[0.28em]'>
+									Current day
 								</p>
-								<h2 className='mt-1 line-clamp-1 text-[1.75rem] font-extrabold tracking-tight text-white sm:text-[2rem]'>
+								<h2 className='mt-1 line-clamp-1 text-[1.65rem] font-extrabold tracking-tight text-white sm:text-[2rem]'>
 									{new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(
 										new Date(`${focusedDay.date}T00:00:00`),
 									)}
 								</h2>
 							</div>
-							<div className='shrink-0 rounded-full border border-white/10 bg-[#2a2d30] px-3 py-2 text-[0.7rem] font-bold text-[#7ce485] sm:px-4 sm:text-sm'>
+							<div className='shrink-0 rounded-full border border-[#6fdb68]/25 bg-[#1c211f] px-3 py-2 text-[0.7rem] font-bold text-[#7ce485] sm:px-4 sm:text-sm'>
 								{totalRecipes} RECIPES
 							</div>
 						</div>
 
-						<div className='space-y-3 sm:space-y-4'>
-							{CATEGORY_TYPES.map((categoryType) => {
-								const config = CATEGORY_UI[categoryType];
-								const CategoryIcon = config.icon;
-								const recipeIds = focusedDay.categories[categoryType] ?? [];
+<div className='space-y-1'>
+						{CATEGORY_TYPES.map((categoryType) => {
+							const config = CATEGORY_UI[categoryType];
+							const recipeIds = focusedDay.categories[categoryType] ?? [];
 
-								return (
-									<div
-										key={categoryType}
-										className={`rounded-2xl border border-white/10 border-l-2 bg-[#1b1c22] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.45)] sm:rounded-[2.1rem] sm:p-4 ${config.frameClass}`}>
-										<div className='mb-3 flex items-center justify-between gap-2 sm:gap-3'>
-											<div className='flex min-w-0 items-center gap-2 sm:gap-3'>
-												<div className='rounded-full border border-white/10 bg-black/20 p-1.5 sm:p-2'>
-													<CategoryIcon className={`h-4 w-4 sm:h-5 sm:w-5 ${config.plusClass}`} />
-												</div>
-												<h3 className='line-clamp-1 text-lg font-semibold text-white sm:text-2xl'>{config.label}</h3>
-											</div>
-											<button
-												type='button'
-												onClick={() => openRecipeModal(safeFocusedDayIndex, categoryType)}
-												className='flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[#2f3237] shadow-[0_12px_24px_rgba(0,0,0,0.45)]'>
-												<CirclePlus className={`h-5 w-5 ${config.plusClass}`} />
-											</button>
-										</div>
+							return (
+								<div key={categoryType}>
+									<button
+										type='button'
+										onClick={() => openRecipeModal(safeFocusedDayIndex, categoryType)}
+										className='flex items-center gap-2 py-2.5'>
+										<CirclePlus className={`h-5 w-5 ${config.plusClass}`} />
+										<span className={`text-sm font-bold uppercase tracking-[0.16em] ${config.plusClass}`}>
+											{config.label}
+										</span>
+									</button>
 
-										{recipeIds.length === 0 ? (
-											<button
-												type='button'
-												onClick={() => openRecipeModal(safeFocusedDayIndex, categoryType)}
-												className='min-h-11 w-full rounded-2xl border border-dashed border-white/10 bg-black/20 py-4 text-center text-sm font-semibold text-[#6e727a] sm:rounded-[1.8rem] sm:py-5 sm:text-base'>
-												+ Add Recipe
-											</button>
-										) : (
-											<div className='space-y-2 sm:space-y-3'>
-												{recipeIds.map((recipeId, recipeIndex) => {
-													const recipe = recipesById.get(recipeId);
-													return (
-														<div
-															key={`${recipeId}-${recipeIndex}`}
-															className='flex items-center gap-2 rounded-2xl border border-white/10 bg-[#2b2d33] p-2.5 sm:gap-3 sm:rounded-[1.7rem] sm:p-3'>
-															<div className='h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-black/40 sm:h-16 sm:w-16 sm:rounded-2xl'>
+									{recipeIds.length > 0 && (
+										<div className='mb-2 space-y-2'>
+											{recipeIds.map((recipeId, recipeIndex) => {
+												const recipe = recipesById.get(recipeId);
+												const recipeKey = `${safeFocusedDayIndex}-${categoryType}-${recipeIndex}`;
+												const isExpanded = expandedRecipeKey === recipeKey;
+												return (
+													<article
+														key={`${recipeId}-${recipeIndex}`}
+														className='overflow-hidden rounded-2xl border border-stone-800/80 bg-stone-900'>
+														<button
+															type='button'
+															onClick={() => setExpandedRecipeKey((current) => (current === recipeKey ? null : recipeKey))}
+															className='flex min-w-0 w-full text-left'>
+															<div className='relative h-[5.5rem] w-[5.5rem] shrink-0 sm:h-24 sm:w-24'>
 																{recipe?.imageUrl ? (
 																	<img
 																		src={recipe.imageUrl}
@@ -653,54 +614,46 @@ export function CreatePlanPage() {
 																		className='h-full w-full object-cover'
 																	/>
 																) : (
-																	<div className='flex h-full w-full items-center justify-center text-lg font-bold text-[#6f7379] sm:text-xl'>
-																		{(recipe?.title ?? 'R').slice(0, 1)}
-																	</div>
+																	<div className='h-full w-full bg-stone-700' />
 																)}
+																<div className='pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-r from-transparent to-stone-900' />
 															</div>
-															<div className='min-w-0 flex-1'>
-																<p className='line-clamp-1 text-base font-bold text-white sm:text-lg'>
+															<div className='min-w-0 flex-1 px-3 py-3'>
+																<p className='line-clamp-2 text-sm font-bold leading-snug text-stone-100 sm:text-base'>
 																	{recipe?.title ?? recipeId}
 																</p>
-																<p className='mt-1 text-[0.68rem] uppercase tracking-[0.16em] text-[#7ce485] sm:text-xs sm:tracking-[0.2em]'>
+																<p className='mt-0.5 flex items-center gap-1 text-xs italic text-stone-400'>
+																	<UserCircle2 className='h-3.5 w-3.5 shrink-0' />
 																	{recipe?.authorName ?? 'House Recipe'}
 																</p>
 															</div>
-															<div className='flex flex-col gap-1.5 sm:gap-2'>
+															<div className='flex items-center pr-3'>
+																<ArrowDown className={`h-4 w-4 text-stone-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+															</div>
+														</button>
+														{isExpanded && (
+															<div className='flex items-center justify-end gap-2 border-t border-stone-800 px-3 py-2'>
 																<button
 																	type='button'
-																	onClick={() =>
-																		reorderRecipe(
-																			safeFocusedDayIndex,
-																			categoryType,
-																			recipeIndex,
-																			recipeIndex - 1,
-																		)
-																	}
-																	className='flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-[#1b1d22] text-[#9aa0a8]'>
-																	<ArrowUp className='h-3.5 w-3.5 sm:h-4 sm:w-4' />
+																	onClick={() => reorderRecipe(safeFocusedDayIndex, categoryType, recipeIndex, recipeIndex - 1)}
+																	className='flex h-8 w-8 items-center justify-center rounded-full border border-stone-700 bg-stone-800 text-stone-400'>
+																	<ArrowUp className='h-3.5 w-3.5' />
 																</button>
 																<button
 																	type='button'
-																	onClick={() =>
-																		reorderRecipe(
-																			safeFocusedDayIndex,
-																			categoryType,
-																			recipeIndex,
-																			recipeIndex + 1,
-																		)
-																	}
-																	className='flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-[#1b1d22] text-[#9aa0a8]'>
-																	<ArrowDown className='h-3.5 w-3.5 sm:h-4 sm:w-4' />
+																	onClick={() => reorderRecipe(safeFocusedDayIndex, categoryType, recipeIndex, recipeIndex + 1)}
+																	className='flex h-8 w-8 items-center justify-center rounded-full border border-stone-700 bg-stone-800 text-stone-400'>
+																	<ArrowDown className='h-3.5 w-3.5' />
 																</button>
 																<button
 																	type='button'
 																	onClick={() => removeRecipe(safeFocusedDayIndex, categoryType, recipeIndex)}
-																	className='flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-[#1b1d22] text-[#f4a8bf]'>
-																	<X className='h-3.5 w-3.5 sm:h-4 sm:w-4' />
+																	className='flex h-8 w-8 items-center justify-center rounded-full border border-stone-700 bg-stone-800 text-rose-400'>
+																	<X className='h-3.5 w-3.5' />
 																</button>
 															</div>
-														</div>
+														)}
+													</article>
 													);
 												})}
 											</div>
@@ -716,10 +669,16 @@ export function CreatePlanPage() {
 							</div>
 						)}
 
+						{hasUnappliedDateRangeChange && (
+							<div className='rounded-2xl border border-[#ffd96b]/35 bg-[#332f1f] px-4 py-3 text-sm text-[#ffe7a0] sm:text-base'>
+								Your date range changed. Tap Apply dates to refresh the plan days.
+							</div>
+						)}
+
 						<div className='space-y-3'>
 							<Button
 								type='button'
-								disabled={isSaving}
+								disabled={isSaving || hasUnappliedDateRangeChange}
 								onClick={onSave}
 								className='h-12 w-full rounded-full bg-[#66cf63] text-base font-extrabold text-[#062510] hover:bg-[#73de70] disabled:bg-[#3a3d42] disabled:text-[#8d939b] sm:h-14 sm:text-lg'>
 								{isSaving ? (
@@ -741,6 +700,22 @@ export function CreatePlanPage() {
 								Cancel
 							</Button>
 						</div>
+					</div>
+				) : (
+					<div className='space-y-4 rounded-2xl border border-dashed border-white/15 bg-[#111317]/70 p-5 text-center sm:rounded-[2rem] sm:p-7'>
+						<p className='text-sm uppercase tracking-[0.18em] text-[#8c95a0] sm:text-base'>
+							Plan days will appear here
+						</p>
+						<p className='text-sm text-[#a7afb8] sm:text-base'>
+							Pick a date range and apply it to start organizing recipes by day.
+						</p>
+						<Button
+							type='button'
+							onClick={() => setDatePanelOpen(true)}
+							className='h-11 rounded-full bg-[#66cf63] px-6 font-bold text-[#062510] hover:bg-[#73de70]'>
+							Select dates
+							<ArrowRight className='ml-2 h-4 w-4' />
+						</Button>
 					</div>
 				)}
 			</div>
@@ -791,33 +766,36 @@ export function CreatePlanPage() {
 												key={recipe.id}
 												type='button'
 												onClick={() => toggleRecipeSelection(recipe.id)}
-												className={`flex w-full items-center gap-2 rounded-2xl border p-2.5 text-left transition sm:gap-3 sm:rounded-[1.8rem] sm:p-3 ${
+												className={`w-full overflow-hidden rounded-2xl border text-left transition ${
 													selected
-														? 'border-[#6fdb68]/70 bg-[#262d26]'
-														: 'border-white/10 bg-[#1f2127]'
+														? 'border-[#6fdb68]/60 bg-[#141f14]'
+														: 'border-stone-800/80 bg-stone-900'
 												}`}>
-												<div className='h-12 w-12 shrink-0 overflow-hidden rounded-full bg-black/40 sm:h-14 sm:w-14'>
-													{recipe.imageUrl ? (
-														<img src={recipe.imageUrl} alt={recipe.title} className='h-full w-full object-cover' />
-													) : (
-														<div className='flex h-full w-full items-center justify-center text-base font-bold text-[#7e838b] sm:text-lg'>
-															{recipe.title.slice(0, 1)}
+												<div className='flex min-w-0'>
+													<div className='relative h-[5.5rem] w-[5.5rem] shrink-0 sm:h-24 sm:w-24'>
+														{recipe.imageUrl ? (
+															<img src={recipe.imageUrl} alt={recipe.title} className='h-full w-full object-cover' />
+														) : (
+															<div className='h-full w-full bg-stone-700' />
+														)}
+														<div className={`pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-r from-transparent ${selected ? 'to-[#141f14]' : 'to-stone-900'}`} />
+													</div>
+													<div className='min-w-0 flex-1 px-3 py-3'>
+														<p className='line-clamp-2 text-sm font-bold leading-snug text-stone-100 sm:text-base'>{recipe.title}</p>
+														<p className='mt-0.5 flex items-center gap-1 text-xs italic text-stone-400'>
+															<UserCircle2 className='h-3.5 w-3.5 shrink-0' />
+															{recipe.authorName}
+														</p>
+													</div>
+													<div className='flex items-center pr-3'>
+														<div className={`flex h-6 w-6 items-center justify-center rounded-full border ${
+															selected
+																? 'border-[#6fdb68] bg-[#6fdb68] text-[#05240f]'
+																: 'border-stone-700 text-transparent'
+														}`}>
+															<Check className='h-3.5 w-3.5' />
 														</div>
-													)}
-												</div>
-												<div className='min-w-0 flex-1'>
-													<p className='line-clamp-1 text-base font-bold text-white sm:text-lg'>{recipe.title}</p>
-													<p className='truncate text-[0.68rem] uppercase tracking-[0.16em] text-[#7ce485] sm:text-xs sm:tracking-[0.22em]'>
-														{recipe.authorName}
-													</p>
-												</div>
-												<div
-													className={`flex h-11 w-11 items-center justify-center rounded-xl border ${
-														selected
-															? 'border-[#6fdb68] bg-[#6fdb68] text-[#05240f]'
-															: 'border-[#4d5a4e] bg-transparent text-transparent'
-													}`}>
-													<Check className='h-5 w-5' />
+													</div>
 												</div>
 											</button>
 										);
