@@ -7,13 +7,8 @@ import {
 	useNavigate,
 	useRouter,
 } from '@tanstack/react-router';
-import {
-	ChevronLeft,
-	CalendarDays,
-	MoreHorizontal,
-	UserCircle2,
-	UtensilsCrossed,
-} from 'lucide-react';
+import { ChevronLeft, CalendarDays, MoreHorizontal, UtensilsCrossed } from 'lucide-react';
+import { getInitials, getNameFromToken } from '@/lib/jwt';
 import { useAuth } from '@/auth/AuthContext';
 import { useI18n } from '@/i18n/I18nContext';
 import { apiFetch } from '@/lib/api';
@@ -34,6 +29,7 @@ export function AppShell() {
 	const location = useLocation();
 	const { t } = useI18n();
 	const { theme, setTheme, language, setLanguage } = useUserSettings();
+	const initials = getInitials(getNameFromToken(auth.tokens?.accessToken ?? '') ?? '');
 	const [menuOpen, setMenuOpen] = useState(false);
 	const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -110,7 +106,7 @@ export function AppShell() {
 							aria-label={t('shell.profile')}
 							className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm transition hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700"
 						>
-							<UserCircle2 className="h-6 w-6" />
+							<span className="text-sm font-semibold leading-none">{initials}</span>
 						</button>
 
 						{menuOpen && (
