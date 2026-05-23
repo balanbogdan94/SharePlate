@@ -1,7 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
-import { Plus, Sparkles, Users } from 'lucide-react';
+import { CalendarRange, Plus, Sparkles, Users } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
 import { PlanCurrentView } from '@/pages/tabs/plan/PlanCurrentView';
 import { PlanOtherView } from '@/pages/tabs/plan/PlanOtherView';
 import { usePlanTab } from '@/pages/usePlanTab';
@@ -23,9 +22,12 @@ export function PlanTabPage() {
 				{isError && <Alert variant='destructive'><AlertTitle>Could not load plans</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
 				{isLoading && <p className='text-sm text-[#98a0aa]'>Loading plans...</p>}
 				{noPlans && (
-					<div className='space-y-5 rounded-2xl border border-white/10 bg-[#14161c]/80 p-4'>
-						<div className='text-center'><h2 className='mt-2 text-[1.75rem] font-extrabold text-white'>No plans yet</h2><p className='mt-2 text-sm text-[#afb5be]'>Start your culinary journey by creating a shared household meal plan.</p></div>
-						<Button type='button' onClick={onCreate} className='h-12 w-full rounded-full bg-[#2f3338] text-base font-extrabold text-[#7ce485] hover:bg-[#3a3f45]'><Plus className='mr-2 h-5 w-5' />Create Plan</Button>
+					<div className='space-y-5 rounded-2xl bg-[#14161c]/80 p-4'>
+						<div className='flex flex-col items-center py-4 text-center'>
+							<CalendarRange className='mb-4 h-12 w-12 text-[#7ce485]/60' />
+							<h2 className='text-[1.75rem] font-extrabold text-white'>No plans yet</h2>
+							<p className='mt-2 text-sm text-[#afb5be]'>Use the + button to create your first household meal plan and start organising your week.</p>
+						</div>
 						<div className='grid gap-3 sm:grid-cols-2'>
 							<div className='rounded-2xl border border-l-2 border-white/10 border-l-[#9cc7ff] bg-[#1a1c22] p-3'><Sparkles className='mb-2 h-5 w-5 text-[#9cc7ff]' /><p className='text-base font-extrabold text-white'>Smart Suggester</p><p className='mt-1 text-sm text-[#afb5be]'>AI-curated meals based on your pantry.</p></div>
 							<div className='rounded-2xl border border-l-2 border-white/10 border-l-[#ff9fbc] bg-[#1a1c22] p-3'><Users className='mb-2 h-5 w-5 text-[#ff9fbc]' /><p className='text-base font-extrabold text-white'>Family Sync</p><p className='mt-1 text-sm text-[#afb5be]'>Real-time updates for every member.</p></div>
@@ -33,9 +35,10 @@ export function PlanTabPage() {
 					</div>
 				)}
 				{noActive && (
-					<div className='space-y-5 rounded-2xl border border-white/10 bg-[#14161c]/80 p-4'>
-						<div className='text-center'><h2 className='mt-2 text-[1.75rem] font-extrabold text-white'>No active plan today</h2><p className='mt-2 text-sm text-[#afb5be]'>Create a plan now to start your week.</p></div>
-						<Button type='button' onClick={onCreate} className='h-12 w-full rounded-full bg-[#2f3338] text-base font-extrabold text-[#7ce485] hover:bg-[#3a3f45]'><Plus className='mr-2 h-5 w-5' />Create Plan</Button>
+					<div className='flex flex-col items-center rounded-2xl bg-[#14161c]/80 py-8 text-center'>
+						<CalendarRange className='mb-4 h-10 w-10 text-[#7ce485]/60' />
+						<h2 className='text-[1.75rem] font-extrabold text-white'>No active plan today</h2>
+						<p className='mt-2 text-sm text-[#afb5be]'>Tap + to create a plan and start organising your week.</p>
 					</div>
 				)}
 				{visibleCurrentPlan && <PlanCurrentView plan={visibleCurrentPlan} expandedDayDate={expandedDayDate} onToggleDay={toggleDay} recipeMap={recipeMap} exportProps={exportPropsFor(visibleCurrentPlan.id)} />}
