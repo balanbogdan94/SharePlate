@@ -62,9 +62,7 @@ function getDayDifference(startDate: string, endDate: string): number {
 function formatDayChip(value: string): { weekday: string; day: string } {
 	const date = new Date(`${value}T00:00:00`);
 	return {
-		weekday: new Intl.DateTimeFormat(undefined, { weekday: 'short' })
-			.format(date)
-			.toUpperCase(),
+		weekday: new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(date).toUpperCase(),
 		day: String(date.getDate()),
 	};
 }
@@ -189,12 +187,12 @@ export function CreatePlanPage() {
 		};
 	}, [planDetailQuery.data]);
 
-	const effectivePayload = isEditMode ? payload ?? hydratedEditPayload : payload;
+	const effectivePayload = isEditMode ? (payload ?? hydratedEditPayload) : payload;
 	const hasUnappliedDateRangeChange =
 		!isEditMode &&
 		Boolean(
 			effectivePayload &&
-				(effectivePayload.startDate !== startDate || effectivePayload.endDate !== endDate),
+			(effectivePayload.startDate !== startDate || effectivePayload.endDate !== endDate),
 		);
 	const safeFocusedDayIndex = effectivePayload
 		? Math.min(focusedDayIndex, Math.max(0, effectivePayload.days.length - 1))
@@ -212,16 +210,6 @@ export function CreatePlanPage() {
 		return map;
 	}, [recipesQuery.data, recipeSearchQuery.data]);
 
-	const totalRecipes = useMemo(() => {
-		if (!effectivePayload) {
-			return 0;
-		}
-		return effectivePayload.days.reduce(
-			(total, day) =>
-				total + CATEGORY_TYPES.reduce((categoryTotal, category) => categoryTotal + day.categories[category].length, 0),
-			0,
-		);
-	}, [effectivePayload]);
 
 	const closeModal = () => {
 		setModalOpen(false);
@@ -319,7 +307,12 @@ export function CreatePlanPage() {
 	};
 
 	const addSelectedRecipes = () => {
-		if (modalDayIndex === null || !modalCategoryType || !effectivePayload || selectedRecipeIds.length === 0) {
+		if (
+			modalDayIndex === null ||
+			!modalCategoryType ||
+			!effectivePayload ||
+			selectedRecipeIds.length === 0
+		) {
 			closeModal();
 			return;
 		}
@@ -330,12 +323,12 @@ export function CreatePlanPage() {
 				dayIndex !== modalDayIndex
 					? day
 					: {
-						...day,
-						categories: {
-							...day.categories,
-							[modalCategoryType]: [...day.categories[modalCategoryType], ...selectedRecipeIds],
+							...day,
+							categories: {
+								...day.categories,
+								[modalCategoryType]: [...day.categories[modalCategoryType], ...selectedRecipeIds],
+							},
 						},
-					},
 			),
 		}));
 
@@ -427,9 +420,9 @@ export function CreatePlanPage() {
 
 	if (isEditMode && planDetailQuery.isLoading) {
 		return (
-			<section className='rounded-2xl bg-[#090b0f] p-3 pb-24 text-[#f2f2f2] sm:rounded-[2rem] sm:p-5 sm:pb-28'>
-				<div className='flex items-center gap-3 text-sm text-[#8c949f]'>
-					<Loader2 className='h-4 w-4 animate-spin' />
+			<section className="rounded-2xl bg-[#090b0f] p-3 pb-24 text-[#f2f2f2] sm:rounded-[2rem] sm:p-5 sm:pb-28">
+				<div className="flex items-center gap-3 text-sm text-[#8c949f]">
+					<Loader2 className="h-4 w-4 animate-spin" />
 					Loading plan...
 				</div>
 			</section>
@@ -437,31 +430,32 @@ export function CreatePlanPage() {
 	}
 
 	return (
-		<section className='relative overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_12%_8%,rgba(42,58,90,0.28),rgba(8,10,14,1)_40%)] p-3 pb-24 text-[#f5f5f5] sm:rounded-[2rem] sm:p-5 sm:pb-28'>
-			<div className='absolute -left-8 top-20 h-28 w-28 rounded-full bg-[#76dc6e]/10 blur-3xl sm:h-36 sm:w-36' />
-			<div className='absolute -right-12 top-6 h-36 w-36 rounded-full bg-[#5aa9ff]/10 blur-3xl sm:h-44 sm:w-44' />
-			<div className='relative space-y-4 sm:space-y-5'>
+		<section className="relative overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_12%_8%,rgba(42,58,90,0.28),rgba(8,10,14,1)_40%)] p-3 pb-24 text-[#f5f5f5] sm:rounded-[2rem] sm:p-5 sm:pb-28">
+			<div className="absolute -left-8 top-20 h-28 w-28 rounded-full bg-[#76dc6e]/10 blur-3xl sm:h-36 sm:w-36" />
+			<div className="absolute -right-12 top-6 h-36 w-36 rounded-full bg-[#5aa9ff]/10 blur-3xl sm:h-44 sm:w-44" />
+			<div className="relative space-y-4 sm:space-y-5">
 				<div>
-					<h1 className='text-[2.2rem] font-black leading-none tracking-tight text-[#f8f8f9] sm:text-[2.4rem]'>
+					<h1 className="text-[2.2rem] font-black leading-none tracking-tight text-[#f8f8f9] sm:text-[2.4rem]">
 						{isEditMode ? 'Edit plan' : 'Create plan'}
 					</h1>
 				</div>
 
-				<div className='rounded-2xl border border-white/10 bg-[#15171c]/95 p-3 shadow-[0_14px_40px_rgba(0,0,0,0.45)] sm:rounded-[1.9rem] sm:p-4'>
-					<p className='text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#97a1aa] sm:text-[0.68rem]'>
+				<div className="rounded-2xl border border-white/10 bg-[#15171c]/95 p-3 shadow-[0_14px_40px_rgba(0,0,0,0.45)] sm:rounded-[1.9rem] sm:p-4">
+					<p className="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#97a1aa] sm:text-[0.68rem]">
 						Select dates
 					</p>
 					<button
-						type='button'
+						type="button"
 						onClick={() => !isEditMode && setDatePanelOpen((value) => !value)}
 						className={`mt-2 flex min-h-12 w-full items-center gap-2 rounded-2xl border px-3 py-3 text-left transition sm:min-h-14 sm:rounded-3xl sm:px-4 ${
 							datePanelOpen && !isEditMode
 								? 'border-[#6fdb68]/60 bg-[#21252a]'
 								: 'border-white/10 bg-[#1d2025]'
 						}`}
-						aria-expanded={datePanelOpen}>
-						<CalendarDays className='h-4 w-4 shrink-0 text-[#6fdb68] sm:h-5 sm:w-5' />
-						<span className='min-w-0 flex-1 truncate text-sm font-semibold text-[#e8eaee] sm:text-base'>
+						aria-expanded={datePanelOpen}
+					>
+						<CalendarDays className="h-4 w-4 shrink-0 text-[#6fdb68] sm:h-5 sm:w-5" />
+						<span className="min-w-0 flex-1 truncate text-sm font-semibold text-[#e8eaee] sm:text-base">
 							{effectivePayload
 								? formatRangeLabel(effectivePayload.startDate, effectivePayload.endDate)
 								: formatRangeLabel(startDate, endDate)}
@@ -474,186 +468,210 @@ export function CreatePlanPage() {
 					</button>
 
 					{datePanelOpen && !isEditMode && (
-						<div className='mt-3 space-y-3 rounded-2xl border border-white/10 bg-black/25 p-3 sm:rounded-3xl sm:p-4'>
-							<div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
-								<label className='text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[#95a0aa] sm:text-[0.68rem]'>
+						<div className="mt-3 space-y-3 rounded-2xl border border-white/10 bg-black/25 p-3 sm:rounded-3xl sm:p-4">
+							<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+								<label className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[#95a0aa] sm:text-[0.68rem]">
 									Start
 									<Input
-										type='date'
+										type="date"
 										value={startDate}
 										min={today}
 										onChange={(event) => setStartDate(event.target.value)}
-										className='mt-1 h-11 rounded-xl border-white/10 bg-[#14161a] text-sm font-semibold text-white'
+										className="mt-1 h-11 rounded-xl border-white/10 bg-[#14161a] text-sm font-semibold text-white"
 									/>
 								</label>
-								<label className='text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[#95a0aa] sm:text-[0.68rem]'>
+								<label className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[#95a0aa] sm:text-[0.68rem]">
 									End
 									<Input
-										type='date'
+										type="date"
 										value={endDate}
 										min={startDate}
 										onChange={(event) => setEndDate(event.target.value)}
-										className='mt-1 h-11 rounded-xl border-white/10 bg-[#14161a] text-sm font-semibold text-white'
+										className="mt-1 h-11 rounded-xl border-white/10 bg-[#14161a] text-sm font-semibold text-white"
 									/>
 								</label>
 							</div>
 							<Button
-								type='button'
+								type="button"
 								onClick={applyDateRange}
-								className='h-11 w-full rounded-full bg-[#68d461] text-sm font-extrabold text-[#09240f] hover:bg-[#79de73] sm:text-base'>
+								className="h-11 w-full rounded-full bg-[#68d461] text-sm font-extrabold text-[#09240f] hover:bg-[#79de73] sm:text-base"
+							>
 								Apply dates
 							</Button>
 						</div>
 					)}
 
 					{dateError && (
-						<p className='mt-3 rounded-2xl border border-[#f4a8bf]/35 bg-[#35262d] px-3 py-2 text-sm text-[#ffd2df]'>
+						<p className="mt-3 rounded-2xl border border-[#f4a8bf]/35 bg-[#35262d] px-3 py-2 text-sm text-[#ffd2df]">
 							{dateError}
 						</p>
 					)}
 				</div>
 
 				{plansQuery.isError && !isEditMode && (
-					<Alert variant='destructive'>
+					<Alert variant="destructive">
 						<AlertTitle>Could not load plans</AlertTitle>
-						<AlertDescription>{toErrorMessage(plansQuery.error, 'Please try again.')}</AlertDescription>
+						<AlertDescription>
+							{toErrorMessage(plansQuery.error, 'Please try again.')}
+						</AlertDescription>
 					</Alert>
 				)}
 
 				{planDetailQuery.isError && isEditMode && (
-					<Alert variant='destructive'>
+					<Alert variant="destructive">
 						<AlertTitle>Could not load plan</AlertTitle>
-						<AlertDescription>{toErrorMessage(planDetailQuery.error, 'Please try again.')}</AlertDescription>
+						<AlertDescription>
+							{toErrorMessage(planDetailQuery.error, 'Please try again.')}
+						</AlertDescription>
 					</Alert>
 				)}
 
 				{mutationError && (
-					<Alert variant='destructive'>
+					<Alert variant="destructive">
 						<AlertTitle>Save failed</AlertTitle>
 						<AlertDescription>{mutationError}</AlertDescription>
 					</Alert>
 				)}
 
 				{effectivePayload && focusedDay ? (
-					<div className='space-y-4 sm:space-y-5'>
-						<div className='flex gap-2 overflow-x-auto pb-1 sm:gap-3'>
+					<div className="space-y-4 sm:space-y-5">
+						<div className="flex gap-2 overflow-x-auto pb-1 sm:gap-3">
 							{effectivePayload.days.map((day, dayIndex) => {
 								const chip = formatDayChip(day.date);
 								const active = dayIndex === safeFocusedDayIndex;
 								return (
 									<button
 										key={day.date}
-										type='button'
+										type="button"
 										onClick={() => setFocusedDayIndex(dayIndex)}
 										className={`min-w-20 rounded-full border px-3 py-2 text-left transition-all duration-200 sm:min-w-24 sm:py-3 ${
 											active
 												? 'border-[#6bd56b] bg-[#1d2221] shadow-[0_10px_24px_rgba(108,214,107,0.24)]'
 												: 'border-white/10 bg-[#1a1d23]'
-										}`}>
-										<p className={`text-[0.62rem] font-semibold tracking-[0.15em] sm:text-xs sm:tracking-[0.2em] ${active ? 'text-[#7ce485]' : 'text-[#8c9097]'}`}>
+										}`}
+									>
+										<p
+											className={`text-[0.62rem] font-semibold tracking-[0.15em] sm:text-xs sm:tracking-[0.2em] ${active ? 'text-[#7ce485]' : 'text-[#8c9097]'}`}
+										>
 											{chip.weekday}
 										</p>
-										<p className='mt-1 text-[1.6rem] font-black leading-none text-white sm:text-[1.9rem]'>{chip.day}</p>
+										<p className="mt-1 text-[1.6rem] font-black leading-none text-white sm:text-[1.9rem]">
+											{chip.day}
+										</p>
 									</button>
 								);
 							})}
 						</div>
 
-						<div className='flex items-end justify-between gap-3'>
-							<div className='min-w-0'>
-								<p className='text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[#83dc7b] sm:text-xs sm:tracking-[0.28em]'>
-									Current day
-								</p>
-								<h2 className='mt-1 line-clamp-1 text-[1.65rem] font-extrabold tracking-tight text-white sm:text-[2rem]'>
-									{new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(
-										new Date(`${focusedDay.date}T00:00:00`),
-									)}
-								</h2>
-							</div>
-							<div className='shrink-0 rounded-full border border-[#6fdb68]/25 bg-[#1c211f] px-3 py-2 text-[0.7rem] font-bold text-[#7ce485] sm:px-4 sm:text-sm'>
-								{totalRecipes} RECIPES
-							</div>
-						</div>
+						<div className="space-y-1">
+							{CATEGORY_TYPES.filter((cat) => cat !== 'Morning').map((categoryType) => {
+								const config = CATEGORY_UI[categoryType];
+								const recipeIds = focusedDay.categories[categoryType] ?? [];
 
-<div className='space-y-1'>
-						{CATEGORY_TYPES.map((categoryType) => {
-							const config = CATEGORY_UI[categoryType];
-							const recipeIds = focusedDay.categories[categoryType] ?? [];
+								return (
+									<div key={categoryType}>
+										<button
+											type="button"
+											onClick={() => openRecipeModal(safeFocusedDayIndex, categoryType)}
+											className="flex items-center gap-2 py-2.5"
+										>
+											<CirclePlus className={`h-5 w-5 ${config.plusClass}`} />
+											<span
+												className={`text-sm font-bold uppercase tracking-[0.16em] ${config.plusClass}`}
+											>
+												{config.label}
+											</span>
+										</button>
 
-							return (
-								<div key={categoryType}>
-									<button
-										type='button'
-										onClick={() => openRecipeModal(safeFocusedDayIndex, categoryType)}
-										className='flex items-center gap-2 py-2.5'>
-										<CirclePlus className={`h-5 w-5 ${config.plusClass}`} />
-										<span className={`text-sm font-bold uppercase tracking-[0.16em] ${config.plusClass}`}>
-											{config.label}
-										</span>
-									</button>
-
-									{recipeIds.length > 0 && (
-										<div className='mb-2 space-y-2'>
-											{recipeIds.map((recipeId, recipeIndex) => {
-												const recipe = recipesById.get(recipeId);
-												const recipeKey = `${safeFocusedDayIndex}-${categoryType}-${recipeIndex}`;
-												const isExpanded = expandedRecipeKey === recipeKey;
-												return (
-													<article
-														key={`${recipeId}-${recipeIndex}`}
-														className='overflow-hidden rounded-2xl border border-stone-800/80 bg-stone-900'>
-														<button
-															type='button'
-															onClick={() => setExpandedRecipeKey((current) => (current === recipeKey ? null : recipeKey))}
-															className='flex min-w-0 w-full text-left'>
-															<div className='relative h-[5.5rem] w-[5.5rem] shrink-0 sm:h-24 sm:w-24'>
-																{recipe?.imageUrl ? (
-																	<img
-																		src={recipe.imageUrl}
-																		alt={recipe.title}
-																		className='h-full w-full object-cover'
+										{recipeIds.length > 0 && (
+											<div className="mb-2 space-y-2">
+												{recipeIds.map((recipeId, recipeIndex) => {
+													const recipe = recipesById.get(recipeId);
+													const recipeKey = `${safeFocusedDayIndex}-${categoryType}-${recipeIndex}`;
+													const isExpanded = expandedRecipeKey === recipeKey;
+													return (
+														<article
+															key={`${recipeId}-${recipeIndex}`}
+															className="overflow-hidden rounded-2xl border border-stone-800/80 bg-stone-900"
+														>
+															<button
+																type="button"
+																onClick={() =>
+																	setExpandedRecipeKey((current) =>
+																		current === recipeKey ? null : recipeKey,
+																	)
+																}
+																className="flex min-w-0 w-full text-left"
+															>
+																<div className="relative h-[5.5rem] w-[5.5rem] shrink-0 sm:h-24 sm:w-24">
+																	{recipe?.imageUrl ? (
+																		<img
+																			src={recipe.imageUrl}
+																			alt={recipe.title}
+																			className="h-full w-full object-cover"
+																		/>
+																	) : (
+																		<div className="h-full w-full bg-stone-700" />
+																	)}
+																	<div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-r from-transparent to-stone-900" />
+																</div>
+																<div className="min-w-0 flex-1 px-3 py-3">
+																	<p className="line-clamp-2 text-sm font-bold leading-snug text-stone-100 sm:text-base">
+																		{recipe?.title ?? recipeId}
+																	</p>
+																	<p className="mt-0.5 flex items-center gap-1 text-xs italic text-stone-400">
+																		<UserCircle2 className="h-3.5 w-3.5 shrink-0" />
+																		{recipe?.authorName ?? 'House Recipe'}
+																	</p>
+																</div>
+																<div className="flex items-center pr-3">
+																	<ArrowDown
+																		className={`h-4 w-4 text-stone-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
 																	/>
-																) : (
-																	<div className='h-full w-full bg-stone-700' />
-																)}
-																<div className='pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-r from-transparent to-stone-900' />
-															</div>
-															<div className='min-w-0 flex-1 px-3 py-3'>
-																<p className='line-clamp-2 text-sm font-bold leading-snug text-stone-100 sm:text-base'>
-																	{recipe?.title ?? recipeId}
-																</p>
-																<p className='mt-0.5 flex items-center gap-1 text-xs italic text-stone-400'>
-																	<UserCircle2 className='h-3.5 w-3.5 shrink-0' />
-																	{recipe?.authorName ?? 'House Recipe'}
-																</p>
-															</div>
-															<div className='flex items-center pr-3'>
-																<ArrowDown className={`h-4 w-4 text-stone-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-															</div>
-														</button>
-														{isExpanded && (
-															<div className='flex items-center justify-end gap-2 border-t border-stone-800 px-3 py-2'>
-																<button
-																	type='button'
-																	onClick={() => reorderRecipe(safeFocusedDayIndex, categoryType, recipeIndex, recipeIndex - 1)}
-																	className='flex h-8 w-8 items-center justify-center rounded-full border border-stone-700 bg-stone-800 text-stone-400'>
-																	<ArrowUp className='h-3.5 w-3.5' />
-																</button>
-																<button
-																	type='button'
-																	onClick={() => reorderRecipe(safeFocusedDayIndex, categoryType, recipeIndex, recipeIndex + 1)}
-																	className='flex h-8 w-8 items-center justify-center rounded-full border border-stone-700 bg-stone-800 text-stone-400'>
-																	<ArrowDown className='h-3.5 w-3.5' />
-																</button>
-																<button
-																	type='button'
-																	onClick={() => removeRecipe(safeFocusedDayIndex, categoryType, recipeIndex)}
-																	className='flex h-8 w-8 items-center justify-center rounded-full border border-stone-700 bg-stone-800 text-rose-400'>
-																	<X className='h-3.5 w-3.5' />
-																</button>
-															</div>
-														)}
-													</article>
+																</div>
+															</button>
+															{isExpanded && (
+																<div className="flex items-center justify-end gap-2 border-t border-stone-800 px-3 py-2">
+																	<button
+																		type="button"
+																		onClick={() =>
+																			reorderRecipe(
+																				safeFocusedDayIndex,
+																				categoryType,
+																				recipeIndex,
+																				recipeIndex - 1,
+																			)
+																		}
+																		className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-700 bg-stone-800 text-stone-400"
+																	>
+																		<ArrowUp className="h-3.5 w-3.5" />
+																	</button>
+																	<button
+																		type="button"
+																		onClick={() =>
+																			reorderRecipe(
+																				safeFocusedDayIndex,
+																				categoryType,
+																				recipeIndex,
+																				recipeIndex + 1,
+																			)
+																		}
+																		className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-700 bg-stone-800 text-stone-400"
+																	>
+																		<ArrowDown className="h-3.5 w-3.5" />
+																	</button>
+																	<button
+																		type="button"
+																		onClick={() =>
+																			removeRecipe(safeFocusedDayIndex, categoryType, recipeIndex)
+																		}
+																		className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-700 bg-stone-800 text-rose-400"
+																	>
+																		<X className="h-3.5 w-3.5" />
+																	</button>
+																</div>
+															)}
+														</article>
 													);
 												})}
 											</div>
@@ -664,26 +682,27 @@ export function CreatePlanPage() {
 						</div>
 
 						{saveError && (
-							<div className='rounded-2xl border border-[#f4a8bf]/30 bg-[#2d2a2c] px-4 py-3 text-sm text-[#ffd1de] sm:text-base'>
+							<div className="rounded-2xl border border-[#f4a8bf]/30 bg-[#2d2a2c] px-4 py-3 text-sm text-[#ffd1de] sm:text-base">
 								{saveError}
 							</div>
 						)}
 
 						{hasUnappliedDateRangeChange && (
-							<div className='rounded-2xl border border-[#ffd96b]/35 bg-[#332f1f] px-4 py-3 text-sm text-[#ffe7a0] sm:text-base'>
+							<div className="rounded-2xl border border-[#ffd96b]/35 bg-[#332f1f] px-4 py-3 text-sm text-[#ffe7a0] sm:text-base">
 								Your date range changed. Tap Apply dates to refresh the plan days.
 							</div>
 						)}
 
-						<div className='space-y-3'>
+						<div className="space-y-3">
 							<Button
-								type='button'
+								type="button"
 								disabled={isSaving || hasUnappliedDateRangeChange}
 								onClick={onSave}
-								className='h-12 w-full rounded-full bg-[#66cf63] text-base font-extrabold text-[#062510] hover:bg-[#73de70] disabled:bg-[#3a3d42] disabled:text-[#8d939b] sm:h-14 sm:text-lg'>
+								className="h-12 w-full rounded-full bg-[#66cf63] text-base font-extrabold text-[#062510] hover:bg-[#73de70] disabled:bg-[#3a3d42] disabled:text-[#8d939b] sm:h-14 sm:text-lg"
+							>
 								{isSaving ? (
 									<>
-										<Loader2 className='mr-2 h-5 w-5 animate-spin' />
+										<Loader2 className="mr-2 h-5 w-5 animate-spin" />
 										Saving...
 									</>
 								) : isEditMode ? (
@@ -692,29 +711,23 @@ export function CreatePlanPage() {
 									'Save Plan'
 								)}
 							</Button>
-							<Button
-								type='button'
-								variant='ghost'
-								onClick={() => void navigate({ to: '/plans' })}
-								className='h-11 w-full rounded-full border border-white/10 text-sm text-[#bfc4cd] hover:bg-white/10 hover:text-white'>
-								Cancel
-							</Button>
 						</div>
 					</div>
 				) : (
-					<div className='space-y-4 rounded-2xl border border-dashed border-white/15 bg-[#111317]/70 p-5 text-center sm:rounded-[2rem] sm:p-7'>
-						<p className='text-sm uppercase tracking-[0.18em] text-[#8c95a0] sm:text-base'>
+					<div className="space-y-4 rounded-2xl border border-dashed border-white/15 bg-[#111317]/70 p-5 text-center sm:rounded-[2rem] sm:p-7">
+						<p className="text-sm uppercase tracking-[0.18em] text-[#8c95a0] sm:text-base">
 							Plan days will appear here
 						</p>
-						<p className='text-sm text-[#a7afb8] sm:text-base'>
+						<p className="text-sm text-[#a7afb8] sm:text-base">
 							Pick a date range and apply it to start organizing recipes by day.
 						</p>
 						<Button
-							type='button'
+							type="button"
 							onClick={() => setDatePanelOpen(true)}
-							className='h-11 rounded-full bg-[#66cf63] px-6 font-bold text-[#062510] hover:bg-[#73de70]'>
+							className="h-11 rounded-full bg-[#66cf63] px-6 font-bold text-[#062510] hover:bg-[#73de70]"
+						>
 							Select dates
-							<ArrowRight className='ml-2 h-4 w-4' />
+							<ArrowRight className="ml-2 h-4 w-4" />
 						</Button>
 					</div>
 				)}
@@ -724,76 +737,91 @@ export function CreatePlanPage() {
 				className={`fixed inset-0 z-40 transition-all duration-200 ${
 					modalOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
 				}`}
-				aria-hidden={!modalOpen}>
-				<div className='absolute inset-0 bg-black/70 backdrop-blur-sm' onClick={closeModal} />
-				<div className='absolute inset-x-0 bottom-0 max-h-[92dvh] rounded-t-[1.6rem] border border-white/10 bg-[#1a1b20] p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_20px_60px_rgba(0,0,0,0.65)] sm:inset-x-3 sm:bottom-3 sm:top-[10%] sm:max-h-none sm:rounded-[2.2rem] sm:p-4'>
-					<div className='flex h-full flex-col overflow-hidden'>
-						<div className='sticky top-0 z-10 -mx-3 border-b border-white/10 bg-[#1a1b20]/95 px-3 pb-3 pt-1 backdrop-blur sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pb-4 sm:pt-0'>
-							<div className='mb-3 flex items-center justify-between'>
-								<h3 className='text-[1.75rem] font-extrabold text-white sm:text-[2rem]'>Add Recipes</h3>
+				aria-hidden={!modalOpen}
+			>
+				<div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={closeModal} />
+				<div className="absolute inset-x-0 bottom-0 max-h-[92dvh] rounded-t-[1.6rem] border border-white/10 bg-[#1a1b20] p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_20px_60px_rgba(0,0,0,0.65)] sm:inset-x-3 sm:bottom-3 sm:top-[10%] sm:max-h-none sm:rounded-[2.2rem] sm:p-4">
+					<div className="flex h-full flex-col overflow-hidden">
+						<div className="sticky top-0 z-10 -mx-3 border-b border-white/10 bg-[#1a1b20]/95 px-3 pb-3 pt-1 backdrop-blur sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pb-4 sm:pt-0">
+							<div className="mb-3 flex items-center justify-between">
+								<h3 className="text-[1.75rem] font-extrabold text-white sm:text-[2rem]">
+									Add Recipes
+								</h3>
 								<button
-									type='button'
+									type="button"
 									onClick={closeModal}
-									className='flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[#2f3237] text-[#d6d9df]'>
-									<X className='h-5 w-5' />
+									className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[#2f3237] text-[#d6d9df]"
+								>
+									<X className="h-5 w-5" />
 								</button>
 							</div>
 
-							<div className='rounded-2xl border border-white/10 bg-black/40 px-3 py-2.5 sm:rounded-3xl sm:px-4 sm:py-3'>
+							<div className="rounded-2xl border border-white/10 bg-black/40 px-3 py-2.5 sm:rounded-3xl sm:px-4 sm:py-3">
 								<Input
 									value={recipeSearch}
 									onChange={(event) => setRecipeSearch(event.target.value)}
-									placeholder='Search your kitchen...'
-									className='h-auto border-0 bg-transparent px-0 text-sm text-white placeholder:text-[#6f747c] sm:text-base'
+									placeholder="Search your kitchen..."
+									className="h-auto border-0 bg-transparent px-0 text-sm text-white placeholder:text-[#6f747c] sm:text-base"
 								/>
 							</div>
 						</div>
 
-						<div className='min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-black/25 p-2.5 sm:rounded-[1.8rem] sm:p-3'>
+						<div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-black/25 p-2.5 sm:rounded-[1.8rem] sm:p-3">
 							{recipeSearchQuery.isLoading ? (
-								<div className='flex items-center gap-2 px-2 py-3 text-[#9ca2ab]'>
-									<Loader2 className='h-4 w-4 animate-spin' />
+								<div className="flex items-center gap-2 px-2 py-3 text-[#9ca2ab]">
+									<Loader2 className="h-4 w-4 animate-spin" />
 									Loading recipes...
 								</div>
 							) : recipesForModal.length === 0 ? (
-								<p className='px-2 py-4 text-[#7d828a]'>No recipes found.</p>
+								<p className="px-2 py-4 text-[#7d828a]">No recipes found.</p>
 							) : (
-								<div className='space-y-2.5 sm:space-y-3'>
+								<div className="space-y-2.5 sm:space-y-3">
 									{recipesForModal.map((recipe) => {
 										const selected = selectedRecipeIds.includes(recipe.id);
 										return (
 											<button
 												key={recipe.id}
-												type='button'
+												type="button"
 												onClick={() => toggleRecipeSelection(recipe.id)}
 												className={`w-full overflow-hidden rounded-2xl border text-left transition ${
 													selected
 														? 'border-[#6fdb68]/60 bg-[#141f14]'
 														: 'border-stone-800/80 bg-stone-900'
-												}`}>
-												<div className='flex min-w-0'>
-													<div className='relative h-[5.5rem] w-[5.5rem] shrink-0 sm:h-24 sm:w-24'>
+												}`}
+											>
+												<div className="flex min-w-0">
+													<div className="relative h-[5.5rem] w-[5.5rem] shrink-0 sm:h-24 sm:w-24">
 														{recipe.imageUrl ? (
-															<img src={recipe.imageUrl} alt={recipe.title} className='h-full w-full object-cover' />
+															<img
+																src={recipe.imageUrl}
+																alt={recipe.title}
+																className="h-full w-full object-cover"
+															/>
 														) : (
-															<div className='h-full w-full bg-stone-700' />
+															<div className="h-full w-full bg-stone-700" />
 														)}
-														<div className={`pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-r from-transparent ${selected ? 'to-[#141f14]' : 'to-stone-900'}`} />
+														<div
+															className={`pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-r from-transparent ${selected ? 'to-[#141f14]' : 'to-stone-900'}`}
+														/>
 													</div>
-													<div className='min-w-0 flex-1 px-3 py-3'>
-														<p className='line-clamp-2 text-sm font-bold leading-snug text-stone-100 sm:text-base'>{recipe.title}</p>
-														<p className='mt-0.5 flex items-center gap-1 text-xs italic text-stone-400'>
-															<UserCircle2 className='h-3.5 w-3.5 shrink-0' />
+													<div className="min-w-0 flex-1 px-3 py-3">
+														<p className="line-clamp-2 text-sm font-bold leading-snug text-stone-100 sm:text-base">
+															{recipe.title}
+														</p>
+														<p className="mt-0.5 flex items-center gap-1 text-xs italic text-stone-400">
+															<UserCircle2 className="h-3.5 w-3.5 shrink-0" />
 															{recipe.authorName}
 														</p>
 													</div>
-													<div className='flex items-center pr-3'>
-														<div className={`flex h-6 w-6 items-center justify-center rounded-full border ${
-															selected
-																? 'border-[#6fdb68] bg-[#6fdb68] text-[#05240f]'
-																: 'border-stone-700 text-transparent'
-														}`}>
-															<Check className='h-3.5 w-3.5' />
+													<div className="flex items-center pr-3">
+														<div
+															className={`flex h-6 w-6 items-center justify-center rounded-full border ${
+																selected
+																	? 'border-[#6fdb68] bg-[#6fdb68] text-[#05240f]'
+																	: 'border-stone-700 text-transparent'
+															}`}
+														>
+															<Check className="h-3.5 w-3.5" />
 														</div>
 													</div>
 												</div>
@@ -804,14 +832,15 @@ export function CreatePlanPage() {
 							)}
 						</div>
 
-						<div className='sticky bottom-0 z-10 mt-3 -mx-3 border-t border-white/10 bg-[#1a1b20]/95 px-3 pt-3 backdrop-blur sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pt-4'>
+						<div className="sticky bottom-0 z-10 mt-3 -mx-3 border-t border-white/10 bg-[#1a1b20]/95 px-3 pt-3 backdrop-blur sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pt-4">
 							<Button
-								type='button'
+								type="button"
 								disabled={selectedRecipeIds.length === 0}
 								onClick={addSelectedRecipes}
-								className='h-12 w-full rounded-full bg-[#66cf63] text-base font-extrabold text-[#062510] hover:bg-[#73de70] disabled:bg-[#3a3d42] disabled:text-[#8d939b] sm:h-14 sm:text-lg'>
+								className="h-12 w-full rounded-full bg-[#66cf63] text-base font-extrabold text-[#062510] hover:bg-[#73de70] disabled:bg-[#3a3d42] disabled:text-[#8d939b] sm:h-14 sm:text-lg"
+							>
 								Add Selected ({selectedRecipeIds.length})
-								<CirclePlus className='ml-2 h-5 w-5' />
+								<CirclePlus className="ml-2 h-5 w-5" />
 							</Button>
 						</div>
 					</div>
