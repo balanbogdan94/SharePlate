@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from '@tanstack/react-router';
 import {
 	ArrowDown,
-	ArrowRight,
 	ArrowUp,
 	CalendarDays,
 	Check,
@@ -713,24 +712,7 @@ export function CreatePlanPage() {
 							</Button>
 						</div>
 					</div>
-				) : (
-					<div className="space-y-4 rounded-2xl border border-dashed border-white/15 bg-[#111317]/70 p-5 text-center sm:rounded-[2rem] sm:p-7">
-						<p className="text-sm uppercase tracking-[0.18em] text-[#8c95a0] sm:text-base">
-							Plan days will appear here
-						</p>
-						<p className="text-sm text-[#a7afb8] sm:text-base">
-							Pick a date range and apply it to start organizing recipes by day.
-						</p>
-						<Button
-							type="button"
-							onClick={() => setDatePanelOpen(true)}
-							className="h-11 rounded-full bg-[#66cf63] px-6 font-bold text-[#062510] hover:bg-[#73de70]"
-						>
-							Select dates
-							<ArrowRight className="ml-2 h-4 w-4" />
-						</Button>
-					</div>
-				)}
+				) : null}
 			</div>
 
 			<div
