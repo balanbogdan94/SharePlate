@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useParams } from '@tanstack/react-router';
+import { useCanGoBack, useNavigate, useParams, useRouter } from '@tanstack/react-router';
 import {
 	ArrowDown,
 	ArrowUp,
@@ -15,6 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { apiFetch } from '@/lib/api';
+import { useDraft, readDraftOnce } from '@/lib/useDraft';
 import type { RecipeSummary } from '@/pages/tabs/home/types';
 import {
 	CATEGORY_TYPES,
@@ -24,6 +25,8 @@ import {
 	type PlanListItem,
 	type PlanPayload,
 } from '@/pages/tabs/plan/types';
+
+type PlanDraft = { startDate: string; endDate: string; payload: PlanPayload | null };
 
 function formatDateInput(date: Date): string {
 	const year = date.getFullYear();
@@ -134,12 +137,17 @@ export function CreatePlanPage() {
 	const planId = params.planId;
 	const isEditMode = Boolean(planId);
 	const navigate = useNavigate();
+	const router = useRouter();
+	const canGoBack = useCanGoBack();
 	const queryClient = useQueryClient();
 
+	const draftKey = planId ? `shareplate.draft.plan.${planId}` : 'shareplate.draft.plan.new';
+	const { write: writeDraft, clear: clearDraft } = useDraft(draftKey);
+
 	const today = useMemo(() => formatDateInput(new Date()), []);
-	const [startDate, setStartDate] = useState(today);
-	const [endDate, setEndDate] = useState(addDays(today, 6));
-	const [payload, setPayload] = useState<PlanPayload | null>(null);
+	const [startDate, setStartDate] = useState(() => readDraftOnce<PlanDraft>(draftKey)?.startDate ?? today);
+	const [endDate, setEndDate] = useState(() => readDraftOnce<PlanDraft>(draftKey)?.endDate ?? addDays(today, 6));
+	const [payload, setPayload] = useState<PlanPayload | null>(() => readDraftOnce<PlanDraft>(draftKey)?.payload ?? null);
 	const [dateError, setDateError] = useState<string | null>(null);
 	const [saveError, setSaveError] = useState<string | null>(null);
 	const [datePanelOpen, setDatePanelOpen] = useState(false);
@@ -151,6 +159,19 @@ export function CreatePlanPage() {
 	const [recipeSearch, setRecipeSearch] = useState('');
 	const [selectedRecipeIds, setSelectedRecipeIds] = useState<string[]>([]);
 	const [expandedRecipeKey, setExpandedRecipeKey] = useState<string | null>(null);
+
+	useEffect(() => {
+		writeDraft({ startDate, endDate, payload });
+	}, [startDate, endDate, payload, writeDraft]);
+
+	const discard = useCallback(async () => {
+		clearDraft();
+		if (canGoBack) {
+			router.history.back();
+			return;
+		}
+		await navigate({ to: '/plans' });
+	}, [clearDraft, canGoBack, router, navigate]);
 
 	const plansQuery = useQuery({
 		queryKey: ['plans'],
@@ -209,7 +230,6 @@ export function CreatePlanPage() {
 		return map;
 	}, [recipesQuery.data, recipeSearchQuery.data]);
 
-
 	const closeModal = () => {
 		setModalOpen(false);
 		setRecipeSearch('');
@@ -267,6 +287,7 @@ export function CreatePlanPage() {
 				body: JSON.stringify(nextPayload),
 			}),
 		onSuccess: async (created) => {
+			clearDraft();
 			await queryClient.invalidateQueries({ queryKey: ['plans'] });
 			await navigate({
 				to: '/plans',
@@ -282,6 +303,7 @@ export function CreatePlanPage() {
 				body: JSON.stringify(nextPayload),
 			}),
 		onSuccess: async (updated) => {
+			clearDraft();
 			await queryClient.invalidateQueries({ queryKey: ['plans'] });
 			await queryClient.invalidateQueries({ queryKey: ['plans', 'detail', planId] });
 			await navigate({
@@ -433,10 +455,17 @@ export function CreatePlanPage() {
 			<div className="absolute -left-8 top-20 h-28 w-28 rounded-full bg-[#76dc6e]/10 blur-3xl sm:h-36 sm:w-36" />
 			<div className="absolute -right-12 top-6 h-36 w-36 rounded-full bg-[#5aa9ff]/10 blur-3xl sm:h-44 sm:w-44" />
 			<div className="relative space-y-4 sm:space-y-5">
-				<div>
+				<div className="flex items-center justify-between">
 					<h1 className="text-[2.2rem] font-black leading-none tracking-tight text-[#f8f8f9] sm:text-[2.4rem]">
 						{isEditMode ? 'Edit plan' : 'Create plan'}
 					</h1>
+					<button
+						type="button"
+						onClick={() => void discard()}
+						className="text-sm font-semibold text-[#8c949f] hover:text-[#f5f5f5]"
+					>
+						Discard
+					</button>
 				</div>
 
 				<div className="rounded-2xl border border-white/10 bg-[#15171c]/95 p-3 shadow-[0_14px_40px_rgba(0,0,0,0.45)] sm:rounded-[1.9rem] sm:p-4">
