@@ -145,9 +145,15 @@ export function CreatePlanPage() {
 	const { write: writeDraft, clear: clearDraft } = useDraft(draftKey);
 
 	const today = useMemo(() => formatDateInput(new Date()), []);
-	const [startDate, setStartDate] = useState(() => readDraftOnce<PlanDraft>(draftKey)?.startDate ?? today);
-	const [endDate, setEndDate] = useState(() => readDraftOnce<PlanDraft>(draftKey)?.endDate ?? addDays(today, 6));
-	const [payload, setPayload] = useState<PlanPayload | null>(() => readDraftOnce<PlanDraft>(draftKey)?.payload ?? null);
+	const [startDate, setStartDate] = useState(
+		() => readDraftOnce<PlanDraft>(draftKey)?.startDate ?? today,
+	);
+	const [endDate, setEndDate] = useState(
+		() => readDraftOnce<PlanDraft>(draftKey)?.endDate ?? addDays(today, 6),
+	);
+	const [payload, setPayload] = useState<PlanPayload | null>(
+		() => readDraftOnce<PlanDraft>(draftKey)?.payload ?? null,
+	);
 	const [dateError, setDateError] = useState<string | null>(null);
 	const [saveError, setSaveError] = useState<string | null>(null);
 	const [datePanelOpen, setDatePanelOpen] = useState(false);
