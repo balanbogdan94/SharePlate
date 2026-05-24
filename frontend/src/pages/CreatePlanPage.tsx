@@ -72,6 +72,7 @@ function formatDayChip(value: string): { weekday: string; day: string } {
 function formatRangeLabel(startDate: string, endDate: string): string {
 	const start = new Date(`${startDate}T00:00:00`);
 	const end = new Date(`${endDate}T00:00:00`);
+	if (isNaN(start.getTime()) || isNaN(end.getTime())) return '—';
 	const monthFormatter = new Intl.DateTimeFormat(undefined, { month: 'short' });
 	const startMonth = monthFormatter.format(start);
 	const endMonth = monthFormatter.format(end);
@@ -457,22 +458,11 @@ export function CreatePlanPage() {
 	}
 
 	return (
-		<section className="relative overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_12%_8%,rgba(42,58,90,0.28),rgba(8,10,14,1)_40%)] p-3 pb-24 text-[#f5f5f5] sm:rounded-[2rem] sm:p-5 sm:pb-28">
-			<div className="absolute -left-8 top-20 h-28 w-28 rounded-full bg-[#76dc6e]/10 blur-3xl sm:h-36 sm:w-36" />
-			<div className="absolute -right-12 top-6 h-36 w-36 rounded-full bg-[#5aa9ff]/10 blur-3xl sm:h-44 sm:w-44" />
-			<div className="relative space-y-4 sm:space-y-5">
-				<div className="flex items-center justify-between">
-					<h1 className="text-[2.2rem] font-black leading-none tracking-tight text-[#f8f8f9] sm:text-[2.4rem]">
-						{isEditMode ? 'Edit plan' : 'Create plan'}
-					</h1>
-					<button
-						type="button"
-						onClick={() => void discard()}
-						className="text-sm font-semibold text-[#8c949f] hover:text-[#f5f5f5]"
-					>
-						Discard
-					</button>
-				</div>
+		<section className="relative flex flex-col justify-between  overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_12%_8%,rgba(42,58,90,0.28),rgba(8,10,14,1)_40%)] p-3 h-full text-[#f5f5f5] sm:rounded-[2rem] sm:p-5 sm:pb-28">
+			<div className="relative space-y-4 sm:space-y-5 overflow-scroll">
+				<h1 className="text-[2.2rem] font-black leading-none tracking-tight text-[#f8f8f9] sm:text-[2.4rem]">
+					{isEditMode ? 'Edit plan' : 'Create plan'}
+				</h1>
 
 				<div className="rounded-2xl border border-white/10 bg-[#15171c]/95 p-3 shadow-[0_14px_40px_rgba(0,0,0,0.45)] sm:rounded-[1.9rem] sm:p-4">
 					<p className="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#97a1aa] sm:text-[0.68rem]">
@@ -726,28 +716,37 @@ export function CreatePlanPage() {
 								Your date range changed. Tap Apply dates to refresh the plan days.
 							</div>
 						)}
-
-						<div className="space-y-3">
-							<Button
-								type="button"
-								disabled={isSaving || hasUnappliedDateRangeChange}
-								onClick={onSave}
-								className="h-12 w-full rounded-full bg-[#66cf63] text-base font-extrabold text-[#062510] hover:bg-[#73de70] disabled:bg-[#3a3d42] disabled:text-[#8d939b] sm:h-14 sm:text-lg"
-							>
-								{isSaving ? (
-									<>
-										<Loader2 className="mr-2 h-5 w-5 animate-spin" />
-										Saving...
-									</>
-								) : isEditMode ? (
-									'Save Plan'
-								) : (
-									'Save Plan'
-								)}
-							</Button>
-						</div>
 					</div>
 				) : null}
+			</div>
+			<div className="space-y-3 pt-4">
+				<Button
+					type="button"
+					disabled={isSaving || hasUnappliedDateRangeChange}
+					onClick={onSave}
+					className="h-12 w-full rounded-full bg-[#66cf63] text-base font-extrabold text-[#062510] hover:bg-[#73de70] disabled:bg-[#3a3d42] disabled:text-[#8d939b] sm:h-14 sm:text-lg"
+				>
+					{isSaving ? (
+						<>
+							<Loader2 className="mr-2 h-5 w-5 animate-spin" />
+							Saving...
+						</>
+					) : isEditMode ? (
+						'Update Plan'
+					) : (
+						'Save Plan'
+					)}
+				</Button>
+
+				<Button
+					type="button"
+					variant="secondary"
+					disabled={isSaving || hasUnappliedDateRangeChange}
+					onClick={discard}
+					className="h-12 w-full rounded-full text-base font-extrabold disabled:bg-[#3a3d42] disabled:text-[#8d939b] sm:h-14 sm:text-lg"
+				>
+					Discard
+				</Button>
 			</div>
 
 			<div
