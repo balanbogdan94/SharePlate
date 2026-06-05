@@ -35,7 +35,7 @@ export function PlanCurrentView({
 	return (
 		<div>
 			<div className="mb-2 flex items-center gap-3">
-				<p className="flex-1 text-xl font-bold text-[#9cc7ff]">
+				<p className="flex-1 text-l font-bold text-[#9cc7ff]">
 					{formatDisplayDate(plan.startDate)} – {formatDisplayDate(plan.endDate)}
 				</p>
 				<button
