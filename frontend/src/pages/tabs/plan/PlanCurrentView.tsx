@@ -1,6 +1,8 @@
 import { useNavigate } from '@tanstack/react-router';
 import { PenLine } from 'lucide-react';
 import type { RecipeSummary } from '@/pages/tabs/home/types';
+import type { ExportPhase } from '@/pages/usePlanExport';
+import type { EditableReminderItem } from '@/pages/tabs/plan/remindersExport';
 import type { PlanDetails } from '@/pages/tabs/plan/types';
 import { formatDisplayDate } from '@/pages/tabs/plan/planUtils';
 import { PlanDaySection } from '@/pages/tabs/plan/PlanDaySection';
@@ -9,9 +11,14 @@ import { PlanRemindersExport } from '@/pages/tabs/plan/PlanRemindersExport';
 type ExportProps = {
 	planId: string;
 	isExporting: boolean;
+	phase: ExportPhase;
+	draftItems: EditableReminderItem[];
 	errorMessage: string | null;
-	fallbackText: string | null;
 	onExport: () => Promise<void>;
+	onUpdateQuantity: (itemId: string, quantity: string) => void;
+	onDeleteDraft: (itemId: string) => void;
+	onCancelDraft: () => void;
+	onSendDraft: () => void;
 };
 
 type Props = {
@@ -50,8 +57,13 @@ export function PlanCurrentView({
 					planId={exportProps.planId}
 					onExport={exportProps.onExport}
 					isExporting={exportProps.isExporting}
+					phase={exportProps.phase}
+					draftItems={exportProps.draftItems}
 					errorMessage={exportProps.errorMessage}
-					fallbackText={exportProps.fallbackText}
+					onUpdateQuantity={exportProps.onUpdateQuantity}
+					onDeleteDraft={exportProps.onDeleteDraft}
+					onCancelDraft={exportProps.onCancelDraft}
+					onSendDraft={exportProps.onSendDraft}
 				/>
 			</div>
 			<div>

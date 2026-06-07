@@ -14,6 +14,13 @@ export type ReminderExportPayload = {
 	text: string;
 };
 
+export type EditableReminderItem = {
+	id: string;
+	name: string;
+	quantity: string;
+	unitId: string;
+};
+
 const SHORTCUT_NAME = 'SharePlate Add To Reminders';
 
 function normalizeIngredientName(name: string): string {
@@ -72,7 +79,10 @@ export function aggregateIngredients(recipes: RecipeDetail[]): AggregatedIngredi
 }
 
 export function formatReminderLines(ingredients: AggregatedIngredient[]): string[] {
-	return ingredients.map((ingredient) => `${ingredient.name} — ${formatQuantity(ingredient.quantity)} ${ingredient.unitId}`);
+	return ingredients.map(
+		(ingredient) =>
+			`${ingredient.name} — ${formatQuantity(ingredient.quantity)} ${ingredient.unitId}`,
+	);
 }
 
 export function buildShortcutUrl(text: string, shortcutName = SHORTCUT_NAME): string {
@@ -92,4 +102,33 @@ export function buildReminderExportPayload(recipes: RecipeDetail[]): ReminderExp
 		lines,
 		text: lines.join('\n'),
 	};
+}
+
+export function toEditableReminderItems(
+	ingredients: AggregatedIngredient[],
+): EditableReminderItem[] {
+	return ingredients.map((ingredient, index) => ({
+		id: `${ingredient.normalizedName}-${ingredient.unitId}-${index}`,
+		name: ingredient.name,
+		quantity: formatQuantity(ingredient.quantity),
+		unitId: ingredient.unitId,
+	}));
+}
+
+export function formatEditableReminderItem(item: EditableReminderItem): string {
+	return `${item.name.trim()} — ${item.quantity.trim()} ${item.unitId.trim()}`;
+}
+
+export function buildEditableReminderText(items: EditableReminderItem[]): string {
+	return items.map(formatEditableReminderItem).join('\n');
+}
+
+export function getEditableReminderValidationMessage(items: EditableReminderItem[]): string | null {
+	if (items.length === 0) {
+		return 'Keep at least one ingredient before sending.';
+	}
+	if (items.some((item) => !Number.isFinite(Number(item.quantity)) || Number(item.quantity) <= 0)) {
+		return 'Every ingredient needs a quantity greater than zero.';
+	}
+	return null;
 }
