@@ -15,6 +15,8 @@ import { CreatePlanPage } from '@/pages/CreatePlanPage';
 import { HomeTabPage } from '@/pages/tabs/HomeTabPage';
 import { PlanTabPage } from '@/pages/tabs/PlanTabPage';
 import { HouseTabPage } from '@/pages/tabs/HouseTabPage';
+import { SettingsTabPage } from '@/pages/tabs/SettingsTabPage';
+import { ProfilePage } from '@/pages/ProfilePage';
 
 type RouterContext = {
 	auth: AuthContextValue;
@@ -51,9 +53,7 @@ const appLayoutRoute = createRoute({
 const homeTabRoute = createRoute({
 	getParentRoute: () => appLayoutRoute,
 	path: '/recipes',
-	validateSearch: (
-		search: Record<string, unknown>,
-	): { expand?: string } => ({
+	validateSearch: (search: Record<string, unknown>): { expand?: string } => ({
 		expand: typeof search.expand === 'string' ? search.expand : undefined,
 	}),
 	component: HomeTabPage,
@@ -80,9 +80,7 @@ const editRecipeRoute = createRoute({
 const planTabRoute = createRoute({
 	getParentRoute: () => appLayoutRoute,
 	path: '/plans',
-	validateSearch: (
-		search: Record<string, unknown>,
-	): { expand?: string } => ({
+	validateSearch: (search: Record<string, unknown>): { expand?: string } => ({
 		expand: typeof search.expand === 'string' ? search.expand : undefined,
 	}),
 	component: PlanTabPage,
@@ -106,12 +104,22 @@ const thirdTabRoute = createRoute({
 	component: HouseTabPage,
 });
 
+const settingsRoute = createRoute({
+	getParentRoute: () => appLayoutRoute,
+	path: '/settings',
+	component: SettingsTabPage,
+});
+
+const profileRoute = createRoute({
+	getParentRoute: () => appLayoutRoute,
+	path: '/profile',
+	component: ProfilePage,
+});
+
 const loginRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: '/login',
-	validateSearch: (
-		search: Record<string, unknown>,
-	): { redirect?: string } => ({
+	validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
 		redirect: typeof search.redirect === 'string' ? search.redirect : undefined,
 	}),
 	beforeLoad: ({ context }) => {
@@ -144,6 +152,8 @@ const routeTree = rootRoute.addChildren([
 		createPlanRoute,
 		editPlanRoute,
 		thirdTabRoute,
+		settingsRoute,
+		profileRoute,
 	]),
 	loginRoute,
 	registerRoute,
