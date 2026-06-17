@@ -138,6 +138,7 @@ public static class HouseEndpoints
                         m.UserId,
                         m.User.Name,
                         m.User.Email,
+                        m.User.ProfilePictureUrl,
                         m.Role.ToString()
                     )).ToList()
             );
@@ -440,6 +441,7 @@ public static class HouseEndpoints
             r.RequesterId,
             r.Requester.Name,
             r.Requester.Email,
+            r.Requester.ProfilePictureUrl,
             r.Status.ToString(),
             r.CreatedAt);
 }

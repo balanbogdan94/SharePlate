@@ -90,6 +90,7 @@ function createRecipeDetail(): RecipeDetail {
 		imageUrl: '',
 		authorId: 'author',
 		authorName: 'Author',
+		authorAvatarUrl: '',
 		createdAt: '2026-04-01T10:00:00Z',
 		updatedAt: '2026-04-01T10:00:00Z',
 		ingredients: [

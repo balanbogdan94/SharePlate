@@ -61,6 +61,7 @@ public record RecipeResponse(
     string ImageUrl,
     Guid AuthorId,
     string AuthorName,
+    string AuthorAvatarUrl,
     DateTime CreatedAt,
     DateTime UpdatedAt
 );
@@ -80,6 +81,7 @@ public record RecipeWithIngredientsResponse(
     string ImageUrl,
     Guid AuthorId,
     string AuthorName,
+    string AuthorAvatarUrl,
     DateTime CreatedAt,
     DateTime UpdatedAt,
     List<RecipeIngredientResponse> Ingredients

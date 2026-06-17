@@ -6,6 +6,7 @@ import {
 	House,
 	HousePlus,
 	Loader2,
+	Pencil,
 	ScanLine,
 	UserMinus,
 	Users,
@@ -14,6 +15,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Avatar } from '@/components/ui/avatar';
 import { apiFetch } from '@/lib/api';
 
 type HouseResponse = {
@@ -45,6 +47,7 @@ type HouseMemberSummary = {
 	userId: string;
 	name: string;
 	email: string;
+	profilePictureUrl: string;
 	role: 'Owner' | 'Member' | string;
 };
 
@@ -61,6 +64,7 @@ type PendingJoinRequestResponse = {
 	requesterId: string;
 	requesterName: string;
 	requesterEmail: string;
+	requesterProfilePictureUrl: string;
 	status: string;
 	createdAt: string;
 };
@@ -89,6 +93,7 @@ export function HouseTabPage() {
 	const [scannerOpen, setScannerOpen] = useState(false);
 	const [scannerError, setScannerError] = useState<string | null>(null);
 	const [copiedCode, setCopiedCode] = useState(false);
+	const [renamingActive, setRenamingActive] = useState(false);
 	const videoRef = useRef<HTMLVideoElement | null>(null);
 	const streamRef = useRef<MediaStream | null>(null);
 
@@ -335,23 +340,23 @@ export function HouseTabPage() {
 
 	if (houseStateQuery.isLoading) {
 		return (
-			<section className="flex h-full items-center justify-center rounded-3xl bg-[#0e1015] p-6 text-[#aeb5be]">
-				<Loader2 className="mr-2 h-5 w-5 animate-spin" />
-				Loading house workspace...
-			</section>
+			<div className="flex h-full items-center justify-center gap-2 text-stone-500 dark:text-stone-400">
+				<Loader2 className="h-5 w-5 animate-spin" />
+				<span className="text-sm">Loading...</span>
+			</div>
 		);
 	}
 
 	if (houseStateQuery.isError || !houseStateQuery.data) {
 		return (
-			<section className="space-y-4 rounded-3xl bg-[#0e1015] p-4">
+			<div className="space-y-4 pb-8 pt-2">
 				<Alert variant="destructive">
 					<AlertTitle>Could not load house</AlertTitle>
 					<AlertDescription>
 						{toErrorMessage(houseStateQuery.error, 'Please try again.')}
 					</AlertDescription>
 				</Alert>
-			</section>
+			</div>
 		);
 	}
 
@@ -359,374 +364,489 @@ export function HouseTabPage() {
 
 	if (state.migrationRequired) {
 		return (
-			<section className="relative overflow-hidden rounded-3xl bg-[radial-gradient(circle_at_top,_rgba(116,225,125,0.16),_rgba(8,10,14,1)_58%)] p-4 pb-10 text-[#f3f5f7] sm:p-6">
-				<div className="space-y-5">
-					<p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#8cd7ff]">
-						Migration Required
-					</p>
-					<h1 className="text-4xl font-extrabold leading-tight">
-						Pick what to do with your personal house
-					</h1>
-					<p className="max-w-xl text-base text-[#b7bdc7]">
-						To continue using house sharing, keep your legacy house as shared or dissolve it and
-						return to no-house state.
-					</p>
-					<div className="grid gap-3 sm:grid-cols-2">
-						<Button
-							type="button"
-							onClick={() => keepMigrationMutation.mutate()}
-							disabled={keepMigrationMutation.isPending || dissolveMigrationMutation.isPending}
-							className="h-12 rounded-full bg-[#66d56d] text-[#102015] hover:bg-[#7de286]"
-						>
-							{keepMigrationMutation.isPending ? 'Keeping...' : 'Keep House'}
-						</Button>
-						<Button
-							type="button"
-							variant="destructive"
-							onClick={() => dissolveMigrationMutation.mutate()}
-							disabled={keepMigrationMutation.isPending || dissolveMigrationMutation.isPending}
-							className="h-12 rounded-full bg-[#3b2124] text-[#ffb9b9] hover:bg-[#53262d]"
-						>
-							{dissolveMigrationMutation.isPending ? 'Dissolving...' : 'Dissolve House'}
-						</Button>
+			<div className="space-y-6 pb-8 pt-2">
+				<h1 className="text-[2rem] font-bold tracking-tight text-stone-900 dark:text-stone-50">
+					House
+				</h1>
+				<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+					<div className="px-4 py-5">
+						<p className="text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
+							Action Required
+						</p>
+						<p className="mt-2 text-lg font-semibold text-stone-900 dark:text-stone-100">
+							Pick what to do with your personal house
+						</p>
+						<p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+							Keep your legacy house as shared or dissolve it to return to no-house state.
+						</p>
+						<div className="mt-4 flex flex-col gap-3 sm:flex-row">
+							<Button
+								type="button"
+								onClick={() => keepMigrationMutation.mutate()}
+								disabled={keepMigrationMutation.isPending || dissolveMigrationMutation.isPending}
+								className="h-11 flex-1 rounded-full bg-green-500 font-semibold text-white hover:bg-green-600"
+							>
+								{keepMigrationMutation.isPending ? 'Keeping...' : 'Keep House'}
+							</Button>
+							<Button
+								type="button"
+								variant="destructive"
+								onClick={() => dissolveMigrationMutation.mutate()}
+								disabled={keepMigrationMutation.isPending || dissolveMigrationMutation.isPending}
+								className="h-11 flex-1 rounded-full"
+							>
+								{dissolveMigrationMutation.isPending ? 'Dissolving...' : 'Dissolve House'}
+							</Button>
+						</div>
 					</div>
 				</div>
-			</section>
+			</div>
 		);
 	}
 
 	return (
-		<section className="relative overflow-hidden rounded-3xl bg-[radial-gradient(circle_at_top,_rgba(115,226,125,0.18),_rgba(8,10,14,1)_55%)] p-3 pb-24 text-[#f3f5f7] sm:p-5">
-			<div className="absolute -left-12 top-14 h-56 w-56 rounded-full bg-[#74e27d]/10 blur-3xl" />
-			<div className="absolute -right-16 bottom-10 h-64 w-64 rounded-full bg-[#94bfff]/10 blur-3xl" />
-			<div className="relative space-y-4">
-				<p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#9bc7ff]">
-					Your House
-				</p>
+		<div className="space-y-6 pb-8 pt-2">
+			<h1 className="text-[2rem] font-bold tracking-tight text-stone-900 dark:text-stone-50">
+				House
+			</h1>
 
-				{state.membershipState === 'None' && (
-					<div className="space-y-4">
-						<div className="rounded-[2rem] border border-white/10 bg-[#14171d]/90 p-5">
-							<div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-[#1f232a]">
-								<House className="h-12 w-12 text-[#67d56f]" />
+			{state.membershipState === 'None' && (
+				<div className="space-y-6">
+					<div className="space-y-1.5">
+						<p className="px-4 text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
+							Join a House
+						</p>
+						<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+							<div className="px-4 py-4">
+								<div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-green-100 dark:bg-green-900/40">
+									<House className="h-8 w-8 text-green-600 dark:text-green-400" />
+								</div>
+								<p className="font-semibold text-stone-900 dark:text-stone-100">
+									You are not part of a house yet
+								</p>
+								<p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+									Join your family or roommates to share recipes and plans.
+								</p>
 							</div>
-							<p className="text-center text-4xl font-extrabold leading-tight text-white">
-								You are not part of a house yet
-							</p>
-							<p className="mx-auto mt-3 max-w-md text-center text-[#b2b8c1]">
-								Join your family or roommates to share recipes and plans.
-							</p>
-
-							<div className="mt-5 space-y-3">
-								<label className="text-sm font-semibold text-[#9bc7ff]">Enter house code</label>
+							<div className="mx-4 h-px bg-stone-200 dark:bg-stone-700/60" />
+							<div className="space-y-3 px-4 py-4">
 								<Input
 									value={joinCode}
 									onChange={(event) => setJoinCode(normalizeCode(event.target.value))}
 									placeholder="ABCD-1234"
-									className="h-12 rounded-full border-white/10 bg-[#0f1116] text-center text-xl tracking-[0.35em] text-white placeholder:text-[#5f6670]"
+									className="h-11 rounded-xl text-center text-lg tracking-[0.3em]"
 								/>
 								<Button
 									type="button"
 									onClick={() => requestJoinMutation.mutate()}
 									disabled={requestJoinMutation.isPending || joinCode.replace('-', '').length < 8}
-									className="h-12 w-full rounded-full bg-[#67d56f] text-lg font-bold text-[#102015] hover:bg-[#7be283]"
+									className="h-11 w-full rounded-xl bg-green-500 font-semibold text-white hover:bg-green-600"
 								>
 									{requestJoinMutation.isPending ? 'Sending request...' : 'Request to Join'}
 								</Button>
-
 								<Button
 									type="button"
 									variant="outline"
-									onClick={() => setScannerOpen((value) => !value)}
-									className="h-12 w-full rounded-full border-white/10 bg-[#1f2329] text-white hover:bg-[#292e36]"
+									onClick={() => setScannerOpen((v) => !v)}
+									className="h-11 w-full rounded-xl"
 								>
 									<ScanLine className="h-4 w-4" />
 									{scannerOpen ? 'Close Scanner' : 'Scan QR Code'}
 								</Button>
-
 								{scannerOpen && (
-									<div className="space-y-2 rounded-2xl border border-white/10 bg-[#0f1116] p-3">
-										<video
-											ref={videoRef}
-											className="w-full rounded-xl bg-black/50"
-											muted
-											playsInline
-										/>
-										<p className="text-xs text-[#90a6bf]">
+									<div className="space-y-2 rounded-xl border border-stone-200 bg-stone-50 p-3 dark:border-stone-700 dark:bg-stone-800">
+										<video ref={videoRef} className="w-full rounded-lg" muted playsInline />
+										<p className="text-xs text-stone-500 dark:text-stone-400">
 											Align the QR code in frame. We auto-fill the house code.
 										</p>
-										{scannerError && <p className="text-xs text-[#ffb4b4]">{scannerError}</p>}
+										{scannerError && <p className="text-xs text-red-500">{scannerError}</p>}
 									</div>
 								)}
+							</div>
+						</div>
+					</div>
 
-								<label className="mt-2 block text-sm font-semibold text-[#9bc7ff]">
-									Create new house
-								</label>
+					<div className="space-y-1.5">
+						<p className="px-4 text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
+							Create a House
+						</p>
+						<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+							<div className="space-y-3 px-4 py-4">
 								<Input
 									value={newHouseName}
 									onChange={(event) => setNewHouseName(event.target.value)}
 									placeholder="The Green Kitchen"
-									className="h-12 rounded-full border-white/10 bg-[#0f1116] text-white placeholder:text-[#5f6670]"
+									className="h-11 rounded-xl"
 								/>
 								<Button
 									type="button"
 									onClick={() => createHouseMutation.mutate()}
 									disabled={createHouseMutation.isPending || newHouseName.trim().length < 2}
-									className="h-12 w-full rounded-full bg-[#2b3037] text-lg font-bold text-white hover:bg-[#3c434d]"
+									className="h-11 w-full rounded-xl bg-stone-800 font-semibold text-white hover:bg-stone-700 dark:bg-stone-700 dark:hover:bg-stone-600"
 								>
 									<HousePlus className="h-4 w-4" />
 									{createHouseMutation.isPending ? 'Creating...' : 'Create New House'}
 								</Button>
 							</div>
 						</div>
-
-						{(requestJoinMutation.isError || createHouseMutation.isError) && (
-							<Alert variant="destructive">
-								<AlertTitle>House action failed</AlertTitle>
-								<AlertDescription>
-									{toErrorMessage(
-										requestJoinMutation.error ?? createHouseMutation.error,
-										'Please try again.',
-									)}
-								</AlertDescription>
-							</Alert>
-						)}
 					</div>
-				)}
 
-				{state.membershipState === 'Pending' && state.pendingRequest && (
-					<div className="space-y-4 rounded-[2rem] border border-white/10 bg-[#14171d]/90 p-5">
-						<p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#9bc7ff]">
-							House Access
-						</p>
-						<h2 className="text-5xl font-extrabold leading-none text-white">Request Pending</h2>
-						<p className="text-[#b3bac3]">Your request is waiting for owner approval.</p>
+					{(requestJoinMutation.isError || createHouseMutation.isError) && (
+						<Alert variant="destructive">
+							<AlertTitle>House action failed</AlertTitle>
+							<AlertDescription>
+								{toErrorMessage(
+									requestJoinMutation.error ?? createHouseMutation.error,
+									'Please try again.',
+								)}
+							</AlertDescription>
+						</Alert>
+					)}
+				</div>
+			)}
 
-						<div className="grid gap-3 sm:grid-cols-2">
-							<div className="rounded-3xl border border-white/10 bg-[#1c2027] p-4">
-								<p className="text-xs uppercase tracking-[0.2em] text-[#7f8792]">House Name</p>
-								<p className="mt-2 text-3xl font-bold text-[#73df7a]">
-									{state.pendingRequest.houseName}
-								</p>
-							</div>
-							<div className="rounded-3xl border border-white/10 bg-[#1c2027] p-4">
-								<p className="text-xs uppercase tracking-[0.2em] text-[#7f8792]">House Code</p>
-								<p className="mt-2 text-3xl font-bold text-white">
-									{state.pendingRequest.houseCode}
-								</p>
-							</div>
+			{state.membershipState === 'Pending' && state.pendingRequest && (
+				<div className="space-y-6">
+					<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+						<div className="px-4 py-4">
+							<p className="text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
+								Awaiting Approval
+							</p>
+							<p className="mt-2 font-semibold text-stone-900 dark:text-stone-100">
+								Your request is waiting for owner approval.
+							</p>
 						</div>
+						<div className="mx-4 h-px bg-stone-200 dark:bg-stone-700/60" />
+						<div className="flex items-center gap-3 px-4 py-3">
+							<span className="text-sm text-stone-500 dark:text-stone-400">House</span>
+							<span className="flex-1 text-right font-semibold text-stone-900 dark:text-stone-100">
+								{state.pendingRequest.houseName}
+							</span>
+						</div>
+						<div className="mx-4 h-px bg-stone-200 dark:bg-stone-700/60" />
+						<div className="flex items-center gap-3 px-4 py-3">
+							<span className="text-sm text-stone-500 dark:text-stone-400">Code</span>
+							<span className="flex-1 text-right font-mono font-bold tracking-widest text-stone-900 dark:text-stone-100">
+								{state.pendingRequest.houseCode}
+							</span>
+						</div>
+					</div>
 
-						<Button
+					<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+						<button
 							type="button"
 							onClick={() => cancelRequestMutation.mutate(state.pendingRequest!.requestId)}
 							disabled={cancelRequestMutation.isPending}
-							className="h-12 w-full rounded-full bg-[#2b3037] text-lg font-semibold text-white hover:bg-[#3c434d]"
+							className="flex min-h-[52px] w-full items-center gap-3 px-4 py-3 active:bg-stone-100 dark:active:bg-stone-800"
 						>
-							{cancelRequestMutation.isPending ? 'Cancelling...' : 'Cancel Request'}
-						</Button>
-					</div>
-				)}
-
-				{state.membershipState === 'Member' && state.house && !state.isOwner && (
-					<div className="space-y-4">
-						<div className="rounded-[2rem] border border-white/10 bg-[#14171d]/90 p-5">
-							<div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-[#1f232a]">
-								<Users className="h-10 w-10 text-[#67d56f]" />
+							<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-red-500">
+								<X className="h-4 w-4 text-white" />
 							</div>
-							<p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#7ddf85]">
-								Current Workspace
-							</p>
-							<h2 className="mt-2 text-5xl font-extrabold text-white">{state.house.name}</h2>
-							<p className="mt-3 inline-flex rounded-full bg-[#0c0e13] px-4 py-2 text-lg text-[#c3cad3]">
-								You are part of this house
-							</p>
-						</div>
+							<span className="text-base font-medium text-red-500">
+								{cancelRequestMutation.isPending ? 'Cancelling...' : 'Cancel Request'}
+							</span>
+						</button>
+					</div>
+				</div>
+			)}
 
-						<div className="rounded-[2rem] border border-white/10 bg-[#14171d]/90 p-5">
-							<p className="text-[#b2b8c1]">
-								Leaving the house will remove access to shared recipes and plans immediately.
-							</p>
-							<Button
-								type="button"
-								onClick={() => leaveHouseMutation.mutate()}
-								disabled={leaveHouseMutation.isPending}
-								className="mt-4 h-12 w-full rounded-full bg-[#321f22] text-lg font-semibold text-[#ffb5b5] hover:bg-[#47262a]"
-							>
-								{leaveHouseMutation.isPending ? 'Leaving...' : 'Leave House'}
-							</Button>
+			{state.membershipState === 'Member' && state.house && !state.isOwner && (
+				<div className="space-y-6">
+					<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+						<div className="flex min-h-[68px] items-center gap-4 px-4 py-3">
+							<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-100 dark:bg-green-900/40">
+								<Users className="h-6 w-6 text-green-600 dark:text-green-400" />
+							</div>
+							<div>
+								<p className="font-semibold text-stone-900 dark:text-stone-100">
+									{state.house.name}
+								</p>
+								<p className="text-sm text-stone-500 dark:text-stone-400">Member</p>
+							</div>
 						</div>
 					</div>
-				)}
 
-				{state.membershipState === 'Member' && state.house && state.isOwner && (
-					<div className="space-y-4">
-						<div className="rounded-[2rem] border border-white/10 bg-[#14171d]/90 p-5">
-							<p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#7ddf85]">
-								House Management
-							</p>
-							<h2 className="mt-2 text-5xl font-extrabold text-white">{state.house.name}</h2>
+					<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+						<button
+							type="button"
+							onClick={() => leaveHouseMutation.mutate()}
+							disabled={leaveHouseMutation.isPending}
+							className="flex min-h-[52px] w-full items-center gap-3 px-4 py-3 active:bg-stone-100 dark:active:bg-stone-800"
+						>
+							<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-red-500">
+								<X className="h-4 w-4 text-white" />
+							</div>
+							<span className="text-base font-medium text-red-500">
+								{leaveHouseMutation.isPending ? 'Leaving...' : 'Leave House'}
+							</span>
+						</button>
+					</div>
+				</div>
+			)}
 
-							<div className="mt-5 grid gap-4 sm:grid-cols-2">
-								<div className="rounded-3xl border border-white/10 bg-[#0f1116] p-4">
-									<p className="text-xs uppercase tracking-[0.2em] text-[#7f8792]">Invite QR</p>
+			{state.membershipState === 'Member' && state.house && state.isOwner && (
+				<div className="space-y-6">
+					<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+						<div className="flex min-h-[68px] items-center gap-4 px-4 py-3">
+							<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-100 dark:bg-green-900/40">
+								<House className="h-6 w-6 text-green-600 dark:text-green-400" />
+							</div>
+							<div>
+								<p className="font-semibold text-stone-900 dark:text-stone-100">
+									{state.house.name}
+								</p>
+								<span className="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-400">
+									Owner
+								</span>
+							</div>
+						</div>
+					</div>
+
+					<div className="space-y-1.5">
+						<p className="px-4 text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
+							Invite
+						</p>
+						<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+							<div className="flex justify-center px-6 py-6">
+								<div className="h-52 w-52 shrink-0 overflow-hidden rounded-2xl border border-stone-200 bg-white p-3 shadow-sm">
 									<img
-										src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(state.house.code)}`}
+										src={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(state.house.code)}`}
 										alt="House QR code"
-										className="mt-3 w-full rounded-2xl border border-white/10 bg-white p-2"
+										className="h-full w-full rounded-lg"
 									/>
 								</div>
-								<div className="rounded-3xl border border-white/10 bg-[#0f1116] p-4">
-									<p className="text-xs uppercase tracking-[0.2em] text-[#7f8792]">House Code</p>
-									<div className="mt-3 flex items-center justify-between rounded-full bg-black/50 px-4 py-3">
-										<p className="text-3xl font-extrabold tracking-[0.15em] text-[#7ce485]">
-											{state.house.code}
-										</p>
-										<button
-											type="button"
-											onClick={() => void onCopyCode(state.house!.code)}
-											className="rounded-full bg-[#20252d] p-2 text-white"
-										>
-											{copiedCode ? (
-												<Check className="h-4 w-4 text-[#7ce485]" />
-											) : (
-												<Copy className="h-4 w-4" />
-											)}
-										</button>
-									</div>
-								</div>
+							</div>
+							<div className="mx-4 h-px bg-stone-200 dark:bg-stone-700/60" />
+							<div className="flex min-h-[52px] items-center gap-3 px-4 py-2">
+								<span className="flex-1 font-mono text-lg font-bold tracking-[0.2em] text-stone-900 dark:text-stone-100">
+									{state.house.code}
+								</span>
+								<button
+									type="button"
+									onClick={() => void onCopyCode(state.house!.code)}
+									className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-100 text-stone-600 transition hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+								>
+									{copiedCode ? (
+										<Check className="h-4 w-4 text-green-500" />
+									) : (
+										<Copy className="h-4 w-4" />
+									)}
+								</button>
 							</div>
 						</div>
+					</div>
 
-						<div className="rounded-[2rem] border border-white/10 bg-[#14171d]/90 p-5">
-							<p className="mb-3 text-3xl font-bold text-white">Members</p>
-							{membersQuery.isLoading && <p className="text-[#aeb6bf]">Loading members...</p>}
-							{membersQuery.isSuccess && membersQuery.data.members.length === 0 && (
-								<p className="text-[#aeb6bf]">No members yet.</p>
+					<div className="space-y-1.5">
+						<p className="px-4 text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
+							Members
+						</p>
+						<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+							{membersQuery.isLoading && (
+								<p className="px-4 py-4 text-sm text-stone-500 dark:text-stone-400">
+									Loading members...
+								</p>
 							)}
-							{membersQuery.data?.members.map((member) => {
-								const isOwner = member.role === 'Owner';
+							{membersQuery.isSuccess && membersQuery.data.members.length === 0 && (
+								<p className="px-4 py-4 text-sm text-stone-500 dark:text-stone-400">
+									No members yet.
+								</p>
+							)}
+							{membersQuery.data?.members.map((member, index) => {
+								const isOwnerMember = member.role === 'Owner';
+								const isLast = index === (membersQuery.data?.members.length ?? 0) - 1;
 								return (
-									<div
-										key={member.userId}
-										className="mb-2 flex items-center justify-between rounded-2xl border border-white/10 bg-[#20242b] px-3 py-3"
-									>
-										<div>
-											<p className="text-lg font-semibold text-white">{member.name}</p>
-											<p className="text-sm text-[#9ca4af]">{member.email}</p>
+									<div key={member.userId}>
+										<div className="flex min-h-[60px] items-center gap-3 px-4 py-3">
+											<Avatar
+												name={member.name}
+												photoUrl={member.profilePictureUrl}
+												className="h-9 w-9"
+												fallbackClassName="bg-stone-200 text-sm text-stone-700 dark:bg-stone-700 dark:text-stone-200"
+											/>
+											<div className="min-w-0 flex-1">
+												<p className="truncate font-medium text-stone-900 dark:text-stone-100">
+													{member.name}
+												</p>
+												<p className="truncate text-xs text-stone-500 dark:text-stone-400">
+													{member.email}
+												</p>
+											</div>
+											{isOwnerMember ? (
+												<span className="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-400">
+													Owner
+												</span>
+											) : (
+												<button
+													type="button"
+													onClick={() => removeMemberMutation.mutate(member.userId)}
+													disabled={removeMemberMutation.isPending}
+													className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-500 transition hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40"
+												>
+													<UserMinus className="h-4 w-4" />
+												</button>
+											)}
 										</div>
-										{isOwner ? (
-											<span className="rounded-full bg-[#243229] px-3 py-1 text-xs font-semibold text-[#7ce485]">
-												Owner
-											</span>
-										) : (
-											<button
-												type="button"
-												onClick={() => removeMemberMutation.mutate(member.userId)}
-												disabled={removeMemberMutation.isPending}
-												className="rounded-full bg-[#3a2427] p-2 text-[#ffb5b5]"
-											>
-												<UserMinus className="h-4 w-4" />
-											</button>
+										{!isLast && (
+											<div className="ml-[3.5rem] h-px bg-stone-200 dark:bg-stone-700/60" />
 										)}
 									</div>
 								);
 							})}
 						</div>
+					</div>
 
-						<div className="rounded-[2rem] border border-white/10 bg-[#14171d]/90 p-5">
-							<p className="mb-3 text-3xl font-bold text-white">Pending Requests</p>
-							{pendingQuery.isLoading && <p className="text-[#aeb6bf]">Loading requests...</p>}
-							{pendingQuery.isSuccess && pendingQuery.data.length === 0 && (
-								<p className="text-[#aeb6bf]">No pending requests.</p>
-							)}
-							{pendingQuery.data?.map((request) => (
-								<div
-									key={request.id}
-									className="mb-2 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#20242b] px-3 py-3"
+					{pendingQuery.isSuccess && pendingQuery.data.length > 0 && (
+						<div className="space-y-1.5">
+							<p className="px-4 text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
+								Pending Requests
+							</p>
+							<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+								{pendingQuery.data.map((request, index) => {
+									const isLast = index === (pendingQuery.data?.length ?? 0) - 1;
+									return (
+										<div key={request.id}>
+											<div className="flex min-h-[60px] items-center gap-3 px-4 py-3">
+												<Avatar
+													name={request.requesterName}
+													photoUrl={request.requesterProfilePictureUrl}
+													className="h-9 w-9"
+													fallbackClassName="bg-amber-100 text-sm text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+												/>
+												<div className="min-w-0 flex-1">
+													<p className="truncate font-medium text-stone-900 dark:text-stone-100">
+														{request.requesterName}
+													</p>
+													<p className="truncate text-xs text-stone-500 dark:text-stone-400">
+														{request.requesterEmail}
+													</p>
+												</div>
+												<div className="flex items-center gap-2">
+													<button
+														type="button"
+														onClick={() => rejectRequestMutation.mutate(request.id)}
+														disabled={
+															rejectRequestMutation.isPending || approveRequestMutation.isPending
+														}
+														className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-red-500 transition hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40"
+													>
+														<X className="h-4 w-4" />
+													</button>
+													<button
+														type="button"
+														onClick={() => approveRequestMutation.mutate(request.id)}
+														disabled={
+															rejectRequestMutation.isPending || approveRequestMutation.isPending
+														}
+														className="flex h-8 w-8 items-center justify-center rounded-full bg-green-50 text-green-600 transition hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40"
+													>
+														<Check className="h-4 w-4" />
+													</button>
+												</div>
+											</div>
+											{!isLast && (
+												<div className="ml-[3.5rem] h-px bg-stone-200 dark:bg-stone-700/60" />
+											)}
+										</div>
+									);
+								})}
+							</div>
+						</div>
+					)}
+
+					<div className="space-y-1.5">
+						<p className="px-4 text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
+							House Settings
+						</p>
+						<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+							{!renamingActive ? (
+								<button
+									type="button"
+									onClick={() => setRenamingActive(true)}
+									className="flex min-h-[52px] w-full items-center gap-3 px-4 py-3 active:bg-stone-50 dark:active:bg-stone-800"
 								>
-									<div className="min-w-0">
-										<p className="truncate text-lg font-semibold text-white">
-											{request.requesterName}
-										</p>
-										<p className="truncate text-sm text-[#9ca4af]">{request.requesterEmail}</p>
-									</div>
-									<div className="flex items-center gap-2">
-										<button
+									<span className="flex-1 text-left text-base text-stone-900 dark:text-stone-100">
+										{houseNameDraft}
+									</span>
+									<Pencil className="h-4 w-4 text-stone-400 dark:text-stone-500" />
+								</button>
+							) : (
+								<div className="space-y-3 px-4 py-4">
+									<Input
+										autoFocus
+										value={houseNameDraft}
+										onChange={(event) => setHouseNameDraft(event.target.value)}
+										className="h-11 rounded-xl"
+									/>
+									<div className="flex gap-2">
+										<Button
 											type="button"
-											onClick={() => rejectRequestMutation.mutate(request.id)}
-											disabled={rejectRequestMutation.isPending || approveRequestMutation.isPending}
-											className="rounded-full bg-[#3a2427] p-2 text-[#ffb5b5]"
+											variant="outline"
+											onClick={() => {
+												setHouseNameDraft(state.house!.name);
+												setRenamingActive(false);
+											}}
+											className="h-11 flex-1 rounded-xl"
 										>
-											<X className="h-4 w-4" />
-										</button>
-										<button
+											Cancel
+										</Button>
+										<Button
 											type="button"
-											onClick={() => approveRequestMutation.mutate(request.id)}
-											disabled={rejectRequestMutation.isPending || approveRequestMutation.isPending}
-											className="rounded-full bg-[#2f4f33] p-2 text-[#7ce485]"
+											onClick={() => {
+												renameHouseMutation.mutate();
+												setRenamingActive(false);
+											}}
+											disabled={renameHouseMutation.isPending || houseNameDraft.trim().length < 2}
+											className="h-11 flex-1 rounded-xl bg-green-500 font-semibold text-white hover:bg-green-600"
 										>
-											<Check className="h-4 w-4" />
-										</button>
+											{renameHouseMutation.isPending ? 'Saving...' : 'Save'}
+										</Button>
 									</div>
 								</div>
-							))}
-						</div>
-
-						<div className="rounded-[2rem] border border-white/10 bg-[#14171d]/90 p-5">
-							<p className="mb-3 text-3xl font-bold text-white">Settings</p>
-							<label className="text-sm font-semibold text-[#9bc7ff]">House name</label>
-							<Input
-								value={houseNameDraft}
-								onChange={(event) => setHouseNameDraft(event.target.value)}
-								className="mt-2 h-12 rounded-full border-white/10 bg-[#0f1116] text-white"
-							/>
-							<Button
-								type="button"
-								onClick={() => renameHouseMutation.mutate()}
-								disabled={renameHouseMutation.isPending || houseNameDraft.trim().length < 2}
-								className="mt-3 h-12 w-full rounded-full bg-[#66d56d] text-lg font-bold text-[#102015] hover:bg-[#7de286]"
-							>
-								{renameHouseMutation.isPending ? 'Saving...' : 'Save changes'}
-							</Button>
-
-							<Button
-								type="button"
-								variant="destructive"
-								onClick={() => dissolveHouseMutation.mutate()}
-								disabled={dissolveHouseMutation.isPending}
-								className="mt-3 h-12 w-full rounded-full bg-[#3b2124] text-lg font-semibold text-[#ffb9b9] hover:bg-[#53262d]"
-							>
-								{dissolveHouseMutation.isPending ? 'Dissolving...' : 'Dissolve house'}
-							</Button>
+							)}
 						</div>
 					</div>
-				)}
 
-				{(cancelRequestMutation.isError ||
-					leaveHouseMutation.isError ||
-					removeMemberMutation.isError ||
-					approveRequestMutation.isError ||
-					rejectRequestMutation.isError ||
-					renameHouseMutation.isError ||
-					dissolveHouseMutation.isError) && (
-					<Alert variant="destructive">
-						<AlertTitle>House action failed</AlertTitle>
-						<AlertDescription>
-							{toErrorMessage(
-								cancelRequestMutation.error ??
-									leaveHouseMutation.error ??
-									removeMemberMutation.error ??
-									approveRequestMutation.error ??
-									rejectRequestMutation.error ??
-									renameHouseMutation.error ??
-									dissolveHouseMutation.error,
-								'Please try again.',
-							)}
-						</AlertDescription>
-					</Alert>
-				)}
-			</div>
-		</section>
+					<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+						<button
+							type="button"
+							onClick={() => dissolveHouseMutation.mutate()}
+							disabled={dissolveHouseMutation.isPending}
+							className="flex min-h-[52px] w-full items-center gap-3 px-4 py-3 active:bg-stone-100 dark:active:bg-stone-800"
+						>
+							<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-red-500">
+								<X className="h-4 w-4 text-white" />
+							</div>
+							<span className="text-base font-medium text-red-500">
+								{dissolveHouseMutation.isPending ? 'Dissolving...' : 'Dissolve House'}
+							</span>
+						</button>
+					</div>
+				</div>
+			)}
+
+			{(cancelRequestMutation.isError ||
+				leaveHouseMutation.isError ||
+				removeMemberMutation.isError ||
+				approveRequestMutation.isError ||
+				rejectRequestMutation.isError ||
+				renameHouseMutation.isError ||
+				dissolveHouseMutation.isError) && (
+				<Alert variant="destructive">
+					<AlertTitle>House action failed</AlertTitle>
+					<AlertDescription>
+						{toErrorMessage(
+							cancelRequestMutation.error ??
+								leaveHouseMutation.error ??
+								removeMemberMutation.error ??
+								approveRequestMutation.error ??
+								rejectRequestMutation.error ??
+								renameHouseMutation.error ??
+								dissolveHouseMutation.error,
+							'Please try again.',
+						)}
+					</AlertDescription>
+				</Alert>
+			)}
+		</div>
 	);
 }

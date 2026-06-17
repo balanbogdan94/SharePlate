@@ -14,6 +14,7 @@ export type RecipeSummary = {
 	imageUrl: string;
 	authorId: string;
 	authorName: string;
+	authorAvatarUrl: string;
 	createdAt: string;
 	updatedAt: string;
 };

@@ -5,6 +5,7 @@ import { ChevronDown, Pencil, Trash2 } from 'lucide-react';
 import { useAuth } from '@/auth/AuthContext';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Avatar } from '@/components/ui/avatar';
 import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import type { RecipeDetail } from '@/pages/tabs/home/types';
@@ -124,6 +125,12 @@ export function RecipeDetailsPage() {
 				)}
 				<h1 className='text-2xl font-extrabold leading-tight text-stone-900 dark:text-stone-100'>{recipe.title}</h1>
 				<div className='flex items-center gap-2'>
+					<Avatar
+						name={recipe.authorName}
+						photoUrl={recipe.authorAvatarUrl}
+						className='h-5 w-5'
+						fallbackClassName='bg-stone-200 text-[9px] text-stone-600 dark:bg-stone-700 dark:text-stone-300'
+					/>
 					<p className='text-sm italic text-stone-500 dark:text-stone-400'>{recipe.authorName}</p>
 					{canManageRecipe && (
 						<>

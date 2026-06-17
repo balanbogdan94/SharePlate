@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { UserCircle2 } from 'lucide-react';
+import { Avatar } from '@/components/ui/avatar';
 import type { RecipeSummary } from './types';
 
 type RecipeCardProps = {
@@ -32,7 +32,12 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
 						{recipe.title}
 					</p>
 					<p className="mt-0.5 flex items-center gap-1 text-xs italic text-stone-500 dark:text-stone-400">
-						<UserCircle2 className="h-3.5 w-3.5 shrink-0" />
+						<Avatar
+							name={recipe.authorName}
+							photoUrl={recipe.authorAvatarUrl}
+							className="h-4 w-4"
+							fallbackClassName="bg-stone-200 text-[8px] text-stone-600 dark:bg-stone-700 dark:text-stone-300"
+						/>
 						{recipe.authorName}
 					</p>
 					{recipe.notes && (

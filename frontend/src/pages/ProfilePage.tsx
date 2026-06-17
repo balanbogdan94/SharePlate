@@ -3,14 +3,12 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { useAuth } from '@/auth/AuthContext';
 import { useI18n } from '@/i18n/I18nContext';
 import { apiFetch } from '@/lib/api';
-import { getInitials, getNameFromToken } from '@/lib/jwt';
+import { ProfileAvatar } from '@/pages/ProfileAvatar';
 
 export function ProfilePage() {
 	const { t } = useI18n();
 	const auth = useAuth();
 	const navigate = useNavigate();
-	const name = getNameFromToken(auth.tokens?.accessToken ?? '') ?? '';
-	const initials = getInitials(name);
 
 	const handleLogout = async () => {
 		const refreshToken = auth.tokens?.refreshToken;
@@ -30,14 +28,7 @@ export function ProfilePage() {
 				{t('shell.profile')}
 			</h1>
 
-			<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
-				<div className="flex min-h-[68px] items-center gap-4 px-4 py-3">
-					<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-green-500 text-lg font-bold text-white">
-						{initials}
-					</div>
-					<p className="truncate font-semibold text-stone-900 dark:text-stone-100">{name}</p>
-				</div>
-			</div>
+			<ProfileAvatar />
 
 			<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
 				<Link

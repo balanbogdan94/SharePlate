@@ -7,9 +7,11 @@ import {
 	useRouter,
 } from '@tanstack/react-router';
 import { ChevronLeft, CalendarDays, UtensilsCrossed } from 'lucide-react';
-import { getInitials, getNameFromToken } from '@/lib/jwt';
+import { getNameFromToken } from '@/lib/jwt';
 import { useAuth } from '@/auth/AuthContext';
 import { useI18n } from '@/i18n/I18nContext';
+import { useCurrentUser } from '@/lib/useCurrentUser';
+import { Avatar } from '@/components/ui/avatar';
 import { IosInstallPrompt } from '@/components/pwa/IosInstallPrompt';
 
 type TabItem = {
@@ -25,7 +27,8 @@ export function AppShell() {
 	const canGoBack = useCanGoBack();
 	const location = useLocation();
 	const { t } = useI18n();
-	const initials = getInitials(getNameFromToken(auth.tokens?.accessToken ?? '') ?? '');
+	const currentUser = useCurrentUser();
+	const name = currentUser.data?.name ?? getNameFromToken(auth.tokens?.accessToken ?? '') ?? '';
 
 	const tabs: TabItem[] = [
 		{ to: '/recipes', label: t('tabs.home'), icon: UtensilsCrossed },
@@ -67,7 +70,12 @@ export function AppShell() {
 					aria-label={t('shell.profile')}
 					className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm transition hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700"
 				>
-					<span className="text-sm font-semibold leading-none">{initials}</span>
+					<Avatar
+						name={name}
+						photoUrl={currentUser.data?.profilePictureUrl}
+						className="h-full w-full border-0"
+						fallbackClassName="text-sm text-stone-700 dark:text-stone-200"
+					/>
 				</Link>
 			</div>
 		</header>

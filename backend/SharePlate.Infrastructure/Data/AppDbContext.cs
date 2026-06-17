@@ -35,6 +35,10 @@ public class AppDbContext : DbContext
         {
             b.HasIndex(u => u.Email).IsUnique();
 
+            b.Property(u => u.ProfilePictureUrl)
+                .HasMaxLength(2048)
+                .HasDefaultValue(string.Empty);
+
             b.Property(u => u.PasswordHashAlgorithm)
                 .HasMaxLength(64)
                 .IsRequired();

@@ -34,6 +34,7 @@ public sealed class User : BaseEntity
 
     public string Name { get; private set; } = string.Empty;
     public string Email { get; private set; } = string.Empty;
+    public string ProfilePictureUrl { get; private set; } = string.Empty;
     public string PasswordHash { get; private set; } = string.Empty;
     public string PasswordHashAlgorithm { get; private set; } = PasswordHashAlgorithms.AspNetCorePbkdf2V3;
     public bool IsPasswordResetRequired { get; private set; }
@@ -55,6 +56,12 @@ public sealed class User : BaseEntity
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(email);
         Email = email;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateProfilePictureUrl(string profilePictureUrl)
+    {
+        ProfilePictureUrl = profilePictureUrl ?? string.Empty;
         UpdatedAt = DateTime.UtcNow;
     }
 

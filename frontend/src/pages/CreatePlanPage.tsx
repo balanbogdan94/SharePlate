@@ -8,12 +8,12 @@ import {
 	Check,
 	CirclePlus,
 	Loader2,
-	UserCircle2,
 	X,
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Avatar } from '@/components/ui/avatar';
 import { apiFetch } from '@/lib/api';
 import { useDraft, readDraftOnce } from '@/lib/useDraft';
 import type { RecipeSummary } from '@/pages/tabs/home/types';
@@ -644,7 +644,12 @@ export function CreatePlanPage() {
 																		{recipe?.title ?? recipeId}
 																	</p>
 																	<p className="mt-0.5 flex items-center gap-1 text-xs italic text-stone-400">
-																		<UserCircle2 className="h-3.5 w-3.5 shrink-0" />
+																		<Avatar
+																			name={recipe?.authorName ?? 'House Recipe'}
+																			photoUrl={recipe?.authorAvatarUrl}
+																			className="h-4 w-4"
+																			fallbackClassName="bg-stone-700 text-[8px] text-stone-300"
+																		/>
 																		{recipe?.authorName ?? 'House Recipe'}
 																	</p>
 																</div>
@@ -825,7 +830,12 @@ export function CreatePlanPage() {
 															{recipe.title}
 														</p>
 														<p className="mt-0.5 flex items-center gap-1 text-xs italic text-stone-400">
-															<UserCircle2 className="h-3.5 w-3.5 shrink-0" />
+															<Avatar
+																name={recipe.authorName}
+																photoUrl={recipe.authorAvatarUrl}
+																className="h-4 w-4"
+																fallbackClassName="bg-stone-700 text-[8px] text-stone-300"
+															/>
 															{recipe.authorName}
 														</p>
 													</div>

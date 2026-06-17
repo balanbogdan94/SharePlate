@@ -254,12 +254,12 @@ public static class RecipeEndpoints
         && file.Length is > 0 and <= MaxImageSizeBytes;
 
     private static RecipeResponse ToResponse(Core.Entities.Recipe r) =>
-        new(r.Id, r.Title, r.Notes, r.ImageUrl, r.AuthorId, r.Author?.Name ?? string.Empty, r.CreatedAt, r.UpdatedAt);
+        new(r.Id, r.Title, r.Notes, r.ImageUrl, r.AuthorId, r.Author?.Name ?? string.Empty, r.Author?.ProfilePictureUrl ?? string.Empty, r.CreatedAt, r.UpdatedAt);
 
     private static RecipeIngredientResponse ToIngredientResponse(RecipeIngredient ri) =>
         new(ri.Id, ri.IngredientId, ri.Ingredient?.Name ?? string.Empty, ri.Quantity, ri.UnitId);
 
     private static RecipeWithIngredientsResponse ToDetailResponse(Core.Entities.Recipe r) =>
-        new(r.Id, r.Title, r.Notes, r.ImageUrl, r.AuthorId, r.Author?.Name ?? string.Empty, r.CreatedAt, r.UpdatedAt,
+        new(r.Id, r.Title, r.Notes, r.ImageUrl, r.AuthorId, r.Author?.Name ?? string.Empty, r.Author?.ProfilePictureUrl ?? string.Empty, r.CreatedAt, r.UpdatedAt,
             r.RecipeIngredients.Select(ToIngredientResponse).ToList());
 }
