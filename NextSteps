@@ -1,0 +1,337 @@
+# SharePlate NextSteps
+
+Last reviewed: 2026-06-18
+
+Goal: bring SharePlate to an enterprise-grade production standard: secure by default, repeatably deployable, observable, recoverable, tested, and operationally owned.
+
+## Executive Assessment
+
+SharePlate has a useful product foundation: a React 19 + TypeScript + Vite frontend, a .NET API, PostgreSQL persistence, JWT auth with refresh-token rotation, Azure Blob image storage, PWA assets, frontend lint/build/test scripts, EF Core migrations, and Bruno API collections for manual API checks.
+
+Do not treat the project as production-ready yet. The main gaps are not feature gaps; they are release discipline, security hardening, operational readiness, automated validation, and deployment architecture.
+
+## Current Signals From The Repo
+
+- Frontend has strict linting, Vitest, MSW, env validation, and some tests, but coverage is still narrow and there is no end-to-end suite.
+- Backend has no test projects in the solution today.
+- No GitHub Actions workflow is present under `.github/workflows`.
+- Infrastructure is currently local-development only: PostgreSQL and Azurite via `infra/docker-compose.yml`.
+- No production Dockerfiles or production IaC templates were found.
+- `Program.cs` applies EF migrations automatically at API startup.
+- CORS is hardcoded to `http://localhost:5173`.
+- Health checks, readiness checks, structured tracing, metrics, rate limiting, global exception handling, HSTS, forwarded headers, and API problem-details middleware were not visible in the API startup path.
+- Production appsettings contain empty secret/config slots, but there is no visible secret-management strategy.
+- Password reset initiation currently returns the reset token through the API response when a user exists; this must become an email/provider-backed flow before production.
+- Refresh tokens are stored client-side in `localStorage`; this is workable for prototypes but below an enterprise security bar without additional controls.
+- Blob images are uploaded to a public blob container. Upload endpoints validate content type and size, but production still needs private access strategy, malware scanning, lifecycle policies, and CDN/cache policy.
+- API route prefixing needs cleanup: `Program.cs` wraps endpoint registration in `/api`, while some endpoint groups map `/auth` and `/plans` and others map `/api/users`, `/api/houses`, `/api/recipes`, `/api/ingredients`, and `/api/units`. The frontend also mixes `/auth`, `/plans`, and `/api/...` paths while the default base URL ends in `/api`. This should be normalized before production.
+- Backend targets `net10.0`; `SharePlate.API.csproj` references `Microsoft.AspNetCore.OpenApi` 9.0.7 while other API packages are 10.x. Align and verify dependency policy.
+
+## P0: Production Blockers
+
+These must be closed before any real production launch.
+
+### 1. Normalize API Routing Contract
+
+Decision needed: choose one API contract and enforce it everywhere.
+
+Recommended standard:
+
+- Backend owns the `/api` prefix once in `Program.cs`.
+- Endpoint files map relative paths only, for example `/users`, `/houses`, `/recipes`, `/auth`, `/plans`.
+- Frontend `VITE_API_BASE_URL` points to `/api` in production, and frontend calls use resource-relative paths like `/users/me`, `/auth/login`, `/recipes/house`, `/plans`.
+
+Actions:
+
+- Fix endpoint group prefixes and frontend paths together.
+- Add integration tests for representative routes: auth login, current user, recipes, houses, units, plans.
+- Add a small API contract smoke test that fails if routes accidentally become `/api/api/...`.
+- Publish OpenAPI from CI and review it as an artifact.
+
+Exit criteria:
+
+- One documented API base URL contract.
+- Frontend and Bruno collections use the same route convention.
+- Route contract tests pass in CI.
+
+### 2. Add CI Quality Gates
+
+Create `.github/workflows` checks for every pull request and main branch push.
+
+Minimum gates:
+
+- Frontend: `cd frontend && npm ci && npm run lint && npm run build && npm run test && npm run deps:check`.
+- Backend: `cd backend && dotnet restore && dotnet build SharePlate.sln --configuration Release`.
+- Backend tests after test projects are added: `cd backend && dotnet test SharePlate.sln --configuration Release --no-build`.
+- Formatting checks: Prettier check for frontend and `dotnet format --verify-no-changes` for backend.
+- Dependency/security checks: `npm audit`, `dotnet list package --vulnerable --include-transitive`, CodeQL or equivalent SAST.
+
+Enterprise additions:
+
+- Branch protection requiring green checks.
+- Dependabot or Renovate for frontend and .NET dependencies.
+- Generated SBOM for release builds.
+- Build artifact retention and traceability from commit to deployment.
+
+Exit criteria:
+
+- No code merges without automated checks.
+- Release artifacts are reproducible from CI.
+
+### 3. Add Backend Test Coverage
+
+Create backend test projects before expanding production features.
+
+Recommended projects:
+
+- `SharePlate.Core.Tests` for entity invariants and domain behavior.
+- `SharePlate.Infrastructure.Tests` for repository behavior using PostgreSQL Testcontainers.
+- `SharePlate.API.Tests` for minimal API integration tests using `WebApplicationFactory` and a real test database.
+
+Critical test areas:
+
+- Auth registration, login, refresh rotation, logout, invalid/reused refresh token handling.
+- Password reset initiation and completion.
+- User self-only authorization.
+- House membership and owner-only operations.
+- Recipe ownership and same-house read access.
+- Plan membership authorization.
+- Upload validation for file type, file size, empty files, and replacement/removal flows.
+- Migration smoke test against an empty database.
+
+Exit criteria:
+
+- API integration tests cover the main authenticated workflows.
+- Authorization tests exist for every endpoint group.
+- New backend code cannot merge without tests or an explicit exception.
+
+### 4. Production Secret And Config Management
+
+Move all production secrets out of JSON files and ad-hoc environment setup.
+
+Actions:
+
+- Define required environment variables for API and frontend.
+- Use a managed secret store such as Azure Key Vault, GitHub Actions environment secrets, or platform-native secret references.
+- Enforce startup validation for every required production setting: database, JWT issuer/audience/signing key, storage, CORS origins, frontend URL, reset-email provider.
+- Set `AllowedHosts` to the real hostnames instead of `*`.
+- Keep development credentials clearly local-only.
+- Add secret scanning in CI.
+
+Exit criteria:
+
+- A fresh production deployment can be configured without editing repository files.
+- Missing production config fails fast with a clear startup error.
+- Secret rotation steps are documented.
+
+### 5. Harden Runtime Security
+
+Add baseline API hardening before public exposure.
+
+Actions:
+
+- Add global exception handling and RFC 7807 ProblemDetails responses.
+- Add `UseHsts`, `UseHttpsRedirection`, and forwarded-header handling for reverse proxies/load balancers.
+- Make CORS origin allowlist environment-driven.
+- Add rate limiting for login, register, refresh, password reset, and upload endpoints.
+- Add request body size limits and multipart limits.
+- Add security headers at the hosting edge: HSTS, CSP, X-Content-Type-Options, Referrer-Policy, Permissions-Policy.
+- Review CSRF posture. If auth remains bearer-token based in JavaScript, document the XSS threat model and mitigation. Prefer secure, HttpOnly, SameSite cookies for refresh-token storage if the product remains browser-only.
+- Move refresh tokens out of `localStorage` or add a formally accepted risk decision with compensating controls.
+- Add refresh-token reuse detection and account/session revocation behavior.
+- Replace API-returned password reset tokens with email delivery and one-time token storage/revocation semantics.
+
+Exit criteria:
+
+- Public auth endpoints are rate limited.
+- Reset tokens are never returned directly to normal API clients in production.
+- Token storage and CSRF/XSS posture are explicitly designed and tested.
+
+### 6. Replace Startup Migrations With Release-Controlled Migrations
+
+Automatic `Database.MigrateAsync()` at API startup is convenient locally but risky for enterprise production.
+
+Actions:
+
+- Move migrations into a release step or controlled migration job.
+- Add migration dry-run/review in CI.
+- Document rollback strategy for each migration class.
+- Add database backup validation before schema-changing deployments.
+- Add startup readiness checks that verify schema compatibility without mutating the database.
+
+Exit criteria:
+
+- Application startup does not mutate production schema unexpectedly.
+- Database changes are reviewed, auditable, and reversible or forward-fixable.
+
+### 7. Add Production Deployment Architecture
+
+The current infra is local-only. Define production hosting explicitly.
+
+Actions:
+
+- Choose hosting topology: API container/App Service, static frontend/CDN, managed PostgreSQL, managed Blob Storage.
+- Add production Dockerfiles if containerizing.
+- Add IaC for production and staging environments: Bicep, Terraform, Pulumi, or equivalent.
+- Add separate environments: dev, staging, production.
+- Add private networking decisions for database and storage.
+- Define TLS, custom domains, DNS, CDN, certificates, and redirect policy.
+- Pin container image versions; avoid `postgres:latest` outside local development.
+
+Exit criteria:
+
+- Staging and production can be created from version-controlled infrastructure code.
+- Deployments are repeatable and do not depend on local machines.
+
+## P1: Enterprise Hardening
+
+These should be completed before broad rollout or business-critical use.
+
+### Observability And Operations
+
+Actions:
+
+- Add structured JSON logging with correlation IDs.
+- Add OpenTelemetry traces and metrics for ASP.NET Core, EF Core, HTTP clients, PostgreSQL, and frontend web vitals.
+- Add `/health/live` and `/health/ready` endpoints with database and storage checks.
+- Create dashboards for request rate, latency, error rate, auth failures, database performance, storage errors, frontend errors, and deployment health.
+- Add alerts for 5xx rate, login/reset abuse, database connection exhaustion, storage failures, failed jobs, and availability SLO breaches.
+- Add runbooks for common incidents: API down, database unavailable, bad deployment, failed migration, storage outage, auth abuse.
+
+Exit criteria:
+
+- Operators can detect, diagnose, and rollback a bad production deployment quickly.
+- SLOs and alerts exist before real users depend on the app.
+
+### Data Protection And Compliance
+
+Actions:
+
+- Define data classification for user profile data, emails, recipes, household membership, and images.
+- Add privacy policy and terms if user-facing.
+- Implement account deletion semantics fully: user data, recipes, images, refresh tokens, house membership, plans.
+- Add retention policy for images, logs, reset tokens, refresh tokens, and deleted accounts.
+- Add audit logging for sensitive actions: login failures, password reset, account deletion, house owner actions, member removals.
+- Ensure backups, point-in-time restore, and restore drills for PostgreSQL.
+- Define RPO/RTO targets and verify them with a restore exercise.
+
+Exit criteria:
+
+- Data deletion, retention, backup, restore, and audit behaviors are documented and tested.
+
+### Storage And File Handling
+
+Actions:
+
+- Avoid public blob containers for private or user-generated content unless explicitly intended.
+- Use private blobs with signed URLs or proxy access where appropriate.
+- Add malware scanning or quarantine workflow for uploads.
+- Validate file signatures, not only content type.
+- Normalize/transform uploaded images server-side to remove metadata and enforce dimensions/format.
+- Add CDN and cache-control policy for safe public assets.
+- Add lifecycle cleanup for orphaned images.
+
+Exit criteria:
+
+- Uploaded content cannot become an unbounded storage, malware, or privacy risk.
+
+### Frontend Production Quality
+
+Actions:
+
+- Add Playwright end-to-end tests for login, registration, household flow, recipe CRUD, plan flow, offline/PWA behavior, and logout.
+- Add accessibility checks with keyboard navigation and screen-reader assertions for core flows.
+- Add error boundaries and user-safe error screens.
+- Add a frontend telemetry provider for runtime errors and performance metrics.
+- Add production build budget checks and Lighthouse targets.
+- Review service-worker cache invalidation so new deployments do not leave users on stale app shells.
+- Standardize API path usage after the backend API contract is fixed.
+
+Exit criteria:
+
+- Critical user flows are covered by automated browser tests.
+- Frontend failures are visible to operators.
+
+### Backend API Maturity
+
+Actions:
+
+- Add API versioning policy before external clients depend on routes.
+- Add pagination, sorting, and search limits for list/search endpoints.
+- Add consistent error shapes and validation responses.
+- Add request/response contract tests from generated OpenAPI or typed clients.
+- Add idempotency or duplicate-protection decisions for sensitive create operations.
+- Add cancellation/timeouts for external dependencies.
+- Add performance indexes and query reviews for house, recipe, plan, ingredient, and token flows.
+
+Exit criteria:
+
+- API behavior is stable, documented, and scalable under expected load.
+
+## P2: Enterprise Scale And Governance
+
+Actions:
+
+- Add feature flags for risky launches.
+- Add admin/support tooling with least-privilege authorization.
+- Add user/session management UI: active sessions, revoke sessions, change password.
+- Add release notes and semantic versioning process.
+- Add threat model documentation and revisit it quarterly.
+- Add dependency/license policy and automated license scanning.
+- Add performance/load tests with realistic data volumes.
+- Add disaster recovery drill schedule.
+- Add cost monitoring and budget alerts for database, storage, compute, and CDN.
+
+Exit criteria:
+
+- The project has governance strong enough for a team, not only a single developer.
+
+## Recommended Work Order
+
+1. Fix API prefix/base URL consistency.
+2. Add CI for existing frontend/backend build checks.
+3. Add backend API integration test project and cover auth/authorization.
+4. Add production config validation and secret management.
+5. Add runtime hardening: exception handling, CORS config, rate limits, HSTS, forwarded headers, request limits.
+6. Move database migrations out of API startup and into deployment.
+7. Add production IaC and staging environment.
+8. Add health checks, telemetry, dashboards, and alerts.
+9. Replace password reset token response with email-backed reset flow.
+10. Rework browser token storage strategy.
+11. Harden blob storage and upload processing.
+12. Add Playwright end-to-end coverage for critical flows.
+
+## Minimum Production Launch Checklist
+
+- [ ] CI runs and blocks merges on frontend lint/build/test and backend build/test.
+- [ ] API routes are normalized and contract-tested.
+- [ ] Backend has integration tests for auth, authorization, recipes, houses, plans, and uploads.
+- [ ] Production secrets are stored outside the repo and validated on startup.
+- [ ] CORS, hosts, frontend URL, API base URL, JWT settings, storage, and database are environment-specific.
+- [ ] Password reset uses an email/provider flow and does not expose reset tokens in API responses.
+- [ ] Refresh token storage risk is resolved or formally accepted with controls.
+- [ ] Public endpoints have rate limits.
+- [ ] Global exception handling and problem-details responses are configured.
+- [ ] HTTPS, HSTS, forwarded headers, and security headers are configured.
+- [ ] Health/readiness endpoints exist and are used by the hosting platform.
+- [ ] Structured logs, traces, metrics, dashboards, and alerts exist.
+- [ ] Database migrations run as a release step, not as normal API startup behavior.
+- [ ] Backups and restore drills are verified.
+- [ ] Production infrastructure is defined as code.
+- [ ] Staging environment mirrors production closely enough to catch release issues.
+- [ ] Uploaded images are scanned or otherwise controlled, and blob access policy is intentional.
+- [ ] Core frontend flows have end-to-end tests.
+- [ ] Runbooks exist for deployment rollback, database failure, auth abuse, and storage outage.
+
+## Suggested Definition Of Done For Future Features
+
+Every production-facing feature should include:
+
+- API and frontend implementation.
+- Unit or integration tests for business rules.
+- Authorization tests for every protected path.
+- Validation tests for malformed input.
+- User-visible loading and error states.
+- Observability for important failures.
+- Documentation for any new configuration.
+- CI passing with no skipped required checks.

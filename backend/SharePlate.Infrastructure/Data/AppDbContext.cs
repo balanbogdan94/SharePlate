@@ -70,7 +70,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<HouseMember>(b =>
         {
             b.HasIndex(m => new { m.HouseId, m.UserId }).IsUnique();
-            b.HasIndex(m => m.UserId).IsUnique();
+            b.HasIndex(m => m.UserId);
         });
 
         modelBuilder.Entity<HouseJoinRequest>(b =>

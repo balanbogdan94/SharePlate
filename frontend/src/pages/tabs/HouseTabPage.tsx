@@ -1,17 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-	Check,
-	Copy,
-	House,
-	HousePlus,
-	Loader2,
-	Pencil,
-	ScanLine,
-	UserMinus,
-	Users,
-	X,
-} from 'lucide-react';
+import { Check, Copy, House, Loader2, Pencil, ScanLine, UserMinus, Users, X } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,9 +25,9 @@ type HouseStatePendingRequestResponse = {
 };
 
 type HouseStateResponse = {
-	membershipState: 'None' | 'Pending' | 'Member';
-	migrationRequired: boolean;
+	membershipState: 'None' | 'Owner' | 'Member';
 	isOwner: boolean;
+	canLeave: boolean;
 	house: HouseResponse | null;
 	pendingRequest: HouseStatePendingRequestResponse | null;
 };
@@ -88,7 +77,6 @@ function normalizeCode(value: string): string {
 export function HouseTabPage() {
 	const queryClient = useQueryClient();
 	const [joinCode, setJoinCode] = useState('');
-	const [newHouseName, setNewHouseName] = useState('');
 	const [houseNameDraft, setHouseNameDraft] = useState('');
 	const [scannerOpen, setScannerOpen] = useState(false);
 	const [scannerError, setScannerError] = useState<string | null>(null);
@@ -131,18 +119,6 @@ export function HouseTabPage() {
 			setHouseNameDraft(stateName);
 		}
 	}, [houseStateQuery.data?.house?.name]);
-
-	const createHouseMutation = useMutation({
-		mutationFn: () =>
-			apiFetch<HouseResponse>('/api/houses', {
-				method: 'POST',
-				body: JSON.stringify({ name: newHouseName.trim() }),
-			}),
-		onSuccess: async () => {
-			setNewHouseName('');
-			await invalidateHouseScope();
-		},
-	});
 
 	const requestJoinMutation = useMutation({
 		mutationFn: () =>
@@ -212,30 +188,6 @@ export function HouseTabPage() {
 			apiFetch(`/api/houses/${houseId}/name`, {
 				method: 'PUT',
 				body: JSON.stringify({ name: houseNameDraft.trim() }),
-			}),
-		onSuccess: invalidateHouseScope,
-	});
-
-	const dissolveHouseMutation = useMutation({
-		mutationFn: () =>
-			apiFetch(`/api/houses/${houseId}`, {
-				method: 'DELETE',
-			}),
-		onSuccess: invalidateHouseScope,
-	});
-
-	const keepMigrationMutation = useMutation({
-		mutationFn: () =>
-			apiFetch('/api/houses/migration/keep', {
-				method: 'POST',
-			}),
-		onSuccess: invalidateHouseScope,
-	});
-
-	const dissolveMigrationMutation = useMutation({
-		mutationFn: () =>
-			apiFetch('/api/houses/migration/dissolve', {
-				method: 'POST',
 			}),
 		onSuccess: invalidateHouseScope,
 	});
@@ -362,48 +314,6 @@ export function HouseTabPage() {
 
 	const state = houseStateQuery.data;
 
-	if (state.migrationRequired) {
-		return (
-			<div className="space-y-6 pb-8 pt-2">
-				<h1 className="text-[2rem] font-bold tracking-tight text-stone-900 dark:text-stone-50">
-					House
-				</h1>
-				<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
-					<div className="px-4 py-5">
-						<p className="text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
-							Action Required
-						</p>
-						<p className="mt-2 text-lg font-semibold text-stone-900 dark:text-stone-100">
-							Pick what to do with your personal house
-						</p>
-						<p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-							Keep your legacy house as shared or dissolve it to return to no-house state.
-						</p>
-						<div className="mt-4 flex flex-col gap-3 sm:flex-row">
-							<Button
-								type="button"
-								onClick={() => keepMigrationMutation.mutate()}
-								disabled={keepMigrationMutation.isPending || dissolveMigrationMutation.isPending}
-								className="h-11 flex-1 rounded-full bg-green-500 font-semibold text-white hover:bg-green-600"
-							>
-								{keepMigrationMutation.isPending ? 'Keeping...' : 'Keep House'}
-							</Button>
-							<Button
-								type="button"
-								variant="destructive"
-								onClick={() => dissolveMigrationMutation.mutate()}
-								disabled={keepMigrationMutation.isPending || dissolveMigrationMutation.isPending}
-								className="h-11 flex-1 rounded-full"
-							>
-								{dissolveMigrationMutation.isPending ? 'Dissolving...' : 'Dissolve House'}
-							</Button>
-						</div>
-					</div>
-				</div>
-			</div>
-		);
-	}
-
 	return (
 		<div className="space-y-6 pb-8 pt-2">
 			<h1 className="text-[2rem] font-bold tracking-tight text-stone-900 dark:text-stone-50">
@@ -466,91 +376,18 @@ export function HouseTabPage() {
 						</div>
 					</div>
 
-					<div className="space-y-1.5">
-						<p className="px-4 text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
-							Create a House
-						</p>
-						<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
-							<div className="space-y-3 px-4 py-4">
-								<Input
-									value={newHouseName}
-									onChange={(event) => setNewHouseName(event.target.value)}
-									placeholder="The Green Kitchen"
-									className="h-11 rounded-xl"
-								/>
-								<Button
-									type="button"
-									onClick={() => createHouseMutation.mutate()}
-									disabled={createHouseMutation.isPending || newHouseName.trim().length < 2}
-									className="h-11 w-full rounded-xl bg-stone-800 font-semibold text-white hover:bg-stone-700 dark:bg-stone-700 dark:hover:bg-stone-600"
-								>
-									<HousePlus className="h-4 w-4" />
-									{createHouseMutation.isPending ? 'Creating...' : 'Create New House'}
-								</Button>
-							</div>
-						</div>
-					</div>
-
-					{(requestJoinMutation.isError || createHouseMutation.isError) && (
+					{requestJoinMutation.isError && (
 						<Alert variant="destructive">
 							<AlertTitle>House action failed</AlertTitle>
 							<AlertDescription>
-								{toErrorMessage(
-									requestJoinMutation.error ?? createHouseMutation.error,
-									'Please try again.',
-								)}
+								{toErrorMessage(requestJoinMutation.error, 'Please try again.')}
 							</AlertDescription>
 						</Alert>
 					)}
 				</div>
 			)}
 
-			{state.membershipState === 'Pending' && state.pendingRequest && (
-				<div className="space-y-6">
-					<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
-						<div className="px-4 py-4">
-							<p className="text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
-								Awaiting Approval
-							</p>
-							<p className="mt-2 font-semibold text-stone-900 dark:text-stone-100">
-								Your request is waiting for owner approval.
-							</p>
-						</div>
-						<div className="mx-4 h-px bg-stone-200 dark:bg-stone-700/60" />
-						<div className="flex items-center gap-3 px-4 py-3">
-							<span className="text-sm text-stone-500 dark:text-stone-400">House</span>
-							<span className="flex-1 text-right font-semibold text-stone-900 dark:text-stone-100">
-								{state.pendingRequest.houseName}
-							</span>
-						</div>
-						<div className="mx-4 h-px bg-stone-200 dark:bg-stone-700/60" />
-						<div className="flex items-center gap-3 px-4 py-3">
-							<span className="text-sm text-stone-500 dark:text-stone-400">Code</span>
-							<span className="flex-1 text-right font-mono font-bold tracking-widest text-stone-900 dark:text-stone-100">
-								{state.pendingRequest.houseCode}
-							</span>
-						</div>
-					</div>
-
-					<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
-						<button
-							type="button"
-							onClick={() => cancelRequestMutation.mutate(state.pendingRequest!.requestId)}
-							disabled={cancelRequestMutation.isPending}
-							className="flex min-h-[52px] w-full items-center gap-3 px-4 py-3 active:bg-stone-100 dark:active:bg-stone-800"
-						>
-							<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-red-500">
-								<X className="h-4 w-4 text-white" />
-							</div>
-							<span className="text-base font-medium text-red-500">
-								{cancelRequestMutation.isPending ? 'Cancelling...' : 'Cancel Request'}
-							</span>
-						</button>
-					</div>
-				</div>
-			)}
-
-			{state.membershipState === 'Member' && state.house && !state.isOwner && (
+			{state.canLeave && state.house && (
 				<div className="space-y-6">
 					<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
 						<div className="flex min-h-[68px] items-center gap-4 px-4 py-3">
@@ -564,6 +401,10 @@ export function HouseTabPage() {
 								<p className="text-sm text-stone-500 dark:text-stone-400">Member</p>
 							</div>
 						</div>
+						<div className="mx-4 h-px bg-stone-200 dark:bg-stone-700/60" />
+						<p className="px-4 py-3 text-sm text-stone-500 dark:text-stone-400">
+							Your own house is paused while you are a member here. Leave to switch back to it.
+						</p>
 					</div>
 
 					<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
@@ -584,7 +425,7 @@ export function HouseTabPage() {
 				</div>
 			)}
 
-			{state.membershipState === 'Member' && state.house && state.isOwner && (
+			{!state.canLeave && state.house && (
 				<div className="space-y-6">
 					<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
 						<div className="flex min-h-[68px] items-center gap-4 px-4 py-3">
@@ -806,42 +647,115 @@ export function HouseTabPage() {
 						</div>
 					</div>
 
-					<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
-						<button
-							type="button"
-							onClick={() => dissolveHouseMutation.mutate()}
-							disabled={dissolveHouseMutation.isPending}
-							className="flex min-h-[52px] w-full items-center gap-3 px-4 py-3 active:bg-stone-100 dark:active:bg-stone-800"
-						>
-							<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-red-500">
-								<X className="h-4 w-4 text-white" />
+					<div className="space-y-1.5">
+						<p className="px-4 text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
+							Join Another House
+						</p>
+						{state.pendingRequest ? (
+							<div className="space-y-3">
+								<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+									<div className="px-4 py-4">
+										<p className="text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
+											Awaiting Approval
+										</p>
+										<p className="mt-2 font-semibold text-stone-900 dark:text-stone-100">
+											Your request to join {state.pendingRequest.houseName} is waiting for approval.
+										</p>
+										<p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+											When approved, your own house pauses until you leave.
+										</p>
+									</div>
+									<div className="mx-4 h-px bg-stone-200 dark:bg-stone-700/60" />
+									<div className="flex items-center gap-3 px-4 py-3">
+										<span className="text-sm text-stone-500 dark:text-stone-400">Code</span>
+										<span className="flex-1 text-right font-mono font-bold tracking-widest text-stone-900 dark:text-stone-100">
+											{state.pendingRequest.houseCode}
+										</span>
+									</div>
+								</div>
+								<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+									<button
+										type="button"
+										onClick={() => cancelRequestMutation.mutate(state.pendingRequest!.requestId)}
+										disabled={cancelRequestMutation.isPending}
+										className="flex min-h-[52px] w-full items-center gap-3 px-4 py-3 active:bg-stone-100 dark:active:bg-stone-800"
+									>
+										<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-red-500">
+											<X className="h-4 w-4 text-white" />
+										</div>
+										<span className="text-base font-medium text-red-500">
+											{cancelRequestMutation.isPending ? 'Cancelling...' : 'Cancel Request'}
+										</span>
+									</button>
+								</div>
 							</div>
-							<span className="text-base font-medium text-red-500">
-								{dissolveHouseMutation.isPending ? 'Dissolving...' : 'Dissolve House'}
-							</span>
-						</button>
+						) : (
+							<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+								<div className="px-4 py-4">
+									<p className="text-sm text-stone-500 dark:text-stone-400">
+										Enter a code to join another house. Your own house stays and pauses until you
+										leave it.
+									</p>
+								</div>
+								<div className="mx-4 h-px bg-stone-200 dark:bg-stone-700/60" />
+								<div className="space-y-3 px-4 py-4">
+									<Input
+										value={joinCode}
+										onChange={(event) => setJoinCode(normalizeCode(event.target.value))}
+										placeholder="ABCD-1234"
+										className="h-11 rounded-xl text-center text-lg tracking-[0.3em]"
+									/>
+									<Button
+										type="button"
+										onClick={() => requestJoinMutation.mutate()}
+										disabled={requestJoinMutation.isPending || joinCode.replace('-', '').length < 8}
+										className="h-11 w-full rounded-xl bg-green-500 font-semibold text-white hover:bg-green-600"
+									>
+										{requestJoinMutation.isPending ? 'Sending request...' : 'Request to Join'}
+									</Button>
+									<Button
+										type="button"
+										variant="outline"
+										onClick={() => setScannerOpen((v) => !v)}
+										className="h-11 w-full rounded-xl"
+									>
+										<ScanLine className="h-4 w-4" />
+										{scannerOpen ? 'Close Scanner' : 'Scan QR Code'}
+									</Button>
+									{scannerOpen && (
+										<div className="space-y-2 rounded-xl border border-stone-200 bg-stone-50 p-3 dark:border-stone-700 dark:bg-stone-800">
+											<video ref={videoRef} className="w-full rounded-lg" muted playsInline />
+											<p className="text-xs text-stone-500 dark:text-stone-400">
+												Align the QR code in frame. We auto-fill the house code.
+											</p>
+											{scannerError && <p className="text-xs text-red-500">{scannerError}</p>}
+										</div>
+									)}
+								</div>
+							</div>
+						)}
 					</div>
 				</div>
 			)}
 
 			{(cancelRequestMutation.isError ||
+				requestJoinMutation.isError ||
 				leaveHouseMutation.isError ||
 				removeMemberMutation.isError ||
 				approveRequestMutation.isError ||
 				rejectRequestMutation.isError ||
-				renameHouseMutation.isError ||
-				dissolveHouseMutation.isError) && (
+				renameHouseMutation.isError) && (
 				<Alert variant="destructive">
 					<AlertTitle>House action failed</AlertTitle>
 					<AlertDescription>
 						{toErrorMessage(
 							cancelRequestMutation.error ??
+								requestJoinMutation.error ??
 								leaveHouseMutation.error ??
 								removeMemberMutation.error ??
 								approveRequestMutation.error ??
 								rejectRequestMutation.error ??
-								renameHouseMutation.error ??
-								dissolveHouseMutation.error,
+								renameHouseMutation.error,
 							'Please try again.',
 						)}
 					</AlertDescription>

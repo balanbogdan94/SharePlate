@@ -9,8 +9,6 @@ namespace SharePlate.API.Endpoints;
 
 public static class HouseEndpoints
 {
-    private const string MigrationRequiredError = "Legacy personal house migration is required. Choose keep or dissolve first.";
-
     public static void MapHouseEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/houses").WithTags("Houses").RequireAuthorization();
@@ -22,85 +20,43 @@ public static class HouseEndpoints
 
             var membership = await uow.HouseMembers.GetCurrentForUserAsync(actorUserId, ct);
             var pending = await uow.HouseJoinRequests.GetPendingForUserAsync(actorUserId, ct);
-            var migrationRequired = RequiresMigration(membership);
 
-            if (membership is not null)
-            {
-                return Results.Ok(new HouseStateResponse(
-                    MembershipState: "Member",
-                    MigrationRequired: migrationRequired,
-                    IsOwner: membership.Role == HouseMemberRole.Owner,
-                    House: ToResponse(membership.House),
-                    PendingRequest: null));
-            }
+            var pendingResponse = pending is null
+                ? null
+                : new HouseStatePendingRequestResponse(
+                    pending.Id,
+                    pending.HouseId,
+                    pending.House.Name,
+                    pending.House.Code,
+                    pending.CreatedAt);
 
-            if (pending is not null)
+            if (membership is null)
             {
+                // Defensive: every user should own a house, but fall back gracefully.
                 return Results.Ok(new HouseStateResponse(
-                    MembershipState: "Pending",
-                    MigrationRequired: false,
+                    MembershipState: "None",
                     IsOwner: false,
+                    CanLeave: false,
                     House: null,
-                    PendingRequest: new HouseStatePendingRequestResponse(
-                        pending.Id,
-                        pending.HouseId,
-                        pending.House.Name,
-                        pending.House.Code,
-                        pending.CreatedAt)));
+                    PendingRequest: pendingResponse));
             }
+
+            var isOwner = membership.Role == HouseMemberRole.Owner;
 
             return Results.Ok(new HouseStateResponse(
-                MembershipState: "None",
-                MigrationRequired: false,
-                IsOwner: false,
-                House: null,
-                PendingRequest: null));
+                MembershipState: isOwner ? "Owner" : "Member",
+                IsOwner: isOwner,
+                CanLeave: !isOwner,
+                House: ToResponse(membership.House),
+                PendingRequest: pendingResponse));
         })
         .WithName("GetMyHouseState")
         .WithSummary("Get current user's house membership state");
-
-        group.MapPost("/migration/keep", async (ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
-        {
-            if (!principal.TryGetUserId(out var actorUserId))
-                return Results.Unauthorized();
-
-            var membership = await uow.HouseMembers.GetCurrentForUserAsync(actorUserId, ct);
-            if (!RequiresMigration(membership))
-                return Results.BadRequest("No personal-house migration is required.");
-
-            membership!.House.MarkAsShared();
-            await uow.SaveChangesAsync(ct);
-
-            return Results.Ok(ToResponse(membership.House));
-        })
-        .WithName("KeepLegacyPersonalHouse")
-        .WithSummary("Mark legacy personal house as shared and continue");
-
-        group.MapPost("/migration/dissolve", async (ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
-        {
-            if (!principal.TryGetUserId(out var actorUserId))
-                return Results.Unauthorized();
-
-            var membership = await uow.HouseMembers.GetCurrentForUserAsync(actorUserId, ct);
-            if (!RequiresMigration(membership))
-                return Results.BadRequest("No personal-house migration is required.");
-
-            uow.Houses.Remove(membership!.House);
-            await uow.SaveChangesAsync(ct);
-
-            return Results.NoContent();
-        })
-        .WithName("DissolveLegacyPersonalHouse")
-        .WithSummary("Dissolve legacy personal house and return to no-house state");
 
         group.MapGet("/{id:guid}", async (Guid id, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
             if (!principal.TryGetUserId(out var actorUserId))
                 return Results.Unauthorized();
-
-            var migrationError = await EnsureMigrationResolvedAsync(actorUserId, uow, ct);
-            if (migrationError is not null)
-                return migrationError;
 
             if (!await uow.HouseMembers.IsMemberAsync(id, actorUserId, ct))
                 return Results.Forbid();
@@ -115,10 +71,6 @@ public static class HouseEndpoints
         {
             if (!principal.TryGetUserId(out var actorUserId))
                 return Results.Unauthorized();
-
-            var migrationError = await EnsureMigrationResolvedAsync(actorUserId, uow, ct);
-            if (migrationError is not null)
-                return migrationError;
 
             if (!await uow.HouseMembers.IsOwnerAsync(id, actorUserId, ct))
                 return Results.Forbid();
@@ -153,10 +105,6 @@ public static class HouseEndpoints
             if (!principal.TryGetUserId(out var actorUserId))
                 return Results.Unauthorized();
 
-            var migrationError = await EnsureMigrationResolvedAsync(actorUserId, uow, ct);
-            if (migrationError is not null)
-                return migrationError;
-
             if (!await uow.HouseMembers.IsOwnerAsync(id, actorUserId, ct))
                 return Results.Forbid();
 
@@ -171,24 +119,19 @@ public static class HouseEndpoints
             if (!principal.TryGetUserId(out var userId))
                 return Results.Unauthorized();
 
-            var migrationError = await EnsureMigrationResolvedAsync(userId, uow, ct);
-            if (migrationError is not null)
-                return migrationError;
-
-            var existingMembership = await uow.HouseMembers.GetCurrentForUserAsync(userId, ct);
-            if (existingMembership is not null)
-                return Results.Conflict("User already belongs to a house.");
+            if (await uow.HouseMembers.GetGuestMembershipForUserAsync(userId, ct) is not null)
+                return Results.Conflict("You already belong to another house. Leave it before joining a new one.");
 
             if (await uow.HouseJoinRequests.HasPendingForUserAsync(userId, ct))
-                return Results.Conflict("User already has a pending join request.");
+                return Results.Conflict("You already have a pending join request.");
 
             var inviteCode = req.Code.Trim().ToUpperInvariant();
             var house = await uow.Houses.GetByCodeAsync(inviteCode, ct);
             if (house is null)
                 return Results.NotFound("Invalid invite code.");
 
-            if (house.IsPersonal)
-                return Results.Conflict("This house is not accepting requests until legacy migration is completed by the owner.");
+            if (house.OwnerId == userId)
+                return Results.Conflict("You cannot join your own house.");
 
             var joinRequest = HouseJoinRequest.Create(house.Id, userId);
             await uow.HouseJoinRequests.AddAsync(joinRequest, ct);
@@ -226,10 +169,6 @@ public static class HouseEndpoints
             if (!principal.TryGetUserId(out var actorUserId))
                 return Results.Unauthorized();
 
-            var migrationError = await EnsureMigrationResolvedAsync(actorUserId, uow, ct);
-            if (migrationError is not null)
-                return migrationError;
-
             if (!await uow.HouseMembers.IsOwnerAsync(id, actorUserId, ct))
                 return Results.Forbid();
 
@@ -240,8 +179,8 @@ public static class HouseEndpoints
             if (request.Status != HouseJoinRequestStatus.Pending)
                 return Results.Conflict("Join request is no longer pending.");
 
-            if (await uow.HouseMembers.GetCurrentForUserAsync(request.RequesterId, ct) is not null)
-                return Results.Conflict("Requester already belongs to a house.");
+            if (await uow.HouseMembers.GetGuestMembershipForUserAsync(request.RequesterId, ct) is not null)
+                return Results.Conflict("Requester already belongs to another house.");
 
             request.Approve(actorUserId);
             await uow.HouseMembers.AddAsync(HouseMember.Create(id, request.RequesterId, HouseMemberRole.Member), ct);
@@ -252,7 +191,7 @@ public static class HouseEndpoints
             }
             catch
             {
-                return Results.Conflict("Requester already belongs to a house.");
+                return Results.Conflict("Requester already belongs to another house.");
             }
 
             return Results.Ok(ToPendingJoinRequestResponse(request));
@@ -264,10 +203,6 @@ public static class HouseEndpoints
         {
             if (!principal.TryGetUserId(out var actorUserId))
                 return Results.Unauthorized();
-
-            var migrationError = await EnsureMigrationResolvedAsync(actorUserId, uow, ct);
-            if (migrationError is not null)
-                return migrationError;
 
             if (!await uow.HouseMembers.IsOwnerAsync(id, actorUserId, ct))
                 return Results.Forbid();
@@ -291,10 +226,6 @@ public static class HouseEndpoints
         {
             if (!principal.TryGetUserId(out var actorUserId))
                 return Results.Unauthorized();
-
-            var migrationError = await EnsureMigrationResolvedAsync(actorUserId, uow, ct);
-            if (migrationError is not null)
-                return migrationError;
 
             if (!await uow.HouseMembers.IsOwnerAsync(id, actorUserId, ct))
                 return Results.Forbid();
@@ -322,32 +253,21 @@ public static class HouseEndpoints
             if (!principal.TryGetUserId(out var actorUserId))
                 return Results.Unauthorized();
 
-            var migrationError = await EnsureMigrationResolvedAsync(actorUserId, uow, ct);
-            if (migrationError is not null)
-                return migrationError;
+            var guestMembership = await uow.HouseMembers.GetGuestMembershipForUserAsync(actorUserId, ct);
+            if (guestMembership is null)
+                return Results.BadRequest("You are not a guest in any house.");
 
-            var membership = await uow.HouseMembers.GetCurrentForUserAsync(actorUserId, ct);
-            if (membership is null)
-                return Results.BadRequest("User is not a house member.");
-
-            if (membership.Role == HouseMemberRole.Owner)
-                return Results.BadRequest("Owner cannot leave the house.");
-
-            uow.HouseMembers.Remove(membership);
+            uow.HouseMembers.Remove(guestMembership);
             await uow.SaveChangesAsync(ct);
             return Results.NoContent();
         })
         .WithName("LeaveHouse")
-        .WithSummary("Leave the current house (members only)");
+        .WithSummary("Leave the joined house and return to your own house");
 
         group.MapPut("/{id:guid}/name", async (Guid id, UpdateHouseNameRequest req, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
             if (!principal.TryGetUserId(out var actorUserId))
                 return Results.Unauthorized();
-
-            var migrationError = await EnsureMigrationResolvedAsync(actorUserId, uow, ct);
-            if (migrationError is not null)
-                return migrationError;
 
             if (!await uow.HouseMembers.IsOwnerAsync(id, actorUserId, ct))
                 return Results.Forbid();
@@ -362,75 +282,7 @@ public static class HouseEndpoints
         })
         .WithName("RenameHouse")
         .WithSummary("Rename a house (owner only)");
-
-        group.MapPost("/", async (CreateHouseRequest req, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
-        {
-            if (!principal.TryGetUserId(out var actorUserId))
-                return Results.Unauthorized();
-
-            var migrationError = await EnsureMigrationResolvedAsync(actorUserId, uow, ct);
-            if (migrationError is not null)
-                return migrationError;
-
-            if (await uow.HouseMembers.GetCurrentForUserAsync(actorUserId, ct) is not null)
-                return Results.Conflict("User already belongs to a house.");
-
-            if (await uow.HouseJoinRequests.HasPendingForUserAsync(actorUserId, ct))
-                return Results.Conflict("User already has a pending join request.");
-
-            House house;
-            var attempts = 0;
-            do
-            {
-                attempts++;
-                house = House.Create(req.Name, actorUserId);
-            }
-            while (attempts < 5 && await uow.Houses.CodeExistsAsync(house.Code, ct));
-
-            await uow.Houses.AddAsync(house, ct);
-            await uow.SaveChangesAsync(ct);
-
-            return Results.Created($"/api/houses/{house.Id}", ToResponse(house));
-        })
-        .WithName("CreateHouse")
-        .WithSummary("Create a new shared house");
-
-        group.MapDelete("/{id:guid}", async (Guid id, ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
-        {
-            if (!principal.TryGetUserId(out var actorUserId))
-                return Results.Unauthorized();
-
-            var migrationError = await EnsureMigrationResolvedAsync(actorUserId, uow, ct);
-            if (migrationError is not null)
-                return migrationError;
-
-            if (!await uow.HouseMembers.IsOwnerAsync(id, actorUserId, ct))
-                return Results.Forbid();
-
-            var house = await uow.Houses.GetByIdAsync(id, ct);
-            if (house is null) return Results.NotFound();
-
-            uow.Houses.Remove(house);
-            await uow.SaveChangesAsync(ct);
-
-            return Results.NoContent();
-        })
-        .WithName("DeleteHouse")
-        .WithSummary("Dissolve a house (owner only)");
     }
-
-    private static async Task<IResult?> EnsureMigrationResolvedAsync(Guid userId, IUnitOfWork uow, CancellationToken ct)
-    {
-        var membership = await uow.HouseMembers.GetCurrentForUserAsync(userId, ct);
-        return RequiresMigration(membership)
-            ? Results.Conflict(MigrationRequiredError)
-            : null;
-    }
-
-    private static bool RequiresMigration(HouseMember? membership)
-        => membership is not null
-           && membership.Role == HouseMemberRole.Owner
-           && membership.House.IsPersonal;
 
     private static HouseResponse ToResponse(House h) =>
         new(h.Id, h.Name, h.Code, h.IsPersonal, h.CreatedAt, h.UpdatedAt);

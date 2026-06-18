@@ -54,12 +54,6 @@ public sealed class House : BaseEntity
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void MarkAsShared()
-    {
-        IsPersonal = false;
-        UpdatedAt = DateTime.UtcNow;
-    }
-
     public void AddMember(Guid userId)
     {
         if (HouseMembers.Any(m => m.UserId == userId))

@@ -122,8 +122,7 @@ namespace SharePlate.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId")
-                        .IsUnique();
+                    b.HasIndex("UserId");
 
                     b.HasIndex("HouseId", "UserId")
                         .IsUnique();

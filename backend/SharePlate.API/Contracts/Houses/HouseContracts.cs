@@ -1,6 +1,5 @@
 namespace SharePlate.API.Contracts.Houses;
 
-public record CreateHouseRequest(string Name);
 public record UpdateHouseNameRequest(string Name);
 public record JoinHouseRequest(string Code);
 public record HouseResponse(Guid Id, string Name, string Code, bool IsPersonal, DateTime CreatedAt, DateTime UpdatedAt);
@@ -11,7 +10,7 @@ public record JoinHouseResponse(Guid RequestId, string Status, Guid HouseId, str
 public record HouseStatePendingRequestResponse(Guid RequestId, Guid HouseId, string HouseName, string HouseCode, DateTime CreatedAt);
 public record HouseStateResponse(
     string MembershipState,
-    bool MigrationRequired,
     bool IsOwner,
+    bool CanLeave,
     HouseResponse? House,
     HouseStatePendingRequestResponse? PendingRequest);

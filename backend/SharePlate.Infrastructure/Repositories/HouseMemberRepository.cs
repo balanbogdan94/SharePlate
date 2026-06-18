@@ -17,8 +17,24 @@ public class HouseMemberRepository : Repository<HouseMember>, IHouseMemberReposi
         => await DbSet
             .Include(m => m.House)
             .Where(m => m.UserId == userId)
-            .OrderBy(m => m.House.IsPersonal)
+            .OrderBy(m => m.Role == HouseMemberRole.Owner)
             .ThenBy(m => m.JoinedAt)
+            .ThenBy(m => m.HouseId)
+            .FirstOrDefaultAsync(ct);
+
+    public async Task<HouseMember?> GetGuestMembershipForUserAsync(Guid userId, CancellationToken ct = default)
+        => await DbSet
+            .Include(m => m.House)
+            .Where(m => m.UserId == userId && m.Role != HouseMemberRole.Owner)
+            .OrderBy(m => m.JoinedAt)
+            .ThenBy(m => m.HouseId)
+            .FirstOrDefaultAsync(ct);
+
+    public async Task<HouseMember?> GetOwnedHouseForUserAsync(Guid userId, CancellationToken ct = default)
+        => await DbSet
+            .Include(m => m.House)
+            .Where(m => m.UserId == userId && m.Role == HouseMemberRole.Owner)
+            .OrderBy(m => m.JoinedAt)
             .ThenBy(m => m.HouseId)
             .FirstOrDefaultAsync(ct);
 
