@@ -23,18 +23,15 @@ export function useCurrentUser() {
 	});
 }
 
-type UpdateAvatarInput = { file?: File | null; remove?: boolean };
+type UpdateAvatarInput = { file: File };
 
 export function useUpdateAvatar() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: (input: UpdateAvatarInput) => {
 			const fd = new FormData();
-			if (input.remove) {
-				fd.append('RemovePhoto', 'true');
-			} else if (input.file) {
-				fd.append('Photo', input.file, input.file.name);
-			}
+			fd.append('RemovePhoto', 'false');
+			fd.append('Photo', input.file, input.file.name);
 			return apiFetch<CurrentUser>('/api/users/me/avatar', { method: 'PUT', body: fd });
 		},
 		onSuccess: () => {

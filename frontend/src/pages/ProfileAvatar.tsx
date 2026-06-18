@@ -49,26 +49,14 @@ export function ProfileAvatar() {
 				</button>
 				<div className="min-w-0 flex-1">
 					<p className="truncate font-semibold text-stone-900 dark:text-stone-100">{name}</p>
-					<div className="mt-1 flex gap-3">
-						<button
-							type="button"
-							onClick={() => inputRef.current?.click()}
-							disabled={isBusy}
-							className="text-sm font-medium text-green-600 disabled:opacity-60 dark:text-green-400"
-						>
-							{t('profile.changePhoto')}
-						</button>
-						{photoUrl && (
-							<button
-								type="button"
-								onClick={() => updateAvatar.mutate({ remove: true })}
-								disabled={isBusy}
-								className="text-sm font-medium text-red-500 disabled:opacity-60"
-							>
-								{t('profile.removePhoto')}
-							</button>
-						)}
-					</div>
+					<button
+						type="button"
+						onClick={() => inputRef.current?.click()}
+						disabled={isBusy}
+						className="mt-1 text-sm font-medium text-green-600 disabled:opacity-60 dark:text-green-400"
+					>
+						{t('profile.changePhoto')}
+					</button>
 				</div>
 				<input
 					ref={inputRef}
