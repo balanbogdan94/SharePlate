@@ -103,78 +103,134 @@ export function RecipeDetailsPage() {
 		Boolean(actorUserId) && actorUserId?.toLowerCase() === recipe.authorId.toLowerCase();
 
 	return (
-		<section className='relative mx-auto flex w-full max-w-2xl flex-col pb-24'>
-			<div className='relative -mx-4'>
+		<section className="relative mx-auto flex w-full max-w-2xl flex-col pb-24">
+			<div className="relative -mx-4">
 				{recipe.imageUrl ? (
 					<>
-						<img src={recipe.imageUrl} alt={recipe.title} className='h-56 w-full object-cover sm:h-72' />
-						<div className='pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-stone-950/80 to-transparent' />
+						<img
+							src={recipe.imageUrl}
+							alt={recipe.title}
+							className="h-56 w-full object-cover sm:h-72"
+						/>
+						<div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-stone-950/80 to-transparent" />
 					</>
 				) : (
-					<div className='flex h-40 items-center justify-center bg-stone-100 text-sm text-stone-400 dark:bg-stone-800 dark:text-stone-500'>
+					<div className="flex h-40 items-center justify-center bg-stone-100 text-sm text-stone-400 dark:bg-stone-800 dark:text-stone-500">
 						No photo
 					</div>
 				)}
 			</div>
-			<div className='flex flex-col gap-1 p-4'>
+			<div className="flex flex-col gap-1 p-4">
 				{deleteRecipeMutation.isError && (
-					<Alert variant='destructive' className='mb-2'>
+					<Alert variant="destructive" className="mb-2">
 						<AlertTitle>Could not delete recipe</AlertTitle>
-						<AlertDescription>{toErrorMessage(deleteRecipeMutation.error, 'Please try again.')}</AlertDescription>
+						<AlertDescription>
+							{toErrorMessage(deleteRecipeMutation.error, 'Please try again.')}
+						</AlertDescription>
 					</Alert>
 				)}
-				<h1 className='text-2xl font-extrabold leading-tight text-stone-900 dark:text-stone-100'>{recipe.title}</h1>
-				<div className='flex items-center gap-2'>
+				<h1 className="text-2xl font-extrabold leading-tight text-stone-900 dark:text-stone-100">
+					{recipe.title}
+				</h1>
+				<div className="flex items-center gap-2">
 					<Avatar
 						name={recipe.authorName}
 						photoUrl={recipe.authorAvatarUrl}
-						className='h-5 w-5'
-						fallbackClassName='bg-stone-200 text-[9px] text-stone-600 dark:bg-stone-700 dark:text-stone-300'
+						className="h-5 w-5"
+						fallbackClassName="bg-stone-200 text-[9px] text-stone-600 dark:bg-stone-700 dark:text-stone-300"
 					/>
-					<p className='text-sm italic text-stone-500 dark:text-stone-400'>{recipe.authorName}</p>
+					<p className="text-sm italic text-stone-500 dark:text-stone-400">{recipe.authorName}</p>
 					{canManageRecipe && (
 						<>
-							<span className='flex-1' />
-							<Button asChild size='icon' variant='ghost' className='text-green-600 dark:text-green-400'>
-								<Link to='/recipes/$recipeId/edit' params={{ recipeId }}><Pencil className='h-4 w-4' /></Link>
+							<span className="flex-1" />
+							<Button
+								asChild
+								size="icon"
+								variant="ghost"
+								className="text-green-600 dark:text-green-400"
+							>
+								<Link to="/recipes/$recipeId/edit" params={{ recipeId }}>
+									<Pencil className="h-4 w-4" />
+								</Link>
 							</Button>
-							<Button size='icon' variant='ghost' className='text-red-600 dark:text-red-400' onClick={onDeleteRecipe} disabled={deleteRecipeMutation.isPending}>
-								<Trash2 className='h-4 w-4' />
+							<Button
+								size="icon"
+								variant="ghost"
+								className="text-red-600 dark:text-red-400"
+								onClick={onDeleteRecipe}
+								disabled={deleteRecipeMutation.isPending}
+							>
+								<Trash2 className="h-4 w-4" />
 							</Button>
 						</>
 					)}
 				</div>
 				{(recipe.categories?.length ?? 0) > 0 && (
-					<div className='mt-2 flex flex-wrap gap-2'>
+					<div className="mt-2 flex flex-wrap gap-2">
 						{recipe.categories?.map((cat) => (
-							<span key={cat} className='rounded-full border border-stone-400 px-3 py-0.5 text-xs text-stone-600 dark:border-stone-500 dark:text-stone-300'>{cat}</span>
+							<span
+								key={cat}
+								className="rounded-full border border-stone-400 px-3 py-0.5 text-xs text-stone-600 dark:border-stone-500 dark:text-stone-300"
+							>
+								{cat}
+							</span>
 						))}
 					</div>
 				)}
-				<div className='mt-4 border-t border-stone-200 dark:border-stone-700'>
-					<button type='button' aria-expanded={notesOpen} onClick={() => setNotesOpen((o) => !o)} className='flex w-full items-center justify-between py-4 text-left'>
-						<span className='text-lg font-bold text-stone-900 dark:text-stone-100'>Chef&#39;s notes</span>
-						<ChevronDown className={cn('h-5 w-5 text-stone-500 transition-transform duration-200', notesOpen && 'rotate-180')} />
+				<div className="mt-4 border-t border-stone-200 dark:border-stone-700">
+					<button
+						type="button"
+						aria-expanded={notesOpen}
+						onClick={() => setNotesOpen((o) => !o)}
+						className="flex w-full items-center justify-between py-4 text-left"
+					>
+						<span className="text-lg font-bold text-stone-900 dark:text-stone-100">
+							Chef&#39;s notes
+						</span>
+						<ChevronDown
+							className={cn(
+								'h-5 w-5 text-stone-500 transition-transform duration-200',
+								notesOpen && 'rotate-180',
+							)}
+						/>
 					</button>
-					{notesOpen && <p className='pb-4 text-sm leading-relaxed text-stone-600 dark:text-stone-300'>{recipe.notes?.trim() || 'No notes yet.'}</p>}
+					{notesOpen && (
+						<p className="pb-4 text-sm leading-relaxed text-stone-600 dark:text-stone-300">
+							{recipe.notes?.trim() || 'No notes yet.'}
+						</p>
+					)}
 				</div>
-				<div className='border-t border-stone-200 dark:border-stone-700'>
-					<button type='button' aria-expanded={ingredientsOpen} onClick={() => setIngredientsOpen((o) => !o)} className='flex w-full items-center justify-between py-4 text-left'>
-						<span className='text-lg font-bold text-stone-900 dark:text-stone-100'>Ingredients</span>
-						<ChevronDown className={cn('h-5 w-5 text-stone-500 transition-transform duration-200', ingredientsOpen && 'rotate-180')} />
+				<div className="border-t border-stone-200 dark:border-stone-700">
+					<button
+						type="button"
+						aria-expanded={ingredientsOpen}
+						onClick={() => setIngredientsOpen((o) => !o)}
+						className="flex w-full items-center justify-between py-4 text-left"
+					>
+						<span className="text-lg font-bold text-stone-900 dark:text-stone-100">
+							Ingredients
+						</span>
+						<ChevronDown
+							className={cn(
+								'h-5 w-5 text-stone-500 transition-transform duration-200',
+								ingredientsOpen && 'rotate-180',
+							)}
+						/>
 					</button>
 					{ingredientsOpen && (
-						<ul className='space-y-3 pb-4'>
+						<ul className="space-y-3 pb-4">
 							{recipe.ingredients.length === 0 ? (
-								<li className='text-sm text-stone-500 dark:text-stone-400'>No ingredients yet.</li>
+								<li className="text-sm text-stone-500 dark:text-stone-400">No ingredients yet.</li>
 							) : (
 								recipe.ingredients.map((ing) => (
-									<li key={ing.id} className='flex items-center justify-between gap-3'>
-										<span className='flex items-center gap-2 text-sm text-stone-700 dark:text-stone-200'>
-											<span className='h-1.5 w-1.5 shrink-0 rounded-full bg-stone-400 dark:bg-stone-500' />
+									<li key={ing.id} className="flex items-center justify-between gap-3">
+										<span className="flex items-center gap-2 text-sm text-stone-700 dark:text-stone-200">
+											<span className="h-1.5 w-1.5 shrink-0 rounded-full bg-stone-400 dark:bg-stone-500" />
 											{ing.ingredientName}
 										</span>
-										<span className='shrink-0 text-sm text-stone-500 dark:text-stone-400'>{ing.quantity} {ing.unitId}</span>
+										<span className="shrink-0 text-sm text-stone-500 dark:text-stone-400">
+											{ing.quantity} {ing.unitId}
+										</span>
 									</li>
 								))
 							)}

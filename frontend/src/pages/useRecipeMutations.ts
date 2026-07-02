@@ -4,9 +4,7 @@ import { apiFetch } from '@/lib/api';
 import type { FormState, IngredientPayload, RecipeDetail } from '@/pages/tabs/home/types';
 
 function serializeIngredients(ingredients: IngredientPayload[]): string {
-	return JSON.stringify(
-		ingredients.map(({ name, quantity, unit }) => ({ name, quantity, unit })),
-	);
+	return JSON.stringify(ingredients.map(({ name, quantity, unit }) => ({ name, quantity, unit })));
 }
 
 type MutationsConfig = {
