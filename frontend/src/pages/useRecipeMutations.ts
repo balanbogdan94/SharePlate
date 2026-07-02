@@ -38,7 +38,7 @@ export function useRecipeMutations({
 			fd.append('Notes', form.notes ?? '');
 			if (imageFile) fd.append('Image', imageFile, imageFile.name);
 			fd.append('Ingredients', serializeIngredients(ingredients));
-			return apiFetch('/api/recipes', { method: 'POST', body: fd });
+			return apiFetch('/recipes', { method: 'POST', body: fd });
 		},
 		onSuccess: async () => {
 			onReset();
@@ -61,7 +61,7 @@ export function useRecipeMutations({
 			fd.append('RemoveImage', String(Boolean(initialData?.imageUrl) && !form.imageUrl));
 			if (imageFile) fd.append('Image', imageFile, imageFile.name);
 			fd.append('Ingredients', serializeIngredients(ingredients));
-			return apiFetch(`/api/recipes/${recipeId}`, { method: 'PUT', body: fd });
+			return apiFetch(`/recipes/${recipeId}`, { method: 'PUT', body: fd });
 		},
 		onSuccess: async () => {
 			void queryClient.invalidateQueries({ queryKey: ['recipes', 'my'] });

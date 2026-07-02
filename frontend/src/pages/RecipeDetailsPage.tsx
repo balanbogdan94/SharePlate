@@ -52,11 +52,11 @@ export function RecipeDetailsPage() {
 
 	const recipeQuery = useQuery({
 		queryKey: ['recipes', 'detail', recipeId],
-		queryFn: () => apiFetch<RecipeDetail>(`/api/recipes/${recipeId}`),
+		queryFn: () => apiFetch<RecipeDetail>(`/recipes/${recipeId}`),
 	});
 
 	const deleteRecipeMutation = useMutation({
-		mutationFn: () => apiFetch<void>(`/api/recipes/${recipeId}`, { method: 'DELETE' }),
+		mutationFn: () => apiFetch<void>(`/recipes/${recipeId}`, { method: 'DELETE' }),
 		onSuccess: async () => {
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: ['recipes', 'my'] }),

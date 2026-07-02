@@ -18,7 +18,7 @@ function usePlanCore({ today, manualSegment, manualExpandedOtherPlanId }: CorePa
 	const search = useSearch({ from: '/app-layout/plans' }) as SearchParams;
 	const pastCutoff = useMemo(() => addDays(today, -30), [today]);
 	const plansQuery = useQuery({ queryKey: ['plans'], queryFn: () => apiFetch<PlanListItem[]>('/plans') });
-	const recipesQuery = useQuery({ queryKey: ['recipes', 'house'], queryFn: () => apiFetch<RecipeSummary[]>('/api/recipes/house') });
+	const recipesQuery = useQuery({ queryKey: ['recipes', 'house'], queryFn: () => apiFetch<RecipeSummary[]>('/recipes/house') });
 	const plans = useMemo(() => (plansQuery.data ?? []).slice().sort((a, b) => a.startDate.localeCompare(b.startDate)), [plansQuery.data]);
 	const currentPlan = useMemo(() => plans.find((p) => isPlanActiveOnDate(p, today)) ?? null, [plans, today]);
 	const segment = useMemo(() => {

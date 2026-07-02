@@ -38,7 +38,7 @@ async function buildPlanDraftItems(plan: PlanDetails): Promise<EditableReminderI
 	const recipeIds = extractRecipeIdsFromPlan(plan);
 	if (recipeIds.length === 0) throw new Error('No recipes found in this plan.');
 	const settledRecipes = await Promise.allSettled(
-		recipeIds.map((recipeId) => apiFetch<RecipeDetail>(`/api/recipes/${recipeId}`)),
+		recipeIds.map((recipeId) => apiFetch<RecipeDetail>(`/recipes/${recipeId}`)),
 	);
 	if (settledRecipes.some((r) => r.status === 'rejected')) {
 		throw new Error('Could not fetch all recipe ingredients.');

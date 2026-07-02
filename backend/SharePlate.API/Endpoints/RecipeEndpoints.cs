@@ -12,7 +12,7 @@ public static class RecipeEndpoints
 {
     public static void MapRecipeEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/recipes").WithTags("Recipes").RequireAuthorization();
+        var group = app.MapGroup("/recipes").WithTags("Recipes").RequireAuthorization();
 
 
         // GET /api/recipes?search=...

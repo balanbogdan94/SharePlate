@@ -169,7 +169,7 @@ export function AddRecipePage() {
 	const recipeDetailQuery = useQuery({
 		queryKey: ['recipes', 'detail', recipeId],
 		enabled: isEditing,
-		queryFn: () => apiFetch<RecipeDetail>(`/api/recipes/${recipeId}`),
+		queryFn: () => apiFetch<RecipeDetail>(`/recipes/${recipeId}`),
 	});
 	if (isEditing && recipeDetailQuery.isLoading) {
 		return (

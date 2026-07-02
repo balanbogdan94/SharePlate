@@ -104,10 +104,10 @@ function mockPlanApi(plan: PlanListItem, recipe: RecipeDetail | Error | null = n
 	const details = createPlanDetails(plan);
 	vi.mocked(apiFetch).mockImplementation(async (path: string) => {
 		if (path === '/plans') return [plan];
-		if (path === '/api/recipes/house') return [];
+		if (path === '/recipes/house') return [];
 		if (path === `/plans/${plan.id}`) return details;
-		if (path === '/api/recipes/recipe-1' && recipe instanceof Error) throw recipe;
-		if (path === '/api/recipes/recipe-1' && recipe) return recipe;
+		if (path === '/recipes/recipe-1' && recipe instanceof Error) throw recipe;
+		if (path === '/recipes/recipe-1' && recipe) return recipe;
 		throw new Error(`Unhandled path: ${path}`);
 	});
 }

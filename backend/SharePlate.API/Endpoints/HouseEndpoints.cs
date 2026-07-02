@@ -11,7 +11,7 @@ public static class HouseEndpoints
 {
     public static void MapHouseEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/houses").WithTags("Houses").RequireAuthorization();
+        var group = app.MapGroup("/houses").WithTags("Houses").RequireAuthorization();
 
         group.MapGet("/state", async (ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {

@@ -60,7 +60,7 @@ export function useAddRecipeForm({ recipeId, initialData }: HookProps) {
 
 	const { data: units } = useQuery({
 		queryKey: ['units'],
-		queryFn: () => apiFetch<Unit[]>('/api/units'),
+		queryFn: () => apiFetch<Unit[]>('/units'),
 	});
 	const defaultUnit = useMemo<UnitType>(() => units?.[0]?.id ?? 'Piece', [units]);
 

@@ -95,7 +95,7 @@ export function HouseTabPage() {
 
 	const houseStateQuery = useQuery({
 		queryKey: ['house', 'state'],
-		queryFn: () => apiFetch<HouseStateResponse>('/api/houses/state'),
+		queryFn: () => apiFetch<HouseStateResponse>('/houses/state'),
 	});
 
 	const houseId = houseStateQuery.data?.house?.id ?? null;
@@ -103,13 +103,13 @@ export function HouseTabPage() {
 	const membersQuery = useQuery({
 		queryKey: ['house', 'members', houseId],
 		enabled: Boolean(houseId && houseStateQuery.data?.isOwner),
-		queryFn: () => apiFetch<HouseWithMembersResponse>(`/api/houses/${houseId}/members`),
+		queryFn: () => apiFetch<HouseWithMembersResponse>(`/houses/${houseId}/members`),
 	});
 
 	const pendingQuery = useQuery({
 		queryKey: ['house', 'pending', houseId],
 		enabled: Boolean(houseId && houseStateQuery.data?.isOwner),
-		queryFn: () => apiFetch<PendingJoinRequestResponse[]>(`/api/houses/${houseId}/join-requests`),
+		queryFn: () => apiFetch<PendingJoinRequestResponse[]>(`/houses/${houseId}/join-requests`),
 	});
 
 	useEffect(() => {
@@ -122,7 +122,7 @@ export function HouseTabPage() {
 
 	const requestJoinMutation = useMutation({
 		mutationFn: () =>
-			apiFetch('/api/houses/join', {
+			apiFetch('/houses/join', {
 				method: 'POST',
 				body: JSON.stringify({ code: joinCode.trim() }),
 			}),
@@ -134,7 +134,7 @@ export function HouseTabPage() {
 
 	const cancelRequestMutation = useMutation({
 		mutationFn: (requestId: string) =>
-			apiFetch(`/api/houses/join-requests/${requestId}`, {
+			apiFetch(`/houses/join-requests/${requestId}`, {
 				method: 'DELETE',
 			}),
 		onSuccess: invalidateHouseScope,
@@ -142,7 +142,7 @@ export function HouseTabPage() {
 
 	const leaveHouseMutation = useMutation({
 		mutationFn: () =>
-			apiFetch('/api/houses/leave', {
+			apiFetch('/houses/leave', {
 				method: 'POST',
 			}),
 		onSuccess: invalidateHouseScope,
@@ -150,7 +150,7 @@ export function HouseTabPage() {
 
 	const removeMemberMutation = useMutation({
 		mutationFn: (userId: string) =>
-			apiFetch(`/api/houses/${houseId}/members/${userId}`, {
+			apiFetch(`/houses/${houseId}/members/${userId}`, {
 				method: 'DELETE',
 			}),
 		onSuccess: async () => {
@@ -163,7 +163,7 @@ export function HouseTabPage() {
 
 	const approveRequestMutation = useMutation({
 		mutationFn: (requestId: string) =>
-			apiFetch(`/api/houses/${houseId}/join-requests/${requestId}/approve`, {
+			apiFetch(`/houses/${houseId}/join-requests/${requestId}/approve`, {
 				method: 'POST',
 			}),
 		onSuccess: async () => {
@@ -177,7 +177,7 @@ export function HouseTabPage() {
 
 	const rejectRequestMutation = useMutation({
 		mutationFn: (requestId: string) =>
-			apiFetch(`/api/houses/${houseId}/join-requests/${requestId}/reject`, {
+			apiFetch(`/houses/${houseId}/join-requests/${requestId}/reject`, {
 				method: 'POST',
 			}),
 		onSuccess: () => queryClient.invalidateQueries({ queryKey: ['house', 'pending', houseId] }),
@@ -185,7 +185,7 @@ export function HouseTabPage() {
 
 	const renameHouseMutation = useMutation({
 		mutationFn: () =>
-			apiFetch(`/api/houses/${houseId}/name`, {
+			apiFetch(`/houses/${houseId}/name`, {
 				method: 'PUT',
 				body: JSON.stringify({ name: houseNameDraft.trim() }),
 			}),

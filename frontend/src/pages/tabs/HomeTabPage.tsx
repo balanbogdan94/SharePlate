@@ -19,7 +19,7 @@ export function HomeTabPage() {
 
 	const recipesQuery = useQuery({
 		queryKey: ['recipes', 'house'],
-		queryFn: () => apiFetch<RecipeSummary[]>('/api/recipes/house'),
+		queryFn: () => apiFetch<RecipeSummary[]>('/recipes/house'),
 	});
 
 	const filteredRecipes = (recipesQuery.data ?? []).filter((r) =>

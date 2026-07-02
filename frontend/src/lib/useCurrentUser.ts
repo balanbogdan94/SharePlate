@@ -17,7 +17,7 @@ export function useCurrentUser() {
 	const auth = useAuth();
 	return useQuery({
 		queryKey: currentUserQueryKey,
-		queryFn: () => apiFetch<CurrentUser>('/api/users/me'),
+		queryFn: () => apiFetch<CurrentUser>('/users/me'),
 		enabled: auth.isAuthenticated,
 		staleTime: 5 * 60 * 1000,
 	});
@@ -32,7 +32,7 @@ export function useUpdateAvatar() {
 			const fd = new FormData();
 			fd.append('RemovePhoto', 'false');
 			fd.append('Photo', input.file, input.file.name);
-			return apiFetch<CurrentUser>('/api/users/me/avatar', { method: 'PUT', body: fd });
+			return apiFetch<CurrentUser>('/users/me/avatar', { method: 'PUT', body: fd });
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: currentUserQueryKey });

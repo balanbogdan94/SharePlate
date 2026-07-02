@@ -8,7 +8,7 @@ public static class UnitEndpoints
 {
     public static void MapUnitEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/units").WithTags("Units");
+        var group = app.MapGroup("/units").WithTags("Units");
 
 
         // GET /api/units

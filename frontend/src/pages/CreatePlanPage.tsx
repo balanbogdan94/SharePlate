@@ -193,13 +193,13 @@ export function CreatePlanPage() {
 
 	const recipesQuery = useQuery({
 		queryKey: ['recipes', 'house'],
-		queryFn: () => apiFetch<RecipeSummary[]>('/api/recipes/house'),
+		queryFn: () => apiFetch<RecipeSummary[]>('/recipes/house'),
 	});
 
 	const recipeSearchQuery = useQuery({
 		queryKey: ['recipes', 'house', 'search', recipeSearch],
 		queryFn: () =>
-			apiFetch<RecipeSummary[]>(`/api/recipes/house?search=${encodeURIComponent(recipeSearch)}`),
+			apiFetch<RecipeSummary[]>(`/recipes/house?search=${encodeURIComponent(recipeSearch)}`),
 		enabled: modalOpen,
 	});
 

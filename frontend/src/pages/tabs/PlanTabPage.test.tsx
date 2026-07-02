@@ -93,7 +93,7 @@ function mockApi(plans: PlanListItem[], detailsById: Record<string, PlanDetails>
 		if (path === '/plans') {
 			return plans;
 		}
-		if (path === '/api/recipes/house') {
+		if (path === '/recipes/house') {
 			return [];
 		}
 		if (path.startsWith('/plans/')) {
