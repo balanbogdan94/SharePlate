@@ -35,6 +35,7 @@ export function AppShell() {
 		{ to: '/plans', label: t('tabs.plan'), icon: CalendarDays },
 	];
 	const isMainRoute = tabs.some((tab) => tab.to === location.pathname);
+	const brand = t('app.brand');
 
 	const handleBack = () => {
 		if (canGoBack) {
@@ -46,8 +47,8 @@ export function AppShell() {
 	};
 
 	return (
-		<div className="mobile-shell min-h-screen min-h-[100dvh] bg-stone-100 text-stone-900 dark:bg-stone-950 dark:text-stone-100">
-			<header className="safe-top sticky top-0 z-20 border-b border-stone-200/80 bg-white/90 backdrop-blur-md dark:border-stone-800/50 dark:bg-stone-950/95">
+		<div className="mobile-shell min-h-screen bg-stone-100 text-stone-900 dark:bg-sp-background dark:text-sp-text-primary">
+			<header className="safe-top sticky top-0 z-20 border-b border-stone-200/80 bg-white/90 backdrop-blur-md dark:border-sp-border-subtle dark:bg-sp-background">
 				<div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-4 sm:h-16">
 					<div className="flex items-center gap-2">
 						{!isMainRoute && (
@@ -55,57 +56,58 @@ export function AppShell() {
 								type="button"
 								onClick={handleBack}
 								aria-label="Go back"
-								className="inline-flex h-9 w-9 items-center justify-center rounded-full text-stone-600 transition hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
+								className="inline-flex h-9 w-9 items-center justify-center rounded-full text-stone-600 transition hover:bg-stone-100 dark:text-sp-icon-secondary dark:hover:bg-sp-surface-hover"
 							>
 								<ChevronLeft className="h-5 w-5" />
 							</button>
 						)}
-					<p className="text-xl font-extrabold uppercase tracking-wide text-green-600 dark:text-green-400">
-						{t('app.brand')}
-					</p>
-				</div>
+						<p className="text-xl font-extrabold uppercase tracking-wide">
+							<span className="text-green-600 dark:text-sp-text-primary">{brand.slice(0, 5)}</span>
+							<span className="text-green-600 dark:text-sp-primary">{brand.slice(5)}</span>
+						</p>
+					</div>
 
-				<Link
-					to="/profile"
-					aria-label={t('shell.profile')}
-					className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm transition hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700"
-				>
-					<Avatar
-						name={name}
-						photoUrl={currentUser.data?.profilePictureUrl}
-						className="h-full w-full border-0"
-						fallbackClassName="text-sm text-stone-700 dark:text-stone-200"
-					/>
-				</Link>
-			</div>
-		</header>
+					<Link
+						to="/profile"
+						aria-label={t('shell.profile')}
+						className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm transition hover:bg-stone-50 dark:border-sp-border dark:bg-sp-surface dark:text-sp-text-primary dark:hover:bg-sp-surface-hover"
+					>
+						<Avatar
+							name={name}
+							photoUrl={currentUser.data?.profilePictureUrl}
+							className="h-full w-full border-0"
+							fallbackClassName="text-sm text-stone-700 dark:text-sp-text-secondary"
+						/>
+					</Link>
+				</div>
+			</header>
 
 			<main className="mx-auto h-[calc(100dvh-3.5rem)] w-full max-w-5xl overflow-y-auto px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-3 sm:h-[calc(100dvh-4rem)] sm:pt-4">
 				<Outlet />
 			</main>
 
-			<footer className="safe-bottom fixed bottom-0 left-0 right-0 z-20 border-t border-stone-200/80 bg-white/92 pt-2 backdrop-blur-md dark:border-stone-800/50 dark:bg-stone-950/92">
-				<div className="mx-auto flex w-fit items-center justify-center gap-2 rounded-2xl bg-stone-100/80 p-2 dark:bg-stone-900/80">
-					{tabs.map((tab) => {
-						const Icon = tab.icon;
-						const isActive = location.pathname.includes(tab.to);
-
-						return (
-							<Link
-								key={tab.to}
-								to={tab.to}
-								className={`flex min-h-11 min-w-24 flex-col items-center justify-center gap-1 rounded-xl px-6 py-2 text-xs font-semibold uppercase tracking-wide transition ${
-									isActive
-										? 'bg-green-100 text-green-700 shadow-sm dark:bg-green-900/40 dark:text-green-400'
-										: 'text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-100'
-								}`}
-							>
-								<Icon className="h-4 w-4" />
-								<span>{tab.label}</span>
-							</Link>
-						);
-					})}
-				</div>
+			<footer className="safe-bottom fixed flex justify-evenly bottom-0 left-0 right-0 z-20 border-t border-stone-200/80 bg-white/92 pt-2 backdrop-blur-md dark:border-sp-nav-border dark:bg-sp-nav-background ">
+				{tabs.map((tab) => {
+					const Icon = tab.icon;
+					const isActive = location.pathname.includes(tab.to);
+					return (
+						<Link
+							key={tab.to}
+							to={tab.to}
+							className={`relative flex min-h-11 min-w-24 flex-col items-center justify-center gap-1 rounded-xl px-6 py-2 text-xs font-semibold uppercase tracking-wide transition ${
+								isActive
+									? 'bg-green-100 text-green-700 shadow-sm dark:bg-transparent dark:text-sp-nav-active dark:shadow-none'
+									: 'text-stone-500 hover:text-stone-700 dark:text-sp-nav-inactive dark:hover:text-sp-text-primary'
+							}`}
+						>
+							{isActive && (
+								<span className="absolute top-0 hidden h-0.5 w-8 rounded-full bg-sp-nav-active dark:block" />
+							)}
+							<Icon className="h-4 w-4" />
+							<span>{tab.label}</span>
+						</Link>
+					);
+				})}
 			</footer>
 
 			<IosInstallPrompt />

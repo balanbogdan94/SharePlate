@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
-import { ChevronDown, Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { useAuth } from '@/auth/AuthContext';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { apiFetch } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { CollapsibleSection } from './recipe-details/CollapsibleSection';
+import { RecipeHero } from './recipe-details/RecipeHero';
 import type { RecipeDetail } from '@/pages/tabs/home/types';
 
 function toErrorMessage(error: unknown, fallback: string): string {
@@ -77,7 +78,7 @@ export function RecipeDetailsPage() {
 	if (recipeQuery.isLoading) {
 		return (
 			<section className="relative mx-auto flex h-full w-full max-w-2xl flex-col gap-4 pb-10">
-				<p className="rounded-2xl border border-stone-200 bg-white p-4 text-sm text-stone-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300">
+				<p className="rounded-2xl border border-stone-200 bg-white p-4 text-sm text-stone-600 dark:border-sp-border dark:bg-sp-surface dark:text-sp-text-secondary">
 					Loading recipe...
 				</p>
 			</section>
@@ -104,22 +105,7 @@ export function RecipeDetailsPage() {
 
 	return (
 		<section className="relative mx-auto flex w-full max-w-2xl flex-col pb-24">
-			<div className="relative -mx-4">
-				{recipe.imageUrl ? (
-					<>
-						<img
-							src={recipe.imageUrl}
-							alt={recipe.title}
-							className="h-56 w-full object-cover sm:h-72"
-						/>
-						<div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-stone-950/80 to-transparent" />
-					</>
-				) : (
-					<div className="flex h-40 items-center justify-center bg-stone-100 text-sm text-stone-400 dark:bg-stone-800 dark:text-stone-500">
-						No photo
-					</div>
-				)}
-			</div>
+			<RecipeHero imageUrl={recipe.imageUrl} title={recipe.title} />
 			<div className="flex flex-col gap-1 p-4">
 				{deleteRecipeMutation.isError && (
 					<Alert variant="destructive" className="mb-2">
@@ -129,7 +115,7 @@ export function RecipeDetailsPage() {
 						</AlertDescription>
 					</Alert>
 				)}
-				<h1 className="text-2xl font-extrabold leading-tight text-stone-900 dark:text-stone-100">
+				<h1 className="text-2xl font-extrabold leading-tight text-stone-900 dark:text-sp-text-primary">
 					{recipe.title}
 				</h1>
 				<div className="flex items-center gap-2">
@@ -137,9 +123,9 @@ export function RecipeDetailsPage() {
 						name={recipe.authorName}
 						photoUrl={recipe.authorAvatarUrl}
 						className="h-5 w-5"
-						fallbackClassName="bg-stone-200 text-[9px] text-stone-600 dark:bg-stone-700 dark:text-stone-300"
+						fallbackClassName="bg-stone-200 text-[9px] text-stone-600 dark:bg-sp-surface-active dark:text-sp-text-secondary"
 					/>
-					<p className="text-sm italic text-stone-500 dark:text-stone-400">{recipe.authorName}</p>
+					<p className="text-sm italic text-stone-500 dark:text-sp-text-secondary">{recipe.authorName}</p>
 					{canManageRecipe && (
 						<>
 							<span className="flex-1" />
@@ -147,7 +133,7 @@ export function RecipeDetailsPage() {
 								asChild
 								size="icon"
 								variant="ghost"
-								className="text-green-600 dark:text-green-400"
+								className="text-green-600 dark:text-sp-primary"
 							>
 								<Link to="/recipes/$recipeId/edit" params={{ recipeId }}>
 									<Pencil className="h-4 w-4" />
@@ -170,72 +156,46 @@ export function RecipeDetailsPage() {
 						{recipe.categories?.map((cat) => (
 							<span
 								key={cat}
-								className="rounded-full border border-stone-400 px-3 py-0.5 text-xs text-stone-600 dark:border-stone-500 dark:text-stone-300"
+								className="rounded-full border border-stone-400 px-3 py-0.5 text-xs text-stone-600 dark:border-sp-border-strong dark:bg-sp-surface dark:text-sp-text-secondary"
 							>
 								{cat}
 							</span>
 						))}
 					</div>
 				)}
-				<div className="mt-4 border-t border-stone-200 dark:border-stone-700">
-					<button
-						type="button"
-						aria-expanded={notesOpen}
-						onClick={() => setNotesOpen((o) => !o)}
-						className="flex w-full items-center justify-between py-4 text-left"
+				<div className="mt-4">
+					<CollapsibleSection
+						title="Chef's notes"
+						open={notesOpen}
+						onToggle={() => setNotesOpen((o) => !o)}
 					>
-						<span className="text-lg font-bold text-stone-900 dark:text-stone-100">
-							Chef&#39;s notes
-						</span>
-						<ChevronDown
-							className={cn(
-								'h-5 w-5 text-stone-500 transition-transform duration-200',
-								notesOpen && 'rotate-180',
-							)}
-						/>
-					</button>
-					{notesOpen && (
-						<p className="pb-4 text-sm leading-relaxed text-stone-600 dark:text-stone-300">
+						<p className="text-sm leading-relaxed text-stone-600 dark:text-sp-text-secondary">
 							{recipe.notes?.trim() || 'No notes yet.'}
 						</p>
-					)}
-				</div>
-				<div className="border-t border-stone-200 dark:border-stone-700">
-					<button
-						type="button"
-						aria-expanded={ingredientsOpen}
-						onClick={() => setIngredientsOpen((o) => !o)}
-						className="flex w-full items-center justify-between py-4 text-left"
+					</CollapsibleSection>
+					<CollapsibleSection
+						title="Ingredients"
+						open={ingredientsOpen}
+						onToggle={() => setIngredientsOpen((o) => !o)}
 					>
-						<span className="text-lg font-bold text-stone-900 dark:text-stone-100">
-							Ingredients
-						</span>
-						<ChevronDown
-							className={cn(
-								'h-5 w-5 text-stone-500 transition-transform duration-200',
-								ingredientsOpen && 'rotate-180',
-							)}
-						/>
-					</button>
-					{ingredientsOpen && (
-						<ul className="space-y-3 pb-4">
+						<ul className="space-y-3">
 							{recipe.ingredients.length === 0 ? (
-								<li className="text-sm text-stone-500 dark:text-stone-400">No ingredients yet.</li>
+								<li className="text-sm text-stone-500 dark:text-sp-text-secondary">No ingredients yet.</li>
 							) : (
 								recipe.ingredients.map((ing) => (
 									<li key={ing.id} className="flex items-center justify-between gap-3">
-										<span className="flex items-center gap-2 text-sm text-stone-700 dark:text-stone-200">
-											<span className="h-1.5 w-1.5 shrink-0 rounded-full bg-stone-400 dark:bg-stone-500" />
+										<span className="flex items-center gap-2 text-sm text-stone-700 dark:text-sp-text-primary">
+											<span className="h-1.5 w-1.5 shrink-0 rounded-full bg-stone-400 dark:bg-sp-icon-secondary" />
 											{ing.ingredientName}
 										</span>
-										<span className="shrink-0 text-sm text-stone-500 dark:text-stone-400">
+										<span className="shrink-0 text-sm text-stone-500 dark:text-sp-text-secondary">
 											{ing.quantity} {ing.unitId}
 										</span>
 									</li>
 								))
 							)}
 						</ul>
-					)}
+					</CollapsibleSection>
 				</div>
 			</div>
 		</section>

@@ -21,6 +21,7 @@ body {
 	-webkit-tap-highlight-color: transparent;
 	touch-action: manipulation;
 	overscroll-behavior-y: none;
+	overflow: hidden;
 }
 
 input,
@@ -91,6 +92,60 @@ button {
 		--chart-3: 30 80% 55%;
 		--chart-4: 280 65% 60%;
 		--chart-5: 340 75% 55%;
+
+		--color-primary: #30d158;
+		--color-primary-hover: #3cda65;
+		--color-primary-active: #28b94d;
+
+		--color-primary-subtle: rgba(48, 209, 88, 0.12);
+		--color-primary-muted: rgba(48, 209, 88, 0.18);
+
+		--color-background: #0b0b0c;
+		--color-background-secondary: #121214;
+
+		--color-surface: #1c1c1e;
+		--color-surface-hover: #242426;
+		--color-surface-active: #2c2c2e;
+
+		--color-surface-elevated: #202022;
+
+		--color-text-primary: #f5f5f7;
+		--color-text-secondary: #a1a1a6;
+		--color-text-tertiary: #6e6e73;
+		--color-text-disabled: #48484a;
+
+		--color-text-on-primary: #07140a;
+
+		--color-icon-primary: #f5f5f7;
+		--color-icon-secondary: #8e8e93;
+		--color-icon-primary-action: #30d158;
+
+		--color-border: rgba(255, 255, 255, 0.08);
+		--color-border-subtle: rgba(255, 255, 255, 0.05);
+		--color-border-strong: rgba(255, 255, 255, 0.14);
+
+		--color-separator: rgba(255, 255, 255, 0.08);
+
+		--color-search-background: #1c1c1e;
+		--color-search-text: #f5f5f7;
+		--color-search-placeholder: #8e8e93;
+		--color-search-icon: #8e8e93;
+		--color-search-focus: #30d158;
+
+		--color-card-background: #1c1c1e;
+		--color-card-background-hover: #242426;
+		--color-card-border: rgba(255, 255, 255, 0.07);
+
+		--color-nav-background: rgba(18, 18, 20, 0.94);
+		--color-nav-active: #30d158;
+		--color-nav-inactive: #8e8e93;
+		--color-nav-border: rgba(255, 255, 255, 0.08);
+
+		--color-fab-background: #30d158;
+		--color-fab-background-hover: #3cda65;
+		--color-fab-icon: #ffffff;
+
+		--color-overlay: rgba(0, 0, 0, 0.55);
 	}
 }
 
@@ -111,5 +166,15 @@ button {
 	.safe-y {
 		padding-top: max(1rem, env(safe-area-inset-top));
 		padding-bottom: max(1rem, env(safe-area-inset-bottom));
+	}
+}
+
+@layer components {
+	.sp-fab-button {
+		@apply fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#6fdb68] text-[#05240f] shadow-[0_18px_30px_rgba(111,219,104,0.35)] transition active:scale-95 sm:bottom-32 sm:right-8 sm:h-14 sm:w-14;
+	}
+
+	.sp-fab-icon {
+		@apply h-6 w-6 sm:h-7 sm:w-7;
 	}
 }
