@@ -1,4 +1,4 @@
-import { Globe, Moon } from 'lucide-react';
+import { Globe, Moon, Volume2 } from 'lucide-react';
 import { useI18n } from '@/i18n/I18nContext';
 import { type Language, type Theme, useUserSettings } from '@/settings/UserSettingsContext';
 
@@ -35,7 +35,12 @@ function SegmentedControl<T extends string>({
 
 export function SettingsTabPage() {
 	const { t } = useI18n();
-	const { theme, setTheme, language, setLanguage } = useUserSettings();
+	const { theme, setTheme, language, setLanguage, soundEnabled, setSoundEnabled } =
+		useUserSettings();
+	const onOff: SegmentedOption<'on' | 'off'>[] = [
+		{ value: 'on', label: t('settings.on') },
+		{ value: 'off', label: t('settings.off') },
+	];
 
 	return (
 		<div className="space-y-6 pb-8 pt-2">
@@ -86,6 +91,27 @@ export function SettingsTabPage() {
 								{ value: 'ro', label: t('shell.language.ro') },
 							]}
 							onChange={setLanguage}
+						/>
+					</div>
+				</div>
+			</div>
+
+			<div className="space-y-1.5">
+				<p className="px-4 text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
+					{t('settings.notifications')}
+				</p>
+				<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+					<div className="flex min-h-[52px] items-center gap-3 px-4 py-2">
+						<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-amber-500">
+							<Volume2 className="h-4 w-4 text-white" />
+						</div>
+						<span className="flex-1 text-base text-stone-900 dark:text-stone-100">
+							{t('settings.sound')}
+						</span>
+						<SegmentedControl<'on' | 'off'>
+							value={soundEnabled ? 'on' : 'off'}
+							options={onOff}
+							onChange={(v) => setSoundEnabled(v === 'on')}
 						/>
 					</div>
 				</div>

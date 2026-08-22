@@ -2,6 +2,7 @@ import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react
 import { useCanGoBack, useNavigate, useRouter } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/api';
+import { unlockAudio } from '@/lib/feedback/sound';
 import { useDraft, readDraftOnce } from '@/lib/useDraft';
 import type {
 	FormState,
@@ -121,6 +122,7 @@ export function useAddRecipeForm({ recipeId, initialData }: HookProps) {
 	};
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
+		unlockAudio();
 		if (ingredients.length === 0) {
 			setIngredientsError('Add at least one ingredient.');
 			return;

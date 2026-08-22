@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCanGoBack, useNavigate, useRouter } from '@tanstack/react-router';
 import { apiFetch } from '@/lib/api';
+import { useFeedback } from '@/lib/feedback/useFeedback';
 import type { FormState, IngredientPayload, RecipeDetail } from '@/pages/tabs/home/types';
 
 function serializeIngredients(ingredients: IngredientPayload[]): string {
@@ -28,6 +29,7 @@ export function useRecipeMutations({
 	const navigate = useNavigate();
 	const router = useRouter();
 	const canGoBack = useCanGoBack();
+	const { notifySuccess, notifyError } = useFeedback();
 
 	const createMutation = useMutation({
 		mutationFn: async () => {
@@ -39,6 +41,10 @@ export function useRecipeMutations({
 			return apiFetch('/recipes', { method: 'POST', body: fd });
 		},
 		onSuccess: async () => {
+			notifySuccess({
+				titleKey: 'recipe.create.success',
+				bodyKey: 'recipe.create.successBody',
+			});
 			onReset();
 			void queryClient.invalidateQueries({ queryKey: ['recipes', 'my'] });
 			void queryClient.invalidateQueries({ queryKey: ['recipes', 'house'] });
@@ -47,6 +53,12 @@ export function useRecipeMutations({
 				return;
 			}
 			await navigate({ to: '/recipes' });
+		},
+		onError: () => {
+			notifyError({
+				titleKey: 'recipe.create.error',
+				bodyKey: 'recipe.create.errorBody',
+			});
 		},
 	});
 
@@ -62,6 +74,10 @@ export function useRecipeMutations({
 			return apiFetch(`/recipes/${recipeId}`, { method: 'PUT', body: fd });
 		},
 		onSuccess: async () => {
+			notifySuccess({
+				titleKey: 'recipe.update.success',
+				bodyKey: 'recipe.update.successBody',
+			});
 			void queryClient.invalidateQueries({ queryKey: ['recipes', 'my'] });
 			void queryClient.invalidateQueries({ queryKey: ['recipes', 'house'] });
 			void queryClient.invalidateQueries({ queryKey: ['recipes', 'detail', recipeId] });
@@ -70,6 +86,12 @@ export function useRecipeMutations({
 				return;
 			}
 			await navigate({ to: '/recipes' });
+		},
+		onError: () => {
+			notifyError({
+				titleKey: 'recipe.update.error',
+				bodyKey: 'recipe.update.errorBody',
+			});
 		},
 	});
 

@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import { apiFetch } from '@/lib/api';
+import { useFeedback } from '@/lib/feedback/useFeedback';
+import { unlockAudio } from '@/lib/feedback/sound';
 import { useDraft, readDraftOnce } from '@/lib/useDraft';
 import type { RecipeSummary } from '@/pages/tabs/home/types';
 import {
@@ -133,6 +135,7 @@ export function CreatePlanPage() {
 	const router = useRouter();
 	const canGoBack = useCanGoBack();
 	const queryClient = useQueryClient();
+	const { notifySuccess, notifyError } = useFeedback();
 
 	const draftKey = planId ? `shareplate.draft.plan.${planId}` : 'shareplate.draft.plan.new';
 	const { write: writeDraft, clear: clearDraft } = useDraft(draftKey);
@@ -286,12 +289,16 @@ export function CreatePlanPage() {
 				body: JSON.stringify(nextPayload),
 			}),
 		onSuccess: async (created) => {
+			notifySuccess({ titleKey: 'plan.create.success', bodyKey: 'plan.create.successBody' });
 			clearDraft();
 			await queryClient.invalidateQueries({ queryKey: ['plans'] });
 			await navigate({
 				to: '/plans',
 				search: { expand: created.id },
 			});
+		},
+		onError: () => {
+			notifyError({ titleKey: 'plan.create.error', bodyKey: 'plan.create.errorBody' });
 		},
 	});
 
@@ -302,6 +309,7 @@ export function CreatePlanPage() {
 				body: JSON.stringify(nextPayload),
 			}),
 		onSuccess: async (updated) => {
+			notifySuccess({ titleKey: 'plan.update.success', bodyKey: 'plan.update.successBody' });
 			clearDraft();
 			await queryClient.invalidateQueries({ queryKey: ['plans'] });
 			await queryClient.invalidateQueries({ queryKey: ['plans', 'detail', planId] });
@@ -309,6 +317,9 @@ export function CreatePlanPage() {
 				to: '/plans',
 				search: { expand: updated.id },
 			});
+		},
+		onError: () => {
+			notifyError({ titleKey: 'plan.update.error', bodyKey: 'plan.update.errorBody' });
 		},
 	});
 
@@ -407,6 +418,7 @@ export function CreatePlanPage() {
 	};
 
 	const onSave = () => {
+		unlockAudio();
 		if (!effectivePayload) {
 			setSaveError('Select a date range to start building your plan.');
 			return;
