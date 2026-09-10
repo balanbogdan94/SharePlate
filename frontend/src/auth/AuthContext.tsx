@@ -1,156 +1,113 @@
-import {
-	createContext,
-	useCallback,
-	useContext,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from 'react';
+import { InteractionStatus } from '@azure/msal-browser';
+import { useMsal } from '@azure/msal-react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import {
-	clearStoredTokens,
-	isAccessTokenExpired,
-	readStoredTokens,
-	writeStoredTokens,
-	type AuthTokens,
-} from '@/auth/storage';
-import { apiFetch, configureApiAuth } from '@/lib/api';
+import { apiTokenRequest } from '@/auth/msal';
+import { apiFetch } from '@/lib/api';
 
-type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
+type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'error';
+
+type ProvisioningResult = {
+	accountId: string;
+	attempt: number;
+	status: 'authenticated' | 'error';
+	error: string | null;
+};
 
 type AuthContextValue = {
 	status: AuthStatus;
 	isAuthenticated: boolean;
-	tokens: AuthTokens | null;
-	login: (tokens: AuthTokens) => void;
-	logout: () => void;
-	refreshAccessToken: () => Promise<string | null>;
+	accountName: string;
+	error: string | null;
+	login: (returnTo?: string) => Promise<void>;
+	logout: () => Promise<void>;
+	retryProvisioning: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-type RefreshResponse = {
-	accessToken: string;
-	refreshToken: string;
-	expiresAtUtc: string;
-};
-
-async function requestRefreshToken(
-	refreshToken: string,
-): Promise<AuthTokens | null> {
-	try {
-		const response = await apiFetch<RefreshResponse>('/auth/refresh', {
-			method: 'POST',
-			body: JSON.stringify({ refreshToken }),
-		});
-
-		return {
-			accessToken: response.accessToken,
-			refreshToken: response.refreshToken,
-			expiresAtUtc: response.expiresAtUtc,
-		};
-	} catch {
-		return null;
-	}
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-	const [status, setStatus] = useState<AuthStatus>('loading');
-	const [tokens, setTokens] = useState<AuthTokens | null>(null);
-	const tokensRef = useRef<AuthTokens | null>(null);
-
-	const commitTokens = useCallback((nextTokens: AuthTokens | null) => {
-		tokensRef.current = nextTokens;
-		setTokens(nextTokens);
-
-		if (nextTokens) {
-			writeStoredTokens(nextTokens);
-			setStatus('authenticated');
-			return;
-		}
-
-		clearStoredTokens();
-		setStatus('unauthenticated');
-	}, []);
-
-	const refreshAccessToken = useCallback(async (): Promise<string | null> => {
-		const current = tokensRef.current ?? readStoredTokens();
-		if (!current?.refreshToken) {
-			commitTokens(null);
-			return null;
-		}
-
-		const refreshed = await requestRefreshToken(current.refreshToken);
-		if (!refreshed) {
-			commitTokens(null);
-			return null;
-		}
-
-		commitTokens(refreshed);
-		return refreshed.accessToken;
-	}, [commitTokens]);
-
-	const login = useCallback(
-		(nextTokens: AuthTokens) => {
-			commitTokens(nextTokens);
-		},
-		[commitTokens],
-	);
-
-	const logout = useCallback(() => {
-		commitTokens(null);
-	}, [commitTokens]);
+	const { instance, accounts, inProgress } = useMsal();
+	const account = instance.getActiveAccount() ?? accounts[0] ?? null;
+	const accountId = account?.homeAccountId ?? null;
+	const [provisioningResult, setProvisioningResult] = useState<ProvisioningResult | null>(null);
+	const [retryCount, setRetryCount] = useState(0);
+	const currentResult =
+		provisioningResult &&
+		provisioningResult.accountId === accountId &&
+		provisioningResult.attempt === retryCount
+			? provisioningResult
+			: null;
+	const status: AuthStatus =
+		inProgress !== InteractionStatus.None
+			? 'loading'
+			: !account
+				? 'unauthenticated'
+				: (currentResult?.status ?? 'loading');
+	const error = currentResult?.error ?? null;
 
 	useEffect(() => {
-		configureApiAuth({
-			getAccessToken: () => tokensRef.current?.accessToken ?? null,
-			refreshAccessToken,
-		});
-	}, [refreshAccessToken]);
+		if (account && !instance.getActiveAccount()) instance.setActiveAccount(account);
+	}, [account, instance]);
 
 	useEffect(() => {
+		if (inProgress !== InteractionStatus.None || !accountId) return;
+
 		let cancelled = false;
-
-		const bootstrap = async () => {
-			const stored = readStoredTokens();
-			if (!stored) {
+		void apiFetch('/session/provision', { method: 'POST' })
+			.then(() => {
 				if (!cancelled) {
-					commitTokens(null);
+					setProvisioningResult({
+						accountId,
+						attempt: retryCount,
+						status: 'authenticated',
+						error: null,
+					});
 				}
-				return;
-			}
-
-			if (!isAccessTokenExpired(stored.expiresAtUtc)) {
-				if (!cancelled) {
-					commitTokens(stored);
-				}
-				return;
-			}
-
-			const refreshed = await requestRefreshToken(stored.refreshToken);
-			if (!cancelled) {
-				commitTokens(refreshed);
-			}
-		};
-
-		void bootstrap();
+			})
+			.catch((provisioningError: unknown) => {
+				if (cancelled) return;
+				setProvisioningResult({
+					accountId,
+					attempt: retryCount,
+					status: 'error',
+					error:
+						provisioningError instanceof Error ? provisioningError.message : 'Provisioning failed.',
+				});
+			});
 
 		return () => {
 			cancelled = true;
 		};
-	}, [commitTokens]);
+	}, [accountId, inProgress, retryCount]);
+
+	const login = useCallback(
+		async (returnTo = '/plans') => {
+			const redirectStartPage = new URL(returnTo, window.location.origin).toString();
+			await instance.loginRedirect({ ...apiTokenRequest, redirectStartPage });
+		},
+		[instance],
+	);
+
+	const logout = useCallback(async () => {
+		await instance.logoutRedirect({ account });
+	}, [account, instance]);
+
+	const retryProvisioning = useCallback(() => {
+		setRetryCount((current) => current + 1);
+	}, []);
 
 	const value = useMemo<AuthContextValue>(
 		() => ({
 			status,
 			isAuthenticated: status === 'authenticated',
-			tokens,
+			accountName: account?.name ?? '',
+			error,
 			login,
 			logout,
-			refreshAccessToken,
+			retryProvisioning,
 		}),
-		[login, logout, refreshAccessToken, status, tokens],
+		[account?.name, error, login, logout, retryProvisioning, status],
 	);
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

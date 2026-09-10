@@ -462,7 +462,7 @@ export function CreatePlanPage() {
 	}
 
 	return (
-		<section className="relative flex flex-col justify-between  overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_12%_8%,rgba(42,58,90,0.28),rgba(8,10,14,1)_40%)] p-3 h-full text-[#f5f5f5] sm:rounded-[2rem] sm:p-5 sm:pb-28">
+		<section className="relative flex flex-col justify-between  overflow-hidden rounded-2xl p-3 h-full text-[#f5f5f5] sm:rounded-[2rem] sm:p-5 sm:pb-28">
 			<div className="relative space-y-4 sm:space-y-5 overflow-scroll">
 				<h1 className="text-[2.2rem] font-black leading-none tracking-tight text-[#f8f8f9] sm:text-[2.4rem]">
 					{isEditMode ? 'Edit plan' : 'Create plan'}

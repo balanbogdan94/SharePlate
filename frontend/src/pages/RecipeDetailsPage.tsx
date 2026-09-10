@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { Pencil, Trash2 } from 'lucide-react';
-import { useAuth } from '@/auth/AuthContext';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { apiFetch } from '@/lib/api';
+import { useCurrentUser } from '@/lib/useCurrentUser';
 import { CollapsibleSection } from './recipe-details/CollapsibleSection';
 import { RecipeHero } from './recipe-details/RecipeHero';
 import type { RecipeDetail } from '@/pages/tabs/home/types';
@@ -18,36 +18,11 @@ function toErrorMessage(error: unknown, fallback: string): string {
 	return fallback;
 }
 
-function getUserIdFromAccessToken(token: string | null): string | null {
-	if (!token) return null;
-	const parts = token.split('.');
-	if (parts.length < 2) return null;
-	try {
-		const base64 = parts[1]
-			.replace(/-/g, '+')
-			.replace(/_/g, '/')
-			.padEnd(Math.ceil(parts[1].length / 4) * 4, '=');
-		const payload = JSON.parse(atob(base64)) as {
-			sub?: string;
-			nameid?: string;
-			'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'?: string;
-		};
-		return (
-			payload.sub ??
-			payload.nameid ??
-			payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ??
-			null
-		);
-	} catch {
-		return null;
-	}
-}
-
 export function RecipeDetailsPage() {
-	const auth = useAuth();
 	const { recipeId } = useParams({ from: '/app-layout/recipes/$recipeId' });
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
+	const currentUser = useCurrentUser();
 	const [notesOpen, setNotesOpen] = useState(false);
 	const [ingredientsOpen, setIngredientsOpen] = useState(true);
 
@@ -99,7 +74,7 @@ export function RecipeDetailsPage() {
 	}
 
 	const recipe = recipeQuery.data;
-	const actorUserId = getUserIdFromAccessToken(auth.tokens?.accessToken ?? null);
+	const actorUserId = currentUser.data?.id ?? null;
 	const canManageRecipe =
 		Boolean(actorUserId) && actorUserId?.toLowerCase() === recipe.authorId.toLowerCase();
 
@@ -125,7 +100,9 @@ export function RecipeDetailsPage() {
 						className="h-5 w-5"
 						fallbackClassName="bg-stone-200 text-[9px] text-stone-600 dark:bg-sp-surface-active dark:text-sp-text-secondary"
 					/>
-					<p className="text-sm italic text-stone-500 dark:text-sp-text-secondary">{recipe.authorName}</p>
+					<p className="text-sm italic text-stone-500 dark:text-sp-text-secondary">
+						{recipe.authorName}
+					</p>
 					{canManageRecipe && (
 						<>
 							<span className="flex-1" />
@@ -180,7 +157,9 @@ export function RecipeDetailsPage() {
 					>
 						<ul className="space-y-3">
 							{recipe.ingredients.length === 0 ? (
-								<li className="text-sm text-stone-500 dark:text-sp-text-secondary">No ingredients yet.</li>
+								<li className="text-sm text-stone-500 dark:text-sp-text-secondary">
+									No ingredients yet.
+								</li>
 							) : (
 								recipe.ingredients.map((ing) => (
 									<li key={ing.id} className="flex items-center justify-between gap-3">

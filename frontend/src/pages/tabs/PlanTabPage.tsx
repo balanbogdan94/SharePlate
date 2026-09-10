@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { CalendarRange, Plus, Sparkles, Users } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlanCurrentView } from '@/pages/tabs/plan/PlanCurrentView';
 import { PlanOtherView } from '@/pages/tabs/plan/PlanOtherView';
 import { usePlanTab } from '@/pages/usePlanTab';
@@ -28,28 +29,29 @@ export function PlanTabPage() {
 		exportPropsFor,
 		otherPlanExportId,
 	} = usePlanTab();
-	const { noPlans, noActive, showOtherPlans, showFab, isError, isLoading, error } = planStatus;
+	const { noPlans, noActive, showFab, isError, isLoading, error } = planStatus;
 
 	return (
-		<section className="relative overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_top,_rgba(38,52,84,0.26),_rgba(8,10,14,1)_45%)] p-3 pb-24 text-[#f5f5f5] sm:rounded-[2rem] sm:p-5 sm:pb-28">
-			<div className="absolute -left-10 top-20 h-40 w-40 rounded-full bg-[#6fdb68]/10 blur-3xl sm:top-24 sm:h-52 sm:w-52" />
-			<div className="relative space-y-4 sm:space-y-5">
-				<div className="grid grid-cols-2 rounded-full border border-white/10 bg-[#1d2025] p-1">
-					<button
-						type="button"
-						onClick={() => setSegment('current')}
-						className={`min-h-11 rounded-full px-3 py-2 text-sm font-semibold transition sm:px-4 sm:py-3 sm:text-base ${segment === 'current' ? 'bg-[#2b2f35] text-[#7ce485]' : 'text-[#808791]'}`}
+		<section className="relative h-full overflow-hidden p-3">
+			<Tabs
+				value={segment}
+				onValueChange={(value) => setSegment(value as 'current' | 'other')}
+				className="relative space-y-4 sm:space-y-5"
+			>
+				<TabsList className="grid w-full grid-cols-2 rounded-full border">
+					<TabsTrigger
+						value="current"
+						className="data-[state=active]:bg-[#2b2f35] data-[state=active]:text-[#7ce485] data-[state=active]:shadow-none data-[state=inactive]:text-[#808791]"
 					>
 						Current Plan
-					</button>
-					<button
-						type="button"
-						onClick={() => setSegment('other')}
-						className={`min-h-11 rounded-full px-3 py-2 text-sm font-semibold transition sm:px-4 sm:py-3 sm:text-base ${segment === 'other' ? 'bg-[#2b2f35] text-[#7ce485]' : 'text-[#808791]'}`}
+					</TabsTrigger>
+					<TabsTrigger
+						value="other"
+						className="data-[state=active]:bg-[#2b2f35] data-[state=active]:text-[#7ce485] data-[state=active]:shadow-none data-[state=inactive]:text-[#808791]"
 					>
 						Other Plans
-					</button>
-				</div>
+					</TabsTrigger>
+				</TabsList>
 				{isError && (
 					<Alert variant="destructive">
 						<AlertTitle>Could not load plans</AlertTitle>
@@ -58,7 +60,7 @@ export function PlanTabPage() {
 				)}
 				{isLoading && <p className="text-sm text-[#98a0aa]">Loading plans...</p>}
 				{noPlans && (
-					<div className="space-y-5 rounded-2xl bg-[#14161c]/80 p-4">
+					<div className="space-y-5 rounded-2xl p-4">
 						<div className="flex flex-col items-center py-4 text-center">
 							<CalendarRange className="mb-4 h-12 w-12 text-[#7ce485]/60" />
 							<h2 className="text-[1.75rem] font-extrabold text-white">No plans yet</h2>
@@ -83,25 +85,27 @@ export function PlanTabPage() {
 						</div>
 					</div>
 				)}
-				{noActive && (
-					<div className="flex flex-col items-center rounded-2xl bg-[#14161c]/80 py-8 text-center">
-						<CalendarRange className="mb-4 h-10 w-10 text-[#7ce485]/60" />
-						<h2 className="text-[1.75rem] font-extrabold text-white">No active plan today</h2>
-						<p className="mt-2 text-sm text-[#afb5be]">
-							Tap + to create a plan and start organising your week.
-						</p>
-					</div>
-				)}
-				{visibleCurrentPlan && (
-					<PlanCurrentView
-						plan={visibleCurrentPlan}
-						expandedDayDate={expandedDayDate}
-						onToggleDay={toggleDay}
-						recipeMap={recipeMap}
-						exportProps={exportPropsFor(visibleCurrentPlan.id)}
-					/>
-				)}
-				{showOtherPlans && (
+				<TabsContent value="current">
+					{noActive && (
+						<div className="flex flex-col items-center py-8 text-center">
+							<CalendarRange className="mb-4 h-10 w-10 text-[#7ce485]/60" />
+							<h2 className="text-[1.75rem] font-extrabold text-white">No active plan today</h2>
+							<p className="mt-2 text-sm text-[#afb5be]">
+								Tap + to create a plan and start organising your week.
+							</p>
+						</div>
+					)}
+					{visibleCurrentPlan && (
+						<PlanCurrentView
+							plan={visibleCurrentPlan}
+							expandedDayDate={expandedDayDate}
+							onToggleDay={toggleDay}
+							recipeMap={recipeMap}
+							exportProps={exportPropsFor(visibleCurrentPlan.id)}
+						/>
+					)}
+				</TabsContent>
+				<TabsContent value="other">
 					<PlanOtherView
 						futurePlans={groupedPlans.future}
 						pastPlans={groupedPlans.past}
@@ -116,8 +120,8 @@ export function PlanTabPage() {
 						today={today}
 						exportProps={exportPropsFor(otherPlanExportId)}
 					/>
-				)}
-			</div>
+				</TabsContent>
+			</Tabs>
 			{showFab && (
 				<button type="button" aria-label="Create plan" onClick={onCreate} className="sp-fab-button">
 					<Plus className="sp-fab-icon" />

@@ -3,7 +3,6 @@ namespace SharePlate.Core.Repositories;
 public interface IUnitOfWork : IAsyncDisposable
 {
     IUserRepository Users { get; }
-    IRefreshTokenRepository RefreshTokens { get; }
     IHouseRepository Houses { get; }
     IHouseMemberRepository HouseMembers { get; }
     IHouseJoinRequestRepository HouseJoinRequests { get; }

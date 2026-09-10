@@ -3,7 +3,6 @@ import { Camera } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { useI18n } from '@/i18n/I18nContext';
 import { useCurrentUser, useUpdateAvatar } from '@/lib/useCurrentUser';
-import { getNameFromToken } from '@/lib/jwt';
 import { useAuth } from '@/auth/AuthContext';
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -15,7 +14,7 @@ export function ProfileAvatar() {
 	const updateAvatar = useUpdateAvatar();
 	const inputRef = useRef<HTMLInputElement>(null);
 
-	const name = currentUser.data?.name ?? getNameFromToken(auth.tokens?.accessToken ?? '') ?? '';
+	const name = currentUser.data?.name ?? auth.accountName;
 	const photoUrl = currentUser.data?.profilePictureUrl ?? '';
 	const isBusy = updateAvatar.isPending;
 

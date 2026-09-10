@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { getInitials } from '@/lib/jwt';
+import { getInitials } from '@/lib/name';
 
 type AvatarProps = {
 	name: string;

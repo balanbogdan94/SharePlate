@@ -1,25 +1,15 @@
 import { ChevronRight, Home, LogOut, Settings } from 'lucide-react';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import { useAuth } from '@/auth/AuthContext';
 import { useI18n } from '@/i18n/I18nContext';
-import { apiFetch } from '@/lib/api';
 import { ProfileAvatar } from '@/pages/ProfileAvatar';
 
 export function ProfilePage() {
 	const { t } = useI18n();
 	const auth = useAuth();
-	const navigate = useNavigate();
 
 	const handleLogout = async () => {
-		const refreshToken = auth.tokens?.refreshToken;
-		if (refreshToken) {
-			await apiFetch<void>('/auth/logout', {
-				method: 'POST',
-				body: JSON.stringify({ refreshToken }),
-			}).catch(() => undefined);
-		}
-		auth.logout();
-		await navigate({ to: '/login' });
+		await auth.logout();
 	};
 
 	return (

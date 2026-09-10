@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Claims;
 using SharePlate.API.Contracts.Plans;
+using SharePlate.API.Security;
 using SharePlate.Core.Entities;
 using SharePlate.Core.Enums;
 using SharePlate.Core.Extensions.Security;
@@ -15,7 +16,7 @@ public static class PlanEndpoints
 
     public static void MapPlanEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/plans").WithTags("Plans").RequireAuthorization();
+        var group = app.MapGroup("/plans").WithTags("Plans").RequireAuthorization(AuthPolicies.SharePlateUser);
 
         group.MapGet("/", async (ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
