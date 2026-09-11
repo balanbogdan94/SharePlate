@@ -11,22 +11,22 @@ import { AddRecipeIngredientModal } from './AddRecipeIngredientModal';
 import { useAddRecipeForm } from './useAddRecipeForm';
 
 const LABEL_CLS =
-	'mb-2 block text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400';
+	'mb-2 block text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-sp-text-tertiary';
 
 type AddRecipeFormProps = { recipeId?: string; initialData?: RecipeDetail };
 type IngredientRowProps = { ingredient: IngredientPayload; onRemove: () => void };
 
 function IngredientRow({ ingredient, onRemove }: IngredientRowProps) {
 	return (
-		<li className="flex items-center justify-between rounded-2xl bg-stone-100 px-4 py-3 dark:bg-stone-800/50">
-			<span className="text-sm font-medium text-stone-800 dark:text-stone-100">
+		<li className="flex items-center justify-between rounded-2xl bg-stone-100 px-4 py-3 dark:bg-sp-surface">
+			<span className="text-sm font-medium text-stone-800 dark:text-sp-text-primary">
 				{ingredient.quantity} {ingredient.unit} {ingredient.name}
 			</span>
 			<button
 				type="button"
 				aria-label={`Remove ${ingredient.name}`}
 				onClick={onRemove}
-				className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-200 text-stone-500 dark:bg-stone-700 dark:text-stone-400"
+				className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-200 text-stone-500 dark:bg-sp-surface-active dark:text-sp-text-secondary"
 			>
 				<X className="h-4 w-4" />
 			</button>
@@ -49,7 +49,7 @@ function IngredientsSection({ ingredients, error, onAdd, onRemove }: Ingredients
 				<button
 					type="button"
 					onClick={onAdd}
-					className="flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-green-600 dark:text-green-400"
+					className="flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-green-600 dark:text-sp-primary"
 				>
 					<CirclePlus className="h-4 w-4" />
 					Add Ingredient
@@ -81,7 +81,7 @@ function TitleSection({ value, onChange }: TitleSectionProps) {
 				required
 				placeholder="e.g. Grandma's Secret Pasta"
 				onChange={onChange}
-				className="h-14 rounded-2xl bg-stone-100 dark:bg-stone-800/50"
+				className="h-14 rounded-2xl bg-stone-100 dark:bg-sp-surface"
 			/>
 		</div>
 	);
@@ -90,8 +90,8 @@ function TitleSection({ value, onChange }: TitleSectionProps) {
 function AddRecipeForm({ recipeId, initialData }: AddRecipeFormProps) {
 	const s = useAddRecipeForm({ recipeId, initialData });
 	return (
-		<section className="mx-auto flex w-full max-w-2xl flex-col pb-24">
-			<h1 className="px-4 pb-6 pt-4 text-3xl font-extrabold text-stone-900 dark:text-stone-100">
+		<section className="animate-in fade-in mx-auto flex w-full max-w-2xl flex-col pb-8 duration-500">
+			<h1 className="px-4 pb-6 pt-4 text-3xl font-extrabold text-stone-900 dark:text-sp-text-primary">
 				{s.isEditing ? 'Edit Recipe' : 'Add Recipe'}
 			</h1>
 			<form onSubmit={s.handleSubmit} className="flex flex-col gap-6 px-4">
@@ -123,7 +123,7 @@ function AddRecipeForm({ recipeId, initialData }: AddRecipeFormProps) {
 						rows={4}
 						placeholder="Any special tips or instructions..."
 						onChange={(e) => s.setForm((p) => ({ ...p, notes: e.target.value }))}
-						className="w-full rounded-2xl border-0 bg-stone-100 px-4 py-3 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none dark:bg-stone-800/50 dark:text-stone-100"
+						className="w-full rounded-2xl border-0 bg-stone-100 px-4 py-3 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none dark:bg-sp-surface dark:text-sp-text-primary dark:placeholder:text-sp-text-tertiary"
 					/>
 				</div>
 				{s.submitError && (
@@ -135,16 +135,18 @@ function AddRecipeForm({ recipeId, initialData }: AddRecipeFormProps) {
 				<Button
 					type="submit"
 					disabled={s.isSaveDisabled}
-					className="h-14 w-full rounded-full bg-green-600 text-base font-bold uppercase tracking-wide text-white hover:bg-green-700"
+					className="relative h-14 w-full overflow-hidden rounded-full bg-gradient-to-r from-green-500 to-emerald-600 text-base font-bold uppercase tracking-wide text-white shadow-[0_10px_30px_-8px_rgba(34,197,94,0.55)] transition hover:brightness-110 active:scale-95 dark:from-sp-primary dark:to-emerald-400 dark:text-sp-text-on-primary dark:shadow-[0_10px_30px_-8px_rgba(48,209,88,0.45)]"
 				>
+					<span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 to-transparent" />
 					<CircleCheck className="mr-2 h-5 w-5" />
 					{s.isPending ? 'Saving...' : s.isEditing ? 'Update Recipe' : 'Save Recipe'}
 				</Button>
 				<button
 					type="button"
 					onClick={() => void s.discard()}
-					className="h-11 w-full rounded-full text-sm font-semibold text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
+					className="flex h-14 w-full items-center justify-center rounded-full border border-stone-300 bg-white text-sm font-bold uppercase tracking-wide text-stone-600 shadow-sm transition hover:bg-stone-100 active:scale-95 dark:border-sp-border dark:bg-sp-surface dark:text-sp-text-secondary dark:hover:bg-sp-surface-hover"
 				>
+					<X className="mr-2 h-4 w-4" />
 					Discard
 				</button>
 			</form>
@@ -174,7 +176,7 @@ export function AddRecipePage() {
 	if (isEditing && recipeDetailQuery.isLoading) {
 		return (
 			<section className="mx-auto w-full max-w-2xl px-4 pt-4">
-				<p className="rounded-2xl border border-stone-200 bg-white p-4 text-sm text-stone-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300">
+				<p className="rounded-2xl border border-stone-200 bg-white p-4 text-sm text-stone-600 dark:border-sp-border dark:bg-sp-surface dark:text-sp-text-secondary">
 					Loading recipe...
 				</p>
 			</section>

@@ -3,7 +3,14 @@ import { CalendarRange, Plus } from 'lucide-react';
 function PlanEmptyIllustration() {
 	return (
 		<svg viewBox="0 0 200 160" className="h-36 w-36" aria-hidden="true" fill="none">
-			<ellipse cx="100" cy="142" rx="50" ry="7" fill="currentColor" className="text-stone-900/5 dark:text-black/40" />
+			<ellipse
+				cx="100"
+				cy="142"
+				rx="50"
+				ry="7"
+				fill="currentColor"
+				className="text-stone-900/5 dark:text-black/40"
+			/>
 
 			<g className="text-green-500 dark:text-sp-primary" strokeLinecap="round">
 				<rect x="50" y="50" width="100" height="82" rx="16" stroke="currentColor" strokeWidth="7" />
@@ -23,7 +30,13 @@ function PlanEmptyIllustration() {
 				<path d="M66 114h48" />
 			</g>
 
-			<circle cx="148" cy="52" r="17" fill="currentColor" className="text-green-500 dark:text-sp-primary" />
+			<circle
+				cx="148"
+				cy="52"
+				r="17"
+				fill="currentColor"
+				className="text-green-500 dark:text-sp-primary"
+			/>
 			<path
 				d="M148 45v14M141 52h14"
 				stroke="currentColor"
@@ -73,7 +86,9 @@ export function PlanNoActiveState() {
 	return (
 		<div className="flex flex-col items-center gap-2 py-10 text-center">
 			<CalendarRange className="h-10 w-10 text-green-500/70 dark:text-sp-primary" />
-			<h2 className="text-lg font-bold text-stone-900 dark:text-sp-text-primary">No active plan today</h2>
+			<h2 className="text-lg font-bold text-stone-900 dark:text-sp-text-primary">
+				No active plan today
+			</h2>
 			<p className="max-w-xs text-sm text-stone-500 dark:text-sp-text-secondary">
 				Tap + to create a plan and start organising your week.
 			</p>

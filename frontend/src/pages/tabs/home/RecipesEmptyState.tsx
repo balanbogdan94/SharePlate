@@ -4,7 +4,14 @@ import { Plus } from 'lucide-react';
 function EmptyRecipesIllustration() {
 	return (
 		<svg viewBox="0 0 200 160" className="h-36 w-36" aria-hidden="true" fill="none">
-			<ellipse cx="100" cy="140" rx="54" ry="7" fill="currentColor" className="text-stone-900/5 dark:text-black/40" />
+			<ellipse
+				cx="100"
+				cy="140"
+				rx="54"
+				ry="7"
+				fill="currentColor"
+				className="text-stone-900/5 dark:text-black/40"
+			/>
 
 			<g className="text-green-500 dark:text-sp-primary" strokeLinecap="round">
 				<path d="M48 78 Q48 122 100 122 Q152 122 152 78" stroke="currentColor" strokeWidth="7" />
@@ -24,7 +31,13 @@ function EmptyRecipesIllustration() {
 				className="text-stone-400 dark:text-sp-text-tertiary"
 			/>
 
-			<circle cx="150" cy="36" r="17" fill="currentColor" className="text-green-500 dark:text-sp-primary" />
+			<circle
+				cx="150"
+				cy="36"
+				r="17"
+				fill="currentColor"
+				className="text-green-500 dark:text-sp-primary"
+			/>
 			<path
 				d="M150 29v14M143 36h14"
 				stroke="currentColor"
