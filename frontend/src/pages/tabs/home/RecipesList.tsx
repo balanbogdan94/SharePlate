@@ -1,5 +1,6 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { RecipeCard } from './RecipeCard';
+import { RecipesEmptyState } from './RecipesEmptyState';
 import type { RecipeSummary } from './types';
 
 function toErrorMessage(error: unknown, fallback: string): string {
@@ -42,7 +43,7 @@ export function RecipesList({
 	}
 
 	if (totalCount === 0) {
-		return <p className={messageClassName}>You have no recipes yet. Tap + to add one.</p>;
+		return <RecipesEmptyState />;
 	}
 
 	if (filteredRecipes.length === 0) {
