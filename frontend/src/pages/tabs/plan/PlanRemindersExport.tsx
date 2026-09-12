@@ -21,7 +21,15 @@ type PlanRemindersExportProps = {
 };
 
 export function PlanRemindersExport(props: PlanRemindersExportProps) {
-	const { onExport, isExporting, errorMessage, draftItems, phase, compact = false, subtle = false } = props;
+	const {
+		onExport,
+		isExporting,
+		errorMessage,
+		draftItems,
+		phase,
+		compact = false,
+		subtle = false,
+	} = props;
 	const showReview = draftItems.length > 0 || phase === 'reviewing' || phase === 'openingShortcut';
 	return (
 		<div className="space-y-2">

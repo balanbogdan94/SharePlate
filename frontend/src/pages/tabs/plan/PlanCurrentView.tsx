@@ -51,7 +51,9 @@ export function PlanCurrentView({
 					<button
 						type="button"
 						aria-label="Edit plan"
-						onClick={() => void navigate({ to: '/plans/$planId/edit', params: { planId: plan.id } })}
+						onClick={() =>
+							void navigate({ to: '/plans/$planId/edit', params: { planId: plan.id } })
+						}
 						className="flex h-8 w-8 items-center justify-center rounded-full bg-transparent text-stone-500 transition hover:bg-stone-100 active:scale-95 dark:text-sp-text-secondary dark:hover:bg-sp-surface-active"
 					>
 						<PenLine className="h-3.5 w-3.5" />

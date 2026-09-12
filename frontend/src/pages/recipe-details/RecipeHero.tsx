@@ -61,9 +61,7 @@ export function RecipeHero({ imageUrl, title, recipeId, canEdit, actions }: Reci
 					<HeroPlaceholderContent canEdit={false} />
 				</div>
 			)}
-			{actions && (
-				<div className="absolute right-4 top-4 flex items-center gap-2">{actions}</div>
-			)}
+			{actions && <div className="absolute right-4 top-4 flex items-center gap-2">{actions}</div>}
 		</div>
 	);
 }
