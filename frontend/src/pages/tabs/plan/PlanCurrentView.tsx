@@ -40,33 +40,39 @@ export function PlanCurrentView({
 	const activeExpandedDayDate = expandedDayDate ?? plan.days[0]?.date ?? null;
 
 	return (
-		<div>
-			<div className="mb-2 flex items-center gap-3">
-				<p className="flex-1 text-l font-bold text-[#9cc7ff]">
-					{formatDisplayDate(plan.startDate)} – {formatDisplayDate(plan.endDate)}
-				</p>
-				<button
-					type="button"
-					aria-label="Edit plan"
-					onClick={() => void navigate({ to: '/plans/$planId/edit', params: { planId: plan.id } })}
-					className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-[#2f3237] text-[#7ce485]"
-				>
-					<PenLine className="h-4 w-4" />
-				</button>
-				<PlanRemindersExport
-					planId={exportProps.planId}
-					onExport={exportProps.onExport}
-					isExporting={exportProps.isExporting}
-					phase={exportProps.phase}
-					draftItems={exportProps.draftItems}
-					errorMessage={exportProps.errorMessage}
-					onUpdateQuantity={exportProps.onUpdateQuantity}
-					onDeleteDraft={exportProps.onDeleteDraft}
-					onCancelDraft={exportProps.onCancelDraft}
-					onSendDraft={exportProps.onSendDraft}
-				/>
+		<div className="animate-in fade-in flex flex-col gap-4 duration-500">
+			<div className="flex items-center justify-between gap-2 px-1 py-0.5">
+				<div className="min-w-0">
+					<p className="truncate text-sm font-semibold text-stone-500 dark:text-sp-text-secondary">
+						{formatDisplayDate(plan.startDate)} – {formatDisplayDate(plan.endDate)}
+					</p>
+				</div>
+				<div className="flex shrink-0 items-center gap-1.5">
+					<button
+						type="button"
+						aria-label="Edit plan"
+						onClick={() => void navigate({ to: '/plans/$planId/edit', params: { planId: plan.id } })}
+						className="flex h-8 w-8 items-center justify-center rounded-full bg-transparent text-stone-500 transition hover:bg-stone-100 active:scale-95 dark:text-sp-text-secondary dark:hover:bg-sp-surface-active"
+					>
+						<PenLine className="h-3.5 w-3.5" />
+					</button>
+					<PlanRemindersExport
+						planId={exportProps.planId}
+						onExport={exportProps.onExport}
+						isExporting={exportProps.isExporting}
+						phase={exportProps.phase}
+						draftItems={exportProps.draftItems}
+						errorMessage={exportProps.errorMessage}
+						onUpdateQuantity={exportProps.onUpdateQuantity}
+						onDeleteDraft={exportProps.onDeleteDraft}
+						onCancelDraft={exportProps.onCancelDraft}
+						onSendDraft={exportProps.onSendDraft}
+						compact
+						subtle
+					/>
+				</div>
 			</div>
-			<div>
+			<div className="divide-y divide-stone-100 rounded-3xl border border-stone-200 bg-white px-4 shadow-sm dark:divide-sp-separator dark:border-sp-border dark:bg-sp-surface">
 				{plan.days.map((day) => (
 					<PlanDaySection
 						key={day.date}

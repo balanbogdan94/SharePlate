@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from '@tanstack/react-router';
-import { Pencil, Trash2 } from 'lucide-react';
+import { useNavigate, useParams } from '@tanstack/react-router';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Avatar } from '@/components/ui/avatar';
 import { apiFetch } from '@/lib/api';
 import { useCurrentUser } from '@/lib/useCurrentUser';
 import { CollapsibleSection } from './recipe-details/CollapsibleSection';
+import { IngredientsList } from './recipe-details/IngredientsList';
 import { RecipeHero } from './recipe-details/RecipeHero';
+import { RecipeHeroActions } from './recipe-details/RecipeHeroActions';
+import { RecipeMeta } from './recipe-details/RecipeMeta';
 import type { RecipeDetail } from '@/pages/tabs/home/types';
 
 function toErrorMessage(error: unknown, fallback: string): string {
@@ -80,102 +80,48 @@ export function RecipeDetailsPage() {
 
 	return (
 		<section className="relative mx-auto flex w-full max-w-2xl flex-col pb-24">
-			<RecipeHero imageUrl={recipe.imageUrl} title={recipe.title} />
-			<div className="flex flex-col gap-1 p-4">
+			<RecipeHero
+				imageUrl={recipe.imageUrl}
+				title={recipe.title}
+				recipeId={recipeId}
+				canEdit={canManageRecipe}
+				actions={
+					canManageRecipe && (
+						<RecipeHeroActions
+							recipeId={recipeId}
+							isDeleting={deleteRecipeMutation.isPending}
+							onDelete={onDeleteRecipe}
+						/>
+					)
+				}
+			/>
+			<div className="flex flex-col gap-3 px-4 pb-4">
+				<RecipeMeta recipe={recipe} />
 				{deleteRecipeMutation.isError && (
-					<Alert variant="destructive" className="mb-2">
+					<Alert variant="destructive">
 						<AlertTitle>Could not delete recipe</AlertTitle>
 						<AlertDescription>
 							{toErrorMessage(deleteRecipeMutation.error, 'Please try again.')}
 						</AlertDescription>
 					</Alert>
 				)}
-				<h1 className="text-2xl font-extrabold leading-tight text-stone-900 dark:text-sp-text-primary">
-					{recipe.title}
-				</h1>
-				<div className="flex items-center gap-2">
-					<Avatar
-						name={recipe.authorName}
-						photoUrl={recipe.authorAvatarUrl}
-						className="h-5 w-5"
-						fallbackClassName="bg-stone-200 text-[9px] text-stone-600 dark:bg-sp-surface-active dark:text-sp-text-secondary"
-					/>
-					<p className="text-sm italic text-stone-500 dark:text-sp-text-secondary">
-						{recipe.authorName}
+				<CollapsibleSection
+					title="Chef's notes"
+					open={notesOpen}
+					onToggle={() => setNotesOpen((o) => !o)}
+				>
+					<p className="text-sm leading-relaxed text-stone-600 dark:text-sp-text-secondary">
+						{recipe.notes?.trim() || 'No notes yet.'}
 					</p>
-					{canManageRecipe && (
-						<>
-							<span className="flex-1" />
-							<Button
-								asChild
-								size="icon"
-								variant="ghost"
-								className="text-green-600 dark:text-sp-primary"
-							>
-								<Link to="/recipes/$recipeId/edit" params={{ recipeId }}>
-									<Pencil className="h-4 w-4" />
-								</Link>
-							</Button>
-							<Button
-								size="icon"
-								variant="ghost"
-								className="text-red-600 dark:text-red-400"
-								onClick={onDeleteRecipe}
-								disabled={deleteRecipeMutation.isPending}
-							>
-								<Trash2 className="h-4 w-4" />
-							</Button>
-						</>
-					)}
-				</div>
-				{(recipe.categories?.length ?? 0) > 0 && (
-					<div className="mt-2 flex flex-wrap gap-2">
-						{recipe.categories?.map((cat) => (
-							<span
-								key={cat}
-								className="rounded-full border border-stone-400 px-3 py-0.5 text-xs text-stone-600 dark:border-sp-border-strong dark:bg-sp-surface dark:text-sp-text-secondary"
-							>
-								{cat}
-							</span>
-						))}
-					</div>
-				)}
-				<div className="mt-4">
-					<CollapsibleSection
-						title="Chef's notes"
-						open={notesOpen}
-						onToggle={() => setNotesOpen((o) => !o)}
-					>
-						<p className="text-sm leading-relaxed text-stone-600 dark:text-sp-text-secondary">
-							{recipe.notes?.trim() || 'No notes yet.'}
-						</p>
-					</CollapsibleSection>
-					<CollapsibleSection
-						title="Ingredients"
-						open={ingredientsOpen}
-						onToggle={() => setIngredientsOpen((o) => !o)}
-					>
-						<ul className="space-y-3">
-							{recipe.ingredients.length === 0 ? (
-								<li className="text-sm text-stone-500 dark:text-sp-text-secondary">
-									No ingredients yet.
-								</li>
-							) : (
-								recipe.ingredients.map((ing) => (
-									<li key={ing.id} className="flex items-center justify-between gap-3">
-										<span className="flex items-center gap-2 text-sm text-stone-700 dark:text-sp-text-primary">
-											<span className="h-1.5 w-1.5 shrink-0 rounded-full bg-stone-400 dark:bg-sp-icon-secondary" />
-											{ing.ingredientName}
-										</span>
-										<span className="shrink-0 text-sm text-stone-500 dark:text-sp-text-secondary">
-											{ing.quantity} {ing.unitId}
-										</span>
-									</li>
-								))
-							)}
-						</ul>
-					</CollapsibleSection>
-				</div>
+				</CollapsibleSection>
+				<CollapsibleSection
+					title="Ingredients"
+					badge={`${recipe.ingredients.length}`}
+					open={ingredientsOpen}
+					onToggle={() => setIngredientsOpen((o) => !o)}
+				>
+					<IngredientsList ingredients={recipe.ingredients} />
+				</CollapsibleSection>
 			</div>
 		</section>
 	);

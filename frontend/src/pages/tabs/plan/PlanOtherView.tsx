@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router';
-import { ChevronDown, ChevronUp, PenLine } from 'lucide-react';
+import { CalendarRange, ChevronDown, ChevronUp, PenLine } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { RecipeSummary } from '@/pages/tabs/home/types';
 import type { ExportPhase } from '@/pages/usePlanExport';
@@ -48,8 +48,10 @@ function ExpandedPlanContent({
 	const activeDayDate = details ? (expandedDayDate ?? details.days[0]?.date ?? null) : null;
 
 	return (
-		<div className="space-y-2 pb-4">
-			{detailsLoading && <p className="text-sm text-[#98a0aa]">Loading plan...</p>}
+		<div className="space-y-3 pb-4">
+			{detailsLoading && (
+				<p className="text-sm text-stone-500 dark:text-sp-text-secondary">Loading plan...</p>
+			)}
 			{Boolean(detailsError) && (
 				<Alert variant="destructive">
 					<AlertTitle>Could not load plan details</AlertTitle>
@@ -58,7 +60,7 @@ function ExpandedPlanContent({
 			)}
 			{details && (
 				<>
-					<div className="flex items-center justify-between">
+					<div className="flex items-center justify-between gap-2">
 						<PlanRemindersExport
 							planId={details.id}
 							onExport={exportProps.onExport}
@@ -78,22 +80,24 @@ function ExpandedPlanContent({
 								onClick={() =>
 									void navigate({ to: '/plans/$planId/edit', params: { planId: plan.id } })
 								}
-								className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-[#2f3237] text-[#7ce485]"
+								className="flex h-10 w-10 items-center justify-center rounded-full bg-stone-100 text-stone-600 transition hover:bg-stone-200 active:scale-95 dark:bg-sp-surface-active dark:text-sp-text-primary dark:hover:bg-sp-surface-hover"
 							>
 								<PenLine className="h-4 w-4" />
 							</button>
 						)}
 					</div>
-					{details.days.map((day) => (
-						<PlanDaySection
-							key={day.date}
-							day={day}
-							isExpanded={activeDayDate === day.date}
-							onToggle={() => onToggleDay(day.date)}
-							recipeMap={recipeMap}
-							planId={plan.id}
-						/>
-					))}
+					<div className="divide-y divide-stone-100 dark:divide-sp-separator">
+						{details.days.map((day) => (
+							<PlanDaySection
+								key={day.date}
+								day={day}
+								isExpanded={activeDayDate === day.date}
+								onToggle={() => onToggleDay(day.date)}
+								recipeMap={recipeMap}
+								planId={plan.id}
+							/>
+						))}
+					</div>
 				</>
 			)}
 		</div>
@@ -107,22 +111,44 @@ type AccordionProps = ExpandedProps & {
 
 function OtherPlanAccordion({ plan, isExpanded, onToggle, ...rest }: AccordionProps) {
 	return (
-		<div className="border-b border-white/10 last:border-0">
+		<div>
 			<button
 				type="button"
 				onClick={onToggle}
+				aria-expanded={isExpanded}
 				className="flex w-full items-center justify-between py-4 text-left"
 			>
-				<p className="text-lg font-bold text-[#7ce485]">
+				<p className="text-base font-bold text-stone-900 dark:text-sp-text-primary">
 					{formatDisplayDate(plan.startDate)} – {formatDisplayDate(plan.endDate)}
 				</p>
 				{isExpanded ? (
-					<ChevronUp className="h-5 w-5 shrink-0 text-[#8a9098]" />
+					<ChevronUp className="h-5 w-5 shrink-0 text-stone-400 dark:text-sp-icon-secondary" />
 				) : (
-					<ChevronDown className="h-5 w-5 shrink-0 text-[#8a9098]" />
+					<ChevronDown className="h-5 w-5 shrink-0 text-stone-400 dark:text-sp-icon-secondary" />
 				)}
 			</button>
 			{isExpanded && <ExpandedPlanContent plan={plan} {...rest} />}
+		</div>
+	);
+}
+
+function PlanOtherEmptyState() {
+	return (
+		<div className="flex h-full flex-col items-center justify-center gap-3 py-10 text-center">
+			<div className="relative">
+				<div className="absolute inset-0 -z-10 rounded-full bg-green-400/30 blur-2xl dark:bg-green-500/20" />
+				<div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100 dark:bg-sp-primary-subtle">
+					<CalendarRange className="h-6 w-6 text-green-600 dark:text-sp-primary" />
+				</div>
+			</div>
+			<div className="space-y-1">
+				<h2 className="text-base font-bold text-stone-900 dark:text-sp-text-primary">
+					No other plans yet
+				</h2>
+				<p className="max-w-[16rem] text-sm text-stone-500 dark:text-sp-text-secondary">
+					Plans outside this week will show up here once you create them.
+				</p>
+			</div>
 		</div>
 	);
 }
@@ -173,22 +199,31 @@ export function PlanOtherView({
 		/>
 	);
 
+	if (futurePlans.length === 0 && pastPlans.length === 0) {
+		return <PlanOtherEmptyState />;
+	}
+
 	return (
-		<div className="space-y-6">
+		<div className="animate-in fade-in flex flex-col gap-6 duration-500">
 			{futurePlans.length > 0 && (
 				<div>
-					<p className="mb-2 text-2xl font-extrabold text-white">Future plans</p>
-					{futurePlans.map(makeAccordion)}
+					<p className="mb-2 text-lg font-extrabold text-stone-900 dark:text-sp-text-primary">
+						Future plans
+					</p>
+					<div className="divide-y divide-stone-100 rounded-3xl border border-stone-200 bg-white px-4 shadow-sm dark:divide-sp-separator dark:border-sp-border dark:bg-sp-surface">
+						{futurePlans.map(makeAccordion)}
+					</div>
 				</div>
 			)}
 			{pastPlans.length > 0 && (
 				<div>
-					<p className="mb-2 text-2xl font-extrabold text-white">Past plans</p>
-					{pastPlans.map(makeAccordion)}
+					<p className="mb-2 text-lg font-extrabold text-stone-900 dark:text-sp-text-primary">
+						Past plans
+					</p>
+					<div className="divide-y divide-stone-100 rounded-3xl border border-stone-200 bg-white px-4 shadow-sm dark:divide-sp-separator dark:border-sp-border dark:bg-sp-surface">
+						{pastPlans.map(makeAccordion)}
+					</div>
 				</div>
-			)}
-			{futurePlans.length === 0 && pastPlans.length === 0 && (
-				<p className="text-sm text-[#98a0aa]">No other plans yet.</p>
 			)}
 		</div>
 	);

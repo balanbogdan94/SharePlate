@@ -7,6 +7,9 @@ import { PlanEmptyState, PlanNoActiveState } from '@/pages/tabs/plan/PlanEmptySt
 import { PlanOtherView } from '@/pages/tabs/plan/PlanOtherView';
 import { usePlanTab } from '@/pages/usePlanTab';
 
+const tabTriggerClassName =
+	'min-h-9 px-3 py-1.5 text-xs sm:min-h-10 sm:px-3 sm:py-2 sm:text-sm rounded-full data-[state=active]:bg-white data-[state=active]:text-green-600 data-[state=active]:shadow-sm data-[state=inactive]:text-stone-500 dark:data-[state=active]:bg-sp-surface-active dark:data-[state=active]:text-sp-primary dark:data-[state=inactive]:text-sp-text-tertiary';
+
 export function PlanTabPage() {
 	const navigate = useNavigate();
 	const onCreate = () => void navigate({ to: '/plans/create-plan' });
@@ -33,7 +36,7 @@ export function PlanTabPage() {
 	const { noPlans, noActive, showFab, isError, isLoading, error } = planStatus;
 
 	return (
-		<section className="relative flex h-full flex-col overflow-hidden p-3">
+		<section className="relative flex h-full flex-col overflow-hidden p-3 pt-4">
 			{isError && (
 				<Alert variant="destructive">
 					<AlertTitle>Could not load plans</AlertTitle>
@@ -52,23 +55,17 @@ export function PlanTabPage() {
 				<Tabs
 					value={segment}
 					onValueChange={(value) => setSegment(value as 'current' | 'other')}
-					className="relative space-y-4 sm:space-y-5"
+					className="flex min-h-0 flex-1 flex-col gap-4"
 				>
-					<TabsList className="grid w-full grid-cols-2 rounded-full border">
-						<TabsTrigger
-							value="current"
-							className="data-[state=active]:bg-[#2b2f35] data-[state=active]:text-[#7ce485] data-[state=active]:shadow-none data-[state=inactive]:text-[#808791]"
-						>
+					<TabsList className="grid w-full shrink-0 grid-cols-2 rounded-full border border-stone-200 bg-stone-100 p-1 dark:border-sp-border dark:bg-sp-surface">
+						<TabsTrigger value="current" className={tabTriggerClassName}>
 							Current Plan
 						</TabsTrigger>
-						<TabsTrigger
-							value="other"
-							className="data-[state=active]:bg-[#2b2f35] data-[state=active]:text-[#7ce485] data-[state=active]:shadow-none data-[state=inactive]:text-[#808791]"
-						>
+						<TabsTrigger value="other" className={tabTriggerClassName}>
 							Other Plans
 						</TabsTrigger>
 					</TabsList>
-					<TabsContent value="current">
+					<TabsContent value="current" className="mt-0 flex-1 overflow-y-auto">
 						{noActive && <PlanNoActiveState />}
 						{visibleCurrentPlan && (
 							<PlanCurrentView
@@ -80,7 +77,7 @@ export function PlanTabPage() {
 							/>
 						)}
 					</TabsContent>
-					<TabsContent value="other">
+					<TabsContent value="other" className="mt-0 flex-1 overflow-y-auto">
 						<PlanOtherView
 							futurePlans={groupedPlans.future}
 							pastPlans={groupedPlans.past}
