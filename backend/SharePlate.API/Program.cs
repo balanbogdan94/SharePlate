@@ -9,6 +9,7 @@ using SharePlate.API.Filters;
 using SharePlate.API.Security;
 using SharePlate.Core.Constants.Auth;
 using SharePlate.Core.Repositories;
+using SharePlate.Core.Services;
 using SharePlate.Infrastructure.Data;
 using SharePlate.Infrastructure.Extensions;
 using SharePlate.Infrastructure.Repositories;
@@ -124,6 +125,9 @@ await using (var scope = app.Services.CreateAsyncScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
+
+    var storage = scope.ServiceProvider.GetRequiredService<IStorageService>();
+    await storage.EnsureImageContainerAsync();
 }
 
 // Configure the HTTP request pipeline.

@@ -120,7 +120,6 @@ public static class PlanEndpoints
         group.MapPut("/{id:guid}", async (
             Guid id,
             UpdatePlanRequest req,
-            HttpRequest httpRequest,
             ClaimsPrincipal principal,
             IUnitOfWork uow,
             CancellationToken ct) =>
@@ -135,14 +134,10 @@ public static class PlanEndpoints
             if (!await uow.HouseMembers.IsMemberAsync(plan.HouseId, actorUserId, ct))
                 return Results.Forbid();
 
-            var localDateError = TryGetLocalDate(httpRequest, out var localDate);
-            if (localDateError is not null)
-                return localDateError;
-
             if (req.StartDate != plan.StartDate || req.EndDate != plan.EndDate)
                 return Results.BadRequest("Start date and end date are immutable.");
 
-            var dateRangeError = ValidatePlanDateRange(req.StartDate, req.EndDate, localDate);
+            var dateRangeError = ValidatePlanDateRange(req.StartDate, req.EndDate);
             if (dateRangeError is not null)
                 return dateRangeError;
 
@@ -224,6 +219,11 @@ public static class PlanEndpoints
         if (startDate < localDate)
             return Results.BadRequest("Start date must be on or after today.");
 
+        return ValidatePlanDateRange(startDate, endDate);
+    }
+
+    private static IResult? ValidatePlanDateRange(DateOnly startDate, DateOnly endDate)
+    {
         if (endDate < startDate)
             return Results.BadRequest("End date must be on or after the start date.");
 
