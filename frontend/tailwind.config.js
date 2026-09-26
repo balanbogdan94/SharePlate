@@ -96,6 +96,16 @@ export default {
   			'sp-card': '0 1px 2px rgba(0, 0, 0, 0.25), 0 4px 12px rgba(0, 0, 0, 0.18)',
   			'sp-floating': '0 4px 16px rgba(0, 0, 0, 0.35)',
   			'sp-primary': '0 4px 16px rgba(48, 209, 88, 0.18)'
+  		},
+  		keyframes: {
+  			aurora: {
+  				'0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+  				'50%': { transform: 'translate(4%, -6%) scale(1.08)' }
+  			}
+  		},
+  		animation: {
+  			aurora: 'aurora 14s ease-in-out infinite',
+  			'aurora-slow': 'aurora 20s ease-in-out infinite'
   		}
   	}
   },

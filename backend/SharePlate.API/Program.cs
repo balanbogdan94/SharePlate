@@ -1,15 +1,15 @@
-using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
+using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
 using SharePlate.API.Endpoints;
 using SharePlate.API.Filters;
-using SharePlate.Core.Configuration;
+using SharePlate.API.Security;
 using SharePlate.Core.Constants.Auth;
 using SharePlate.Core.Repositories;
+using SharePlate.Core.Services;
 using SharePlate.Infrastructure.Data;
 using SharePlate.Infrastructure.Extensions;
 using SharePlate.Infrastructure.Repositories;
@@ -25,7 +25,7 @@ builder.Services.AddOpenApi(options =>
     options.AddDocumentTransformer((document, _, _) =>
     {
         document.Components ??= new OpenApiComponents();
-        document.Components.SecuritySchemes[AuthSchemes.Bearer] = new OpenApiSecurityScheme
+        document.Components.SecuritySchemes[JwtBearerDefaults.AuthenticationScheme] = new OpenApiSecurityScheme
         {
             Type = SecuritySchemeType.Http,
             Scheme = "bearer",
@@ -55,7 +55,7 @@ builder.Services.AddOpenApi(options =>
                 Reference = new OpenApiReference
                 {
                     Type = ReferenceType.SecurityScheme,
-                    Id = AuthSchemes.Bearer
+                    Id = JwtBearerDefaults.AuthenticationScheme
                 }
             }] = Array.Empty<string>()
         });
@@ -72,43 +72,29 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection"), b => b.MigrationsAssembly("SharePlate.Infrastructure")));
 
-var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
-    ?? throw new InvalidOperationException($"Missing '{JwtOptions.SectionName}' configuration section.");
-
-if (string.IsNullOrWhiteSpace(jwtOptions.Issuer)
-    || string.IsNullOrWhiteSpace(jwtOptions.Audience)
-    || string.IsNullOrWhiteSpace(jwtOptions.SecretKey))
-{
-    throw new InvalidOperationException("JWT configuration values are required: Issuer, Audience, SecretKey.");
-}
-
-builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
-
-var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SecretKey));
-
 builder.Services
-    .AddAuthentication(options =>
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApi(
+        jwtOptions => jwtOptions.MapInboundClaims = false,
+        identityOptions => builder.Configuration.GetSection("EntraExternalId").Bind(identityOptions));
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(AuthPolicies.ApiAccess, policy =>
     {
-        options.DefaultAuthenticateScheme = AuthSchemes.Bearer;
-        options.DefaultChallengeScheme = AuthSchemes.Bearer;
-        options.DefaultScheme = AuthSchemes.Bearer;
-    })
-    .AddJwtBearer(AuthSchemes.Bearer, options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateIssuerSigningKey = true,
-            ValidateLifetime = true,
-            ValidIssuer = jwtOptions.Issuer,
-            ValidAudience = jwtOptions.Audience,
-            IssuerSigningKey = signingKey,
-            ClockSkew = TimeSpan.FromMinutes(1)
-        };
+        policy.RequireAuthenticatedUser();
+        policy.RequireAssertion(context => AuthPolicies.HasRequiredScope(context.User));
     });
 
-builder.Services.AddAuthorization();
+    options.AddPolicy(AuthPolicies.SharePlateUser, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.RequireAssertion(context => AuthPolicies.HasRequiredScope(context.User));
+        policy.RequireClaim(AuthClaimTypes.UserId);
+    });
+
+    options.DefaultPolicy = options.GetPolicy(AuthPolicies.ApiAccess)!;
+});
 
 builder.Services.AddCors(options =>
 {
@@ -122,7 +108,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddInfrastructureAuthServices();
+builder.Services.AddScoped<UserProvisioningService>();
 builder.Services.AddInfrastructureStorageServices(builder.Configuration);
 
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -139,6 +125,9 @@ await using (var scope = app.Services.CreateAsyncScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
+
+    var storage = scope.ServiceProvider.GetRequiredService<IStorageService>();
+    await storage.EnsureImageContainerAsync();
 }
 
 // Configure the HTTP request pipeline.
@@ -153,13 +142,14 @@ if (!app.Environment.IsDevelopment())
 }
 app.UseCors(FrontendCorsPolicy);
 app.UseAuthentication();
+app.UseMiddleware<ExternalIdentityResolutionMiddleware>();
 app.UseAuthorization();
 
 var api = app.MapGroup("/api")
              .AddEndpointFilter<DataAnnotationValidationFilter>();
 
-api.MapAuthEndpoints();
 api.MapUserEndpoints();
+api.MapSessionEndpoints();
 api.MapHouseEndpoints();
 api.MapUnitEndpoints();
 api.MapIngredientEndpoints();

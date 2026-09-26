@@ -16,38 +16,41 @@ type IngredientFieldsProps = {
 
 function IngredientFields({ draft, units, defaultUnit, onChange }: IngredientFieldsProps) {
 	return (
-		<div className='space-y-3 rounded-2xl border border-stone-200/70 bg-white/80 p-3 shadow-sm dark:border-stone-700/70 dark:bg-stone-950/70'>
-			<div className='block'>
-				<p className='text-xs font-medium text-stone-500 dark:text-stone-400'>Ingredient</p>
+		<div className="space-y-3 rounded-2xl border border-stone-200/70 bg-white/80 p-3 shadow-sm dark:border-sp-border dark:bg-black/30">
+			<div className="block">
+				<p className="text-xs font-medium text-stone-500 dark:text-sp-text-tertiary">Ingredient</p>
 				<Input
-					id='ingredient-name'
-					aria-label='Ingredient name'
+					id="ingredient-name"
+					aria-label="Ingredient name"
 					value={draft.name}
 					onChange={(e) => onChange({ ...draft, name: e.target.value })}
-					placeholder='e.g. Cherry tomatoes'
-					className='mt-1'
+					placeholder="e.g. Cherry tomatoes"
+					className="mt-1 h-11 rounded-xl bg-white dark:bg-sp-surface"
 				/>
 			</div>
-			<div className='grid grid-cols-[1fr,1.1fr] gap-3'>
-				<div className='block'>
-					<p className='text-xs font-medium text-stone-500 dark:text-stone-400'>Quantity</p>
+			<div className="grid grid-cols-[1fr,1.1fr] gap-3">
+				<div className="block">
+					<p className="text-xs font-medium text-stone-500 dark:text-sp-text-tertiary">Quantity</p>
 					<Input
-						id='ingredient-qty'
-						aria-label='Ingredient quantity'
+						id="ingredient-qty"
+						aria-label="Ingredient quantity"
 						value={draft.quantity}
 						onChange={(e) => onChange({ ...draft, quantity: e.target.value })}
-						inputMode='decimal'
-						placeholder='2'
-						className='mt-1'
+						inputMode="decimal"
+						placeholder="2"
+						className="mt-1 h-11 rounded-xl bg-white dark:bg-sp-surface"
 					/>
 				</div>
-				<label htmlFor='ingredient-unit' className='block'>
-					<span className='text-xs font-medium text-stone-500 dark:text-stone-400'>Unit</span>
+				<label htmlFor="ingredient-unit" className="block">
+					<span className="block text-xs font-medium text-stone-500 dark:text-sp-text-tertiary">
+						Unit
+					</span>
 					<select
-						id='ingredient-unit'
+						id="ingredient-unit"
 						value={draft.unit}
 						onChange={(e) => onChange({ ...draft, unit: e.target.value as UnitType })}
-						className='mt-1 h-11 w-full rounded-md border border-stone-300 bg-white px-2 text-sm text-stone-800 shadow-sm dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100'>
+						className="mt-1 h-11 w-full rounded-xl border border-input bg-white px-3 text-sm text-stone-800 shadow-sm dark:border-sp-border dark:bg-sp-surface dark:text-sp-text-primary"
+					>
 						{units?.map((unit) => (
 							<option key={unit.id} value={unit.id}>
 								{unit.name}
@@ -86,27 +89,34 @@ export function AddRecipeIngredientModal({
 	return (
 		<div
 			className={`fixed inset-0 z-40 transition-all duration-300 ${containerCls}`}
-			aria-hidden={!isOpen}>
+			aria-hidden={!isOpen}
+		>
 			<button
-				type='button'
-				aria-label='Close modal'
-				className='absolute inset-0 w-full bg-stone-900/30 backdrop-blur-[3px]'
+				type="button"
+				aria-label="Close modal"
+				className="absolute inset-0 w-full bg-stone-900/30 backdrop-blur-[3px]"
 				onClick={onClose}
 			/>
 			<div
-				className={`absolute bottom-0 left-0 right-0 mx-auto w-full max-w-2xl rounded-t-[28px] border border-stone-200/70 bg-white/85 px-4 pb-8 pt-4 shadow-2xl backdrop-blur-2xl transition-transform duration-300 dark:border-stone-700/70 dark:bg-stone-900/80 ${panelCls}`}>
-				<div className='mb-4 flex items-center justify-between text-sm font-semibold text-sky-600'>
-					<button type='button' onClick={onClose} className='transition hover:text-sky-700'>
+				className={`absolute bottom-0 left-0 right-0 mx-auto w-full max-w-2xl rounded-t-[28px] border border-stone-200/70 bg-white/85 px-4 pb-8 pt-4 shadow-2xl backdrop-blur-2xl transition-transform duration-300 dark:border-sp-border dark:bg-black/70 ${panelCls}`}
+			>
+				<div className="relative mb-4 grid grid-cols-3 items-center text-sm font-semibold">
+					<button
+						type="button"
+						onClick={onClose}
+						className="justify-self-start text-stone-500 transition hover:text-stone-700 dark:text-sp-text-secondary dark:hover:text-sp-text-primary"
+					>
 						Cancel
 					</button>
-					<p className='text-base font-semibold text-stone-900 dark:text-stone-100'>
+					<p className="justify-self-center text-base font-semibold text-stone-900 dark:text-sp-text-primary">
 						New Ingredient
 					</p>
 					<button
-						type='button'
+						type="button"
 						onClick={onAdd}
 						disabled={!isDraftValid}
-						className={`transition hover:text-sky-700 ${!isDraftValid ? 'pointer-events-none text-stone-300 dark:text-stone-600' : ''}`}>
+						className={`justify-self-end font-bold transition ${isDraftValid ? 'text-green-600 hover:text-green-700 dark:text-sp-primary dark:hover:text-sp-primary-hover' : 'pointer-events-none text-stone-400 dark:text-sp-text-disabled'}`}
+					>
 						Add
 					</button>
 				</div>

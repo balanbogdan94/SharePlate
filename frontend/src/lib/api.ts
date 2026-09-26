@@ -1,17 +1,7 @@
 import { env } from '@/lib/env';
+import { acquireApiAccessToken } from '@/auth/accessToken';
 
 export const apiBaseUrl = env.apiBaseUrl;
-
-type ApiAuthConfig = {
-	getAccessToken: () => string | null;
-	refreshAccessToken: () => Promise<string | null>;
-};
-
-let apiAuthConfig: ApiAuthConfig | null = null;
-
-export function configureApiAuth(config: ApiAuthConfig): void {
-	apiAuthConfig = config;
-}
 
 function getLocalDateHeaderValue(): string {
 	const now = new Date();
@@ -27,11 +17,10 @@ function normalizePath(path: string): string {
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 	const normalizedPath = normalizePath(path);
-	const isRefreshRequest = normalizedPath === '/auth/refresh';
 	const isFormData = init?.body instanceof FormData;
 
-	const request = async (overrideAccessToken?: string): Promise<Response> => {
-		const accessToken = overrideAccessToken ?? apiAuthConfig?.getAccessToken() ?? null;
+	const request = async (forceRefresh = false): Promise<Response> => {
+		const accessToken = await acquireApiAccessToken(forceRefresh);
 
 		return fetch(`${apiBaseUrl}${normalizedPath}`, {
 			headers: {
@@ -46,11 +35,8 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
 	let response = await request();
 
-	if (!response.ok && response.status === 401 && !isRefreshRequest && apiAuthConfig) {
-		const refreshedAccessToken = await apiAuthConfig.refreshAccessToken();
-		if (refreshedAccessToken) {
-			response = await request(refreshedAccessToken);
-		}
+	if (!response.ok && response.status === 401) {
+		response = await request(true);
 	}
 
 	if (!response.ok) {

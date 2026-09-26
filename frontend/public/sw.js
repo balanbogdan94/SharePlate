@@ -1,4 +1,4 @@
-const STATIC_CACHE = 'shareplate-static-v1';
+const STATIC_CACHE = 'shareplate-static-v2';
 const RUNTIME_CACHE = 'shareplate-runtime-v1';
 
 const APP_SHELL = [

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text.Json;
 using SharePlate.API.Contracts.Recipes;
+using SharePlate.API.Security;
 using SharePlate.Core.Entities;
 using SharePlate.Core.Extensions.Security;
 using SharePlate.Core.Repositories;
@@ -12,7 +13,7 @@ public static class RecipeEndpoints
 {
     public static void MapRecipeEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/recipes").WithTags("Recipes").RequireAuthorization();
+        var group = app.MapGroup("/recipes").WithTags("Recipes").RequireAuthorization(AuthPolicies.SharePlateUser);
 
 
         // GET /api/recipes?search=...

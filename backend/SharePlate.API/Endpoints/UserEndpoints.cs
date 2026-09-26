@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using SharePlate.API.Contracts.Users;
+using SharePlate.API.Security;
 using SharePlate.Core.Entities;
 using SharePlate.Core.Extensions.Security;
 using SharePlate.Core.Repositories;
@@ -11,7 +12,7 @@ public static class UserEndpoints
 {
     public static void MapUserEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/users").WithTags("Users").RequireAuthorization();
+        var group = app.MapGroup("/users").WithTags("Users").RequireAuthorization(AuthPolicies.SharePlateUser);
 
 
 

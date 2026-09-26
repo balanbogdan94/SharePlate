@@ -462,7 +462,7 @@ export function CreatePlanPage() {
 	}
 
 	return (
-		<section className="relative flex flex-col justify-between  overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_12%_8%,rgba(42,58,90,0.28),rgba(8,10,14,1)_40%)] p-3 h-full text-[#f5f5f5] sm:rounded-[2rem] sm:p-5 sm:pb-28">
+		<section className="relative flex flex-col justify-between  overflow-hidden rounded-2xl p-3 h-full text-[#f5f5f5] sm:rounded-[2rem] sm:p-5 sm:pb-28">
 			<div className="relative space-y-4 sm:space-y-5 overflow-scroll">
 				<h1 className="text-[2.2rem] font-black leading-none tracking-tight text-[#f8f8f9] sm:text-[2.4rem]">
 					{isEditMode ? 'Edit plan' : 'Create plan'}
@@ -486,7 +486,7 @@ export function CreatePlanPage() {
 						<span className="min-w-0 flex-1 truncate text-sm font-semibold text-[#e8eaee] sm:text-base">
 							{effectivePayload
 								? formatRangeLabel(effectivePayload.startDate, effectivePayload.endDate)
-								: formatRangeLabel(startDate, endDate)}
+								: 'No dates selected'}
 						</span>
 						<ArrowDown
 							className={`h-4 w-4 shrink-0 text-[#8f97a1] transition-transform ${
@@ -572,7 +572,7 @@ export function CreatePlanPage() {
 										key={day.date}
 										type="button"
 										onClick={() => setFocusedDayIndex(dayIndex)}
-										className={`flex w-20 shrink-0 flex-col items-center justify-center rounded-full border transition-all duration-200 sm:w-24 ${
+										className={`flex w-16 shrink-0 flex-col items-center justify-center rounded-full border transition-all duration-200 sm:w-20 ${
 											active
 												? 'aspect-square border-[#6bd56b] bg-[#1d2221]'
 												: 'aspect-square border-white/10 bg-[#1a1d23]'
@@ -583,7 +583,7 @@ export function CreatePlanPage() {
 										>
 											{chip.weekday}
 										</p>
-										<p className="text-[1.6rem] font-black leading-none text-white sm:text-[1.9rem]">
+										<p className="text-[1.4rem] font-black leading-none text-white sm:text-[1.65rem]">
 											{chip.day}
 										</p>
 									</button>
@@ -605,7 +605,11 @@ export function CreatePlanPage() {
 										>
 											<CirclePlus className={`h-4 w-4 ${config.plusClass}`} />
 											<span
-												className={`text-xs font-bold uppercase tracking-[0.16em] ${config.plusClass}`}
+												className={`uppercase ${
+													categoryType === 'Unnamed'
+														? `text-sm font-black tracking-normal ${config.plusClass}`
+														: 'text-[0.625rem] font-bold tracking-[0.16em] text-[#a6afa9]'
+												}`}
 											>
 												{config.label}
 											</span>
@@ -644,7 +648,7 @@ export function CreatePlanPage() {
 																	<div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-r from-transparent to-stone-900" />
 																</div>
 																<div className="min-w-0 flex-1 px-3 py-3">
-																	<p className="line-clamp-2 text-sm font-bold leading-snug text-stone-100 sm:text-base">
+																	<p className="line-clamp-2 text-sm font-extrabold leading-snug text-stone-100 sm:text-base">
 																		{recipe?.title ?? recipeId}
 																	</p>
 																	<p className="mt-0.5 flex items-center gap-1 text-xs italic text-stone-400">
@@ -731,7 +735,12 @@ export function CreatePlanPage() {
 			<div className="space-y-3 pt-4">
 				<Button
 					type="button"
-					disabled={isSaving || hasUnappliedDateRangeChange}
+					disabled={
+						isSaving ||
+						!effectivePayload ||
+						!hasAtLeastOneRecipe(effectivePayload) ||
+						hasUnappliedDateRangeChange
+					}
 					onClick={onSave}
 					className="h-12 w-full rounded-full bg-[#66cf63] text-base font-extrabold text-[#062510] hover:bg-[#73de70] disabled:bg-[#3a3d42] disabled:text-[#8d939b] sm:h-14 sm:text-lg"
 				>

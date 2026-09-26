@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using SharePlate.API.Contracts.Ingredients;
+using SharePlate.API.Security;
 using SharePlate.Core.Entities;
 using SharePlate.Core.Extensions.Security;
 using SharePlate.Core.Repositories;
@@ -10,7 +11,7 @@ public static class IngredientEndpoints
 {
     public static void MapIngredientEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/ingredients").WithTags("Ingredients").RequireAuthorization();
+        var group = app.MapGroup("/ingredients").WithTags("Ingredients").RequireAuthorization(AuthPolicies.SharePlateUser);
 
 
         // GET /api/ingredients/search?name=...

@@ -11,7 +11,6 @@ public class UnitOfWork : IUnitOfWork
     {
         _context = context;
         Users = new UserRepository(context);
-        RefreshTokens = new RefreshTokenRepository(context);
         Houses = new HouseRepository(context);
         HouseMembers = new HouseMemberRepository(context);
         HouseJoinRequests = new HouseJoinRequestRepository(context);
@@ -24,7 +23,6 @@ public class UnitOfWork : IUnitOfWork
     }
 
     public IUserRepository Users { get; }
-    public IRefreshTokenRepository RefreshTokens { get; }
     public IHouseRepository Houses { get; }
     public IHouseMemberRepository HouseMembers { get; }
     public IHouseJoinRequestRepository HouseJoinRequests { get; }

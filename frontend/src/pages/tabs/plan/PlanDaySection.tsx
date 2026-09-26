@@ -1,7 +1,8 @@
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import type { RecipeSummary } from '@/pages/tabs/home/types';
 import { CATEGORY_TYPES, type CategoryType, type PlanDay } from '@/pages/tabs/plan/types';
 import { countDayRecipes } from '@/pages/tabs/plan/planUtils';
+import { cn } from '@/lib/utils';
 import { RecipeCard } from '../home/RecipeCard';
 
 type CategorySectionProps = {
@@ -15,7 +16,7 @@ function CategorySection({ categoryType, recipeIds, recipeMap }: CategorySection
 	return (
 		<div className="space-y-2">
 			{categoryType !== 'Unnamed' && (
-				<p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#7f858f]">
+				<p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-stone-400 dark:text-sp-text-tertiary">
 					{categoryType}
 				</p>
 			)}
@@ -48,21 +49,32 @@ export function PlanDaySection({ day, isExpanded, onToggle, recipeMap }: Props) 
 	const isEmpty = totalRecipes === 0;
 
 	return (
-		<div className="border-b border-white/10 last:border-0">
+		<div>
 			{isEmpty ? (
-				<p className="py-4 text-xl font-bold text-gray-500">{dayLabel}</p>
+				<p className="py-4 text-base font-semibold text-stone-300 dark:text-sp-text-tertiary">
+					{dayLabel}
+				</p>
 			) : (
 				<button
 					type="button"
 					onClick={onToggle}
+					aria-expanded={isExpanded}
 					className="flex w-full items-center justify-between py-4 text-left"
 				>
-					<p className="text-xl font-bold text-white">{dayLabel}</p>
-					{isExpanded ? (
-						<ChevronUp className="h-5 w-5 shrink-0 text-[#8a9098]" />
-					) : (
-						<ChevronDown className="h-5 w-5 shrink-0 text-[#8a9098]" />
-					)}
+					<span className="flex items-center gap-2">
+						<span className="text-base font-bold text-stone-900 dark:text-sp-text-primary">
+							{dayLabel}
+						</span>
+						<span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-700 dark:bg-sp-primary-subtle dark:text-sp-primary">
+							{totalRecipes}
+						</span>
+					</span>
+					<ChevronDown
+						className={cn(
+							'h-5 w-5 shrink-0 text-stone-400 transition-transform duration-300 dark:text-sp-icon-secondary',
+							isExpanded && 'rotate-180',
+						)}
+					/>
 				</button>
 			)}
 			{(isEmpty || isExpanded) && (

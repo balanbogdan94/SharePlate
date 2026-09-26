@@ -22,7 +22,7 @@ public class AppDbContext : DbContext
     public DbSet<MealPlan> MealPlans => Set<MealPlan>();
     public DbSet<MealPlanRecipe> MealPlanRecipes => Set<MealPlanRecipe>();
     public DbSet<ShoppingItem> ShoppingItems => Set<ShoppingItem>();
-    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<ExternalIdentity> ExternalIdentities => Set<ExternalIdentity>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -39,16 +39,9 @@ public class AppDbContext : DbContext
                 .HasMaxLength(2048)
                 .HasDefaultValue(string.Empty);
 
-            b.Property(u => u.PasswordHashAlgorithm)
-                .HasMaxLength(64)
-                .IsRequired();
-
-            b.Property(u => u.IsPasswordResetRequired)
-                .HasDefaultValue(false);
-
-            b.HasMany(u => u.RefreshTokens)
-                .WithOne(rt => rt.User)
-                .HasForeignKey(rt => rt.UserId)
+            b.HasMany(u => u.ExternalIdentities)
+                .WithOne(identity => identity.User)
+                .HasForeignKey(identity => identity.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             b.HasMany(u => u.RequestedHouseJoinRequests)
@@ -82,12 +75,23 @@ public class AppDbContext : DbContext
             b.HasIndex(r => new { r.HouseId, r.Status });
         });
 
-        modelBuilder.Entity<RefreshToken>(b =>
+        modelBuilder.Entity<ExternalIdentity>(b =>
         {
-            b.HasIndex(rt => rt.TokenHash).IsUnique();
+            b.HasIndex(identity => new { identity.Issuer, identity.Subject })
+                .IsUnique();
 
-            b.Property(rt => rt.TokenHash)
+            b.HasIndex(identity => identity.UserId);
+
+            b.Property(identity => identity.Issuer)
                 .HasMaxLength(512)
+                .IsRequired();
+
+            b.Property(identity => identity.Subject)
+                .HasMaxLength(128)
+                .IsRequired();
+
+            b.Property(identity => identity.Provider)
+                .HasMaxLength(64)
                 .IsRequired();
         });
 

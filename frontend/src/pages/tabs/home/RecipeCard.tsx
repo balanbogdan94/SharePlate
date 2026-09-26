@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { ChevronRight, UtensilsCrossed } from 'lucide-react';
+import { UtensilsCrossed } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import type { RecipeSummary } from './types';
 
@@ -12,7 +12,7 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
 		<Link
 			to="/recipes/$recipeId"
 			params={{ recipeId: recipe.id }}
-			className="h-20 grid grid-cols-[25%_1fr_auto] align-middle transition active:scale-[0.9] active:bg-sp-card-background-hover overflow-hidden rounded-2xl border border-sp-card-border bg-sp-card-background shadow-sp-card"
+			className="h-20 grid grid-cols-[25%_1fr] align-middle transition active:scale-[0.9] active:bg-sp-card-background-hover overflow-hidden rounded-2xl border border-sp-card-border bg-sp-card-background shadow-sp-card"
 		>
 			<div className="h-full w-full overflow-hidden [mask-image:linear-gradient(to_right,black_58%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_right,black_58%,transparent_100%)]">
 				{recipe.imageUrl ? (
@@ -38,8 +38,6 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
 					{recipe.authorName}
 				</p>
 			</div>
-
-			<ChevronRight className="mr-3 h-full w-4 shrink-0 text-sp-text-tertiary" />
 		</Link>
 	);
 }

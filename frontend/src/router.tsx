@@ -8,7 +8,6 @@ import {
 import type { AuthContextValue } from '@/auth/AuthContext';
 import { AppShell } from '@/components/layout/AppShell';
 import { LoginPage } from '@/pages/LoginPage';
-import { RegisterPage } from '@/pages/RegisterPage';
 import { AddRecipePage } from '@/pages/AddRecipePage';
 import { RecipeDetailsPage } from '@/pages/RecipeDetailsPage';
 import { CreatePlanPage } from '@/pages/CreatePlanPage';
@@ -130,17 +129,6 @@ const loginRoute = createRoute({
 	component: LoginPage,
 });
 
-const registerRoute = createRoute({
-	getParentRoute: () => rootRoute,
-	path: '/register',
-	beforeLoad: ({ context }) => {
-		if (context.auth.isAuthenticated) {
-			throw redirect({ to: '/plans' });
-		}
-	},
-	component: RegisterPage,
-});
-
 const routeTree = rootRoute.addChildren([
 	indexRoute,
 	appLayoutRoute.addChildren([
@@ -156,7 +144,6 @@ const routeTree = rootRoute.addChildren([
 		profileRoute,
 	]),
 	loginRoute,
-	registerRoute,
 ]);
 
 export const router = createRouter({

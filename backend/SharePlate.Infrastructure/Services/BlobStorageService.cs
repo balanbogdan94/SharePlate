@@ -17,9 +17,15 @@ public sealed class BlobStorageService : IStorageService
         _containerClient = serviceClient.GetBlobContainerClient(opts.ImageContainerName);
     }
 
-    public async Task<string> UploadImageAsync(Stream content, string fileName, string contentType, CancellationToken ct = default)
+    public async Task EnsureImageContainerAsync(CancellationToken ct = default)
     {
         await _containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob, cancellationToken: ct);
+        await _containerClient.SetAccessPolicyAsync(PublicAccessType.Blob, cancellationToken: ct);
+    }
+
+    public async Task<string> UploadImageAsync(Stream content, string fileName, string contentType, CancellationToken ct = default)
+    {
+        await EnsureImageContainerAsync(ct);
 
         var extension = Path.GetExtension(fileName);
         var blobName = $"{Guid.NewGuid()}{extension}";

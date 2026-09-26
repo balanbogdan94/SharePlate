@@ -23,6 +23,14 @@ const USER_SETTINGS_STORAGE_KEY = 'shareplate.user.settings';
 
 const UserSettingsContext = createContext<UserSettings | undefined>(undefined);
 
+function getSystemTheme(): Theme {
+	if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+		return 'light';
+	}
+
+	return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
 function readStoredSettings(): StoredUserSettings {
 	try {
 		const raw = window.localStorage.getItem(USER_SETTINGS_STORAGE_KEY);
@@ -47,7 +55,7 @@ function writeStoredSettings(settings: Required<StoredUserSettings>): void {
 
 export function UserSettingsProvider({ children }: { children: ReactNode }) {
 	const stored = readStoredSettings();
-	const [theme, setTheme] = useState<Theme>(stored.theme ?? 'light');
+	const [theme, setTheme] = useState<Theme>(stored.theme ?? getSystemTheme());
 	const [language, setLanguage] = useState<Language>(stored.language ?? 'en');
 	const [soundEnabled, setSoundEnabled] = useState<boolean>(stored.soundEnabled ?? true);
 

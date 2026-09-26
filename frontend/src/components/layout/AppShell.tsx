@@ -7,8 +7,6 @@ import {
 	useRouter,
 } from '@tanstack/react-router';
 import { ChevronLeft, CalendarDays, UtensilsCrossed } from 'lucide-react';
-import { getNameFromToken } from '@/lib/jwt';
-import { useAuth } from '@/auth/AuthContext';
 import { useI18n } from '@/i18n/I18nContext';
 import { useCurrentUser } from '@/lib/useCurrentUser';
 import { Avatar } from '@/components/ui/avatar';
@@ -21,14 +19,13 @@ type TabItem = {
 };
 
 export function AppShell() {
-	const auth = useAuth();
 	const navigate = useNavigate();
 	const router = useRouter();
 	const canGoBack = useCanGoBack();
 	const location = useLocation();
 	const { t } = useI18n();
 	const currentUser = useCurrentUser();
-	const name = currentUser.data?.name ?? getNameFromToken(auth.tokens?.accessToken ?? '') ?? '';
+	const name = currentUser.data?.name ?? '';
 
 	const tabs: TabItem[] = [
 		{ to: '/recipes', label: t('tabs.home'), icon: UtensilsCrossed },

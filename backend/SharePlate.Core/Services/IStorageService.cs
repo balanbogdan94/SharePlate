@@ -2,6 +2,8 @@ namespace SharePlate.Core.Services;
 
 public interface IStorageService
 {
+    Task EnsureImageContainerAsync(CancellationToken ct = default);
+
     /// <summary>
     /// Uploads an image stream and returns the public URL of the stored blob.
     /// </summary>

@@ -1,5 +1,3 @@
-using SharePlate.Core.Constants;
-
 namespace SharePlate.Core.Entities;
 
 public sealed class User : BaseEntity
@@ -8,42 +6,31 @@ public sealed class User : BaseEntity
 
     public static User Create(
         string name,
-        string email,
-        string passwordHash,
-        string passwordHashAlgorithm = PasswordHashAlgorithms.AspNetCorePbkdf2V3,
-        bool isPasswordResetRequired = false)
+        string email)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentException.ThrowIfNullOrWhiteSpace(email);
-        ArgumentException.ThrowIfNullOrWhiteSpace(passwordHash);
-        ArgumentException.ThrowIfNullOrWhiteSpace(passwordHashAlgorithm);
+
+        var now = DateTime.UtcNow;
 
         return new User
         {
             Id = Guid.NewGuid(),
-            Name = name,
-            Email = email,
-            PasswordHash = passwordHash,
-            PasswordHashAlgorithm = passwordHashAlgorithm,
-            IsPasswordResetRequired = isPasswordResetRequired,
-            PasswordUpdatedAt = DateTime.UtcNow,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            Name = name.Trim(),
+            Email = email.Trim().ToLowerInvariant(),
+            CreatedAt = now,
+            UpdatedAt = now
         };
     }
 
     public string Name { get; private set; } = string.Empty;
     public string Email { get; private set; } = string.Empty;
     public string ProfilePictureUrl { get; private set; } = string.Empty;
-    public string PasswordHash { get; private set; } = string.Empty;
-    public string PasswordHashAlgorithm { get; private set; } = PasswordHashAlgorithms.AspNetCorePbkdf2V3;
-    public bool IsPasswordResetRequired { get; private set; }
-    public DateTime? PasswordUpdatedAt { get; private set; }
 
     public ICollection<HouseMember> HouseMembers { get; private set; } = new List<HouseMember>();
     public ICollection<HouseJoinRequest> RequestedHouseJoinRequests { get; private set; } = new List<HouseJoinRequest>();
     public ICollection<HouseJoinRequest> ReviewedHouseJoinRequests { get; private set; } = new List<HouseJoinRequest>();
-    public ICollection<RefreshToken> RefreshTokens { get; private set; } = new List<RefreshToken>();
+    public ICollection<ExternalIdentity> ExternalIdentities { get; private set; } = new List<ExternalIdentity>();
 
     public void UpdateName(string name)
     {
@@ -55,7 +42,7 @@ public sealed class User : BaseEntity
     public void UpdateEmail(string email)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(email);
-        Email = email;
+        Email = email.Trim().ToLowerInvariant();
         UpdatedAt = DateTime.UtcNow;
     }
 
@@ -65,21 +52,4 @@ public sealed class User : BaseEntity
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void SetPassword(string passwordHash, string algorithm, bool requiresReset)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(passwordHash);
-        ArgumentException.ThrowIfNullOrWhiteSpace(algorithm);
-
-        PasswordHash = passwordHash;
-        PasswordHashAlgorithm = algorithm;
-        IsPasswordResetRequired = requiresReset;
-        PasswordUpdatedAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
-    }
-
-    public void RequirePasswordReset()
-    {
-        IsPasswordResetRequired = true;
-        UpdatedAt = DateTime.UtcNow;
-    }
 }

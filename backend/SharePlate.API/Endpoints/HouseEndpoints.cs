@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using SharePlate.API.Contracts.Houses;
+using SharePlate.API.Security;
 using SharePlate.Core.Entities;
 using SharePlate.Core.Enums;
 using SharePlate.Core.Extensions.Security;
@@ -11,7 +12,7 @@ public static class HouseEndpoints
 {
     public static void MapHouseEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/houses").WithTags("Houses").RequireAuthorization();
+        var group = app.MapGroup("/houses").WithTags("Houses").RequireAuthorization(AuthPolicies.SharePlateUser);
 
         group.MapGet("/state", async (ClaimsPrincipal principal, IUnitOfWork uow, CancellationToken ct) =>
         {
