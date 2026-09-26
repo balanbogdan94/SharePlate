@@ -7,6 +7,10 @@
 Thumbs.db
 Desktop.ini
 
+# Bicep - compiled ARM template output (generated via `az bicep build` without --stdout)
+infra/**/*.json
+!infra/**/parameters/*.json
+
 # IDE and Editor
 .vscode/
 .vs/

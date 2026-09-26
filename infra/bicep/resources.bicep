@@ -6,10 +6,13 @@ param environmentName string
 param location string
 @secure()
 param postgresAdminPassword string
+param alertEmailAddress string
 
 var storageAccountName = toLower('${appName}${environmentName}storage')
 var keyVaultName = '${appName}-${environmentName}-keyvault'
 var appServiceSiteName = '${appName}-${environmentName}-api'
+var staticWebAppName = '${appName}-${environmentName}-webApp'
+var managedIdentityName = '${appName}-${environmentName}-managedIdentity'
 
 module logAnalytics './modules/logAnalytics.bicep' = {
   params: {
@@ -36,13 +39,13 @@ module storage './modules/storage.bicep' = {
 
 module webapp 'modules/staticWebApp.bicep' = {
   params: {
-    name: '${appName}-${environmentName}-webApp'
+    name: staticWebAppName
   }
 }
 
 module postgres './modules/postgres.bicep' = {
   params: {
-    name: '${appName}-${environmentName}-postgres'
+    name: toLower('${appName}-${environmentName}-postgres')
     location: location
     administratorLoginPassword: postgresAdminPassword
   }
@@ -74,6 +77,7 @@ module appService './modules/appService.bicep' = {
     siteName: appServiceSiteName
     location: location
     keyVaultUri: keyVault.outputs.uri
+    appInsightsConnectionString: appInsights.outputs.connectionString
   }
   dependsOn: [
     keyVaultSecrets
@@ -88,5 +92,40 @@ module roleAssignments './modules/roleAssignments.bicep' = {
   }
   dependsOn: [
     storage
+  ]
+}
+
+module actionGroup './modules/actionGroup.bicep' = {
+  params: {
+    name: '${appName}-${environmentName}-ag'
+    emailAddress: alertEmailAddress
+  }
+}
+
+module alerts './modules/alerts.bicep' = {
+  params: {
+    appServiceId: appService.outputs.id
+    appServicePlanId: appService.outputs.planId
+    postgresServerId: postgres.outputs.id
+    actionGroupId: actionGroup.outputs.id
+  }
+}
+
+module githubOidc './modules/identities/githubOidc.bicep' = {
+  params: {
+    name: managedIdentityName
+    location: location
+  }
+}
+
+module githubOidcRoleAssignments './modules/identities/githubOidcRoleAssignments.bicep' = {
+  params: {
+    appServiceName: appServiceSiteName
+    staticWebAppName: staticWebAppName
+    principalId: githubOidc.outputs.principalId
+  }
+  dependsOn: [
+    appService
+    webapp
   ]
 }

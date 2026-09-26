@@ -15,6 +15,8 @@ resource rg 'Microsoft.Resources/resourceGroups@2025-04-01' = {
 @secure()
 param postgresAdminPassword string
 
+param alertEmailAddress string
+
 module resources 'resources.bicep' = {
   name: 'resources'
   scope: resourceGroup(rg.name)
@@ -22,5 +24,6 @@ module resources 'resources.bicep' = {
     environmentName: environmentName
     location: location
     postgresAdminPassword: postgresAdminPassword
+    alertEmailAddress: alertEmailAddress
   }
 }
