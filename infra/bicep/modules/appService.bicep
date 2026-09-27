@@ -5,6 +5,7 @@ param skuName string = 'B1'
 param linuxFxVersion string = 'DOTNETCORE|10.0'
 param keyVaultUri string
 param appInsightsConnectionString string
+param storageAccountUri string
 
 resource appServicePlan 'Microsoft.Web/serverfarms@2024-11-01' = {
   name: planName
@@ -48,6 +49,12 @@ resource appService 'Microsoft.Web/sites@2025-03-01' = {
           // Enables the App Insights site extension - what the Portal's "Turn on Application Insights" button does.
           name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
           value: '~3'
+        }
+        {
+          // No connection string/key here - BlobStorageService uses this URI with DefaultAzureCredential,
+          // authorized via the Storage Blob Data Contributor role granted below.
+          name: 'AzureStorage__AccountUri'
+          value: storageAccountUri
         }
       ]
     }

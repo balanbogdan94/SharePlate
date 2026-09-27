@@ -23,8 +23,10 @@ public sealed class BlobStorageService : IStorageService
 
     public async Task EnsureImageContainerAsync(CancellationToken ct = default)
     {
+        // Public access level is set declaratively in Bicep at creation time. Re-asserting it here via
+        // SetAccessPolicyAsync requires the more privileged Storage Blob Data Owner role, unlike plain
+        // CreateIfNotExistsAsync (covered by Storage Blob Data Contributor), so we skip it.
         await _containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob, cancellationToken: ct);
-        await _containerClient.SetAccessPolicyAsync(PublicAccessType.Blob, cancellationToken: ct);
     }
 
     public async Task<string> UploadImageAsync(Stream content, string fileName, string contentType, CancellationToken ct = default)

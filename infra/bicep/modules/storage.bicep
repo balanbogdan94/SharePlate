@@ -53,3 +53,4 @@ resource userImages 'Microsoft.Storage/storageAccounts/blobServices/containers@2
 
 output id string = storageAccount.id
 output name string = storageAccount.name
+output blobEndpoint string = storageAccount.properties.primaryEndpoints.blob

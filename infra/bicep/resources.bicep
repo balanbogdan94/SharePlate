@@ -78,6 +78,7 @@ module appService './modules/appService.bicep' = {
     location: location
     keyVaultUri: keyVault.outputs.uri
     appInsightsConnectionString: appInsights.outputs.connectionString
+    storageAccountUri: storage.outputs.blobEndpoint
   }
   dependsOn: [
     keyVaultSecrets
@@ -90,9 +91,6 @@ module roleAssignments './modules/roleAssignments.bicep' = {
     storageAccountName: storageAccountName
     principalId: appService.outputs.principalId
   }
-  dependsOn: [
-    storage
-  ]
 }
 
 module actionGroup './modules/actionGroup.bicep' = {

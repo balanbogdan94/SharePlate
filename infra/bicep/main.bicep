@@ -13,6 +13,7 @@ resource rg 'Microsoft.Resources/resourceGroups@2025-04-01' = {
 }
 
 @secure()
+@minLength(8)
 param postgresAdminPassword string
 
 param alertEmailAddress string
