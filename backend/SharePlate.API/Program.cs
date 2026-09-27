@@ -72,6 +72,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection"), b => b.MigrationsAssembly("SharePlate.Infrastructure")));
 
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>();
+
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApi(
@@ -144,6 +147,9 @@ app.UseCors(FrontendCorsPolicy);
 app.UseAuthentication();
 app.UseMiddleware<ExternalIdentityResolutionMiddleware>();
 app.UseAuthorization();
+
+// Unauthenticated - the default policy above requires a token, load balancers/monitors can't provide one.
+app.MapHealthChecks("/health").AllowAnonymous();
 
 var api = app.MapGroup("/api")
              .AddEndpointFilter<DataAnnotationValidationFilter>();

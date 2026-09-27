@@ -1,9 +1,7 @@
 param name string
 param location string
 param githubOrg string = 'balanbogdan94'
-param githubOrgId string = '12782838'
 param githubRepo string = 'SharePlate'
-param githubRepoId string = '1158754288'
 
 @description('Branches allowed to authenticate as this identity via GitHub OIDC, e.g. [\'main\'] or [\'main\', \'release\']')
 param allowedBranches array = ['main']
@@ -19,10 +17,9 @@ resource federatedCredentials 'Microsoft.ManagedIdentity/userAssignedIdentities/
     name: 'github-${branch}'
     properties: {
       issuer: 'https://token.actions.githubusercontent.com'
-      // Anchored on immutable GitHub IDs (owner@ownerId/repo@repoId), matching what the
-      // Portal's "GitHub Actions deploying Azure resources" wizard generates - prevents
-      // subject-confusion attacks if the org/repo is ever renamed.
-      subject: 'repo:${githubOrg}@${githubOrgId}/${githubRepo}@${githubRepoId}:ref:refs/heads/${branch}'
+      // Plain owner/repo format - confirmed by an actual failed login that GitHub's real
+      // OIDC token subject does NOT include the numeric IDs the Portal wizard suggested.
+      subject: 'repo:${githubOrg}/${githubRepo}:ref:refs/heads/${branch}'
       audiences: [
         'api://AzureADTokenExchange'
       ]

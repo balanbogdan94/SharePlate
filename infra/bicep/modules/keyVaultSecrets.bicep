@@ -14,6 +14,8 @@ resource postgresConnectionSecret 'Microsoft.KeyVault/vaults/secrets@2026-02-01'
   parent: existingKeyVault
   name: 'PostgresConnectionString'
   properties: {
-    value: 'Host=${postgresFqdn};Port=5432;Database=${postgresDatabaseName};Username=${postgresAdminLogin};Password=${postgresAdminPassword};Ssl Mode=Require;Trust Server Certificate=true'
+    // Channel Binding=Disable avoids a known Npgsql/SCRAM-SHA-256-PLUS negotiation issue
+    // with Trust Server Certificate that surfaces misleadingly as "no password provided".
+    value: 'Host=${postgresFqdn};Port=5432;Database=${postgresDatabaseName};Username=${postgresAdminLogin};Password=${postgresAdminPassword};Ssl Mode=Require;Trust Server Certificate=true;Channel Binding=Disable'
   }
 }
