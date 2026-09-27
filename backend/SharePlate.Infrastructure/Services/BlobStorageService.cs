@@ -1,3 +1,4 @@
+using Azure.Identity;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Microsoft.Extensions.Options;
@@ -13,7 +14,10 @@ public sealed class BlobStorageService : IStorageService
     public BlobStorageService(IOptions<AzureStorageOptions> options)
     {
         var opts = options.Value;
-        var serviceClient = new BlobServiceClient(opts.ConnectionString);
+        // Managed identity in Azure (AccountUri set) - falls back to connection string for local Azurite dev.
+        var serviceClient = string.IsNullOrEmpty(opts.AccountUri)
+            ? new BlobServiceClient(opts.ConnectionString)
+            : new BlobServiceClient(new Uri(opts.AccountUri), new DefaultAzureCredential());
         _containerClient = serviceClient.GetBlobContainerClient(opts.ImageContainerName);
     }
 
