@@ -6,6 +6,7 @@ param linuxFxVersion string = 'DOTNETCORE|10.0'
 param keyVaultUri string
 param appInsightsConnectionString string
 param storageAccountUri string
+param corsAllowedOrigin string
 
 resource appServicePlan 'Microsoft.Web/serverfarms@2024-11-01' = {
   name: planName
@@ -57,6 +58,13 @@ resource appService 'Microsoft.Web/sites@2025-03-01' = {
           value: storageAccountUri
         }
       ]
+      // Platform-level CORS - handled entirely by App Service, not app code, to avoid duplicate
+      // Access-Control-Allow-Origin headers if both layers were active at once.
+      cors: {
+        allowedOrigins: [
+          corsAllowedOrigin
+        ]
+      }
     }
   }
 }

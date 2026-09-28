@@ -79,6 +79,7 @@ module appService './modules/appService.bicep' = {
     keyVaultUri: keyVault.outputs.uri
     appInsightsConnectionString: appInsights.outputs.connectionString
     storageAccountUri: storage.outputs.blobEndpoint
+    corsAllowedOrigin: 'https://${webapp.outputs.defaultHostname}'
   }
   dependsOn: [
     keyVaultSecrets
