@@ -99,21 +99,25 @@ builder.Services.AddAuthorization(options =>
     options.DefaultPolicy = options.GetPolicy(AuthPolicies.ApiAccess)!;
 });
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy(FrontendCorsPolicy, policy =>
-    {
-        policy
-            .WithOrigins("http://localhost:5173")
-            .AllowAnyHeader()
-            .AllowAnyMethod();
-    });
-});
-
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<UserProvisioningService>();
 builder.Services.AddInfrastructureStorageServices(builder.Configuration);
 
+// Deployed environments rely on App Service's native CORS instead - this only exists locally,
+// since Kestrel alone has no equivalent platform-level layer to fall back on.
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy(FrontendCorsPolicy, policy =>
+        {
+            policy
+                .WithOrigins("http://localhost:5173")
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+    });
+}
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
@@ -137,13 +141,13 @@ await using (var scope = app.Services.CreateAsyncScope())
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseCors(FrontendCorsPolicy);
 }
 
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
-app.UseCors(FrontendCorsPolicy);
 app.UseAuthentication();
 app.UseMiddleware<ExternalIdentityResolutionMiddleware>();
 app.UseAuthorization();
