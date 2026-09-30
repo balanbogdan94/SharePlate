@@ -17,7 +17,7 @@ const msalConfig: Configuration = {
 		postLogoutRedirectUri: env.entraRedirectUri,
 	},
 	cache: {
-		cacheLocation: BrowserCacheLocation.SessionStorage,
+		cacheLocation: BrowserCacheLocation.LocalStorage,
 	},
 };
 
