@@ -44,8 +44,9 @@ export function AppShell() {
 	};
 
 	return (
-		<div className="mobile-shell min-h-screen bg-stone-100 text-stone-900 dark:bg-sp-background dark:text-sp-text-primary">
-			<header className="safe-top sticky top-0 z-20 border-b border-stone-200/80 bg-white/90 backdrop-blur-md dark:border-sp-border-subtle dark:bg-sp-background">
+		// Keep safe-area padding inside the viewport instead of creating a second scroll area.
+		<div className="mobile-shell fixed inset-x-0 top-0 flex h-dvh flex-col overflow-hidden bg-stone-100 text-stone-900 dark:bg-sp-background dark:text-sp-text-primary">
+			<header className="safe-top z-20 shrink-0 border-b border-stone-200/80 bg-white/90 backdrop-blur-md dark:border-sp-border-subtle dark:bg-sp-background">
 				<div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-4 sm:h-16">
 					<div className="flex items-center gap-2">
 						{!isMainRoute && (
@@ -79,7 +80,7 @@ export function AppShell() {
 				</div>
 			</header>
 
-			<main className="mx-auto h-[calc(100dvh-3.5rem)] w-full max-w-5xl overflow-y-auto overscroll-y-contain px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-3 sm:h-[calc(100dvh-4rem)] sm:pt-4">
+			<main className="mx-auto min-h-0 w-full max-w-5xl flex-1 overflow-y-auto overscroll-y-contain px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-3 sm:pt-4">
 				<Outlet />
 			</main>
 

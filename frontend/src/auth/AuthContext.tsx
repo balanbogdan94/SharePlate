@@ -28,7 +28,11 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
 	const { instance, accounts, inProgress } = useMsal();
-	const account = instance.getActiveAccount() ?? accounts[0] ?? null;
+	// Persistent accounts cannot be read until MSAL has initialized its encrypted cache.
+	const account =
+		inProgress === InteractionStatus.Startup
+			? null
+			: (instance.getActiveAccount() ?? accounts[0] ?? null);
 	const accountId = account?.homeAccountId ?? null;
 	const [provisioningResult, setProvisioningResult] = useState<ProvisioningResult | null>(null);
 	const [retryCount, setRetryCount] = useState(0);

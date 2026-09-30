@@ -41,7 +41,7 @@ const appLayoutRoute = createRoute({
 			throw redirect({
 				to: '/login',
 				search: {
-					redirect: `${location.pathname}${location.search}${location.hash}`,
+					redirect: location.href,
 				},
 			});
 		}
