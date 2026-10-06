@@ -8,21 +8,35 @@ export function usePlanTab() {
 	const navigate = useNavigate();
 	const today = useMemo(() => formatDateInput(new Date()), []);
 	const [manualSegment, setManualSegment] = useState<'current' | 'other' | null>(null);
-	const [expandedDayDate, setExpandedDayDate] = useState<string | null>(null);
+	const [expandedDayDates, setExpandedDayDates] = useState<Set<string> | null>(null);
 	const [manualExpandedOtherPlanId, setManualExpandedOtherPlanId] = useState<string | null>(null);
-	const [expandedOtherDayDate, setExpandedOtherDayDate] = useState<string | null>(null);
+	const [expandedOtherDayDates, setExpandedOtherDayDates] = useState<Set<string> | null>(null);
 	const exportState = usePlanExport();
 	const planData = usePlanData({ today, manualSegment, manualExpandedOtherPlanId });
-	const toggleDay = useCallback((d: string) => setExpandedDayDate((c) => (c === d ? null : d)), []);
+	const toggleDay = useCallback((date: string, defaultDate: string | null) => {
+		setExpandedDayDates((current) => {
+			const next = new Set(current ?? (defaultDate ? [defaultDate] : []));
+			if (next.has(date)) next.delete(date);
+			else next.add(date);
+			return next;
+		});
+	}, []);
 	const toggleOtherDay = useCallback(
-		(d: string) => setExpandedOtherDayDate((c) => (c === d ? null : d)),
+		(date: string, defaultDate: string | null) => {
+			setExpandedOtherDayDates((current) => {
+				const next = new Set(current ?? (defaultDate ? [defaultDate] : []));
+				if (next.has(date)) next.delete(date);
+				else next.add(date);
+				return next;
+			});
+		},
 		[],
 	);
 	const handleToggleOtherPlan = useCallback(
 		(planId: string) => {
 			const isExpanded = planData.expandedOtherPlanId === planId;
 			setManualExpandedOtherPlanId((c) => (c === planId ? null : planId));
-			setExpandedOtherDayDate(null);
+			setExpandedOtherDayDates(null);
 			if (isExpanded && planData.expandedOtherPlanId) void navigate({ to: '/plans', search: {} });
 			else if (!isExpanded) void navigate({ to: '/plans', search: { expand: planId } });
 		},
@@ -59,9 +73,9 @@ export function usePlanTab() {
 		otherPlanDetails: planData.otherPlanDetails,
 		otherPlanLoading: planData.otherPlanLoading,
 		otherPlanError: planData.otherPlanError,
-		expandedOtherDayDate,
+		expandedOtherDayDates,
 		onTogglePlan: handleToggleOtherPlan,
-		expandedDayDate,
+		expandedDayDates,
 		toggleDay,
 		toggleOtherDay,
 		recipeMap: planData.recipeMap,

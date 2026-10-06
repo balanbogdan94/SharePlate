@@ -25,3 +25,6 @@ Run frontend commands from repository root:
 - `cd frontend && npm run lint`
 - `cd frontend && npm run build`
 
+## Frontend validation cadence
+
+Follow the [frontend validation cadence](.github/copilot-instructions.md#frontend-validation-cadence): use browser checks for small visual refinements and batch lint/build instead of running them after every change or chat turn.

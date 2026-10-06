@@ -1,5 +1,4 @@
-import { useNavigate } from '@tanstack/react-router';
-import { PenLine } from 'lucide-react';
+import { PlanOptions } from './PlanOptions';
 import type { RecipeSummary } from '@/pages/tabs/home/types';
 import type { ExportPhase } from '@/pages/usePlanExport';
 import type { EditableReminderItem } from '@/pages/tabs/plan/remindersExport';
@@ -23,42 +22,33 @@ type ExportProps = {
 
 type Props = {
 	plan: PlanDetails;
-	expandedDayDate: string | null;
-	onToggleDay: (date: string) => void;
+	expandedDayDates: ReadonlySet<string> | null;
+	onToggleDay: (date: string, defaultDate: string | null) => void;
 	recipeMap: Map<string, RecipeSummary>;
 	exportProps: ExportProps;
 };
 
 export function PlanCurrentView({
 	plan,
-	expandedDayDate,
+	expandedDayDates,
 	onToggleDay,
 	recipeMap,
 	exportProps,
 }: Props) {
-	const navigate = useNavigate();
-	const activeExpandedDayDate = expandedDayDate ?? plan.days[0]?.date ?? null;
+	const defaultExpandedDayDate = plan.days[0]?.date ?? null;
 
 	return (
 		<div className="animate-in fade-in flex flex-col gap-4 duration-500">
 			<div className="flex items-center justify-between gap-2 px-1 py-0.5">
-				<div className="min-w-0">
+				<div className="flex min-w-0 items-center">
 					<p className="truncate text-sm font-semibold text-stone-500 dark:text-sp-text-secondary">
 						{formatDisplayDate(plan.startDate)} – {formatDisplayDate(plan.endDate)}
 					</p>
+					<PlanOptions plan={plan} />
 				</div>
 				<div className="flex shrink-0 items-center gap-1.5">
-					<button
-						type="button"
-						aria-label="Edit plan"
-						onClick={() =>
-							void navigate({ to: '/plans/$planId/edit', params: { planId: plan.id } })
-						}
-						className="flex h-8 w-8 items-center justify-center rounded-full bg-transparent text-stone-500 transition hover:bg-stone-100 active:scale-95 dark:text-sp-text-secondary dark:hover:bg-sp-surface-active"
-					>
-						<PenLine className="h-3.5 w-3.5" />
-					</button>
 					<PlanRemindersExport
+						planDateLabel={`${formatDisplayDate(plan.startDate)} – ${formatDisplayDate(plan.endDate)}`}
 						planId={exportProps.planId}
 						onExport={exportProps.onExport}
 						isExporting={exportProps.isExporting}
@@ -79,8 +69,10 @@ export function PlanCurrentView({
 					<PlanDaySection
 						key={day.date}
 						day={day}
-						isExpanded={activeExpandedDayDate === day.date}
-						onToggle={() => onToggleDay(day.date)}
+						isExpanded={
+							expandedDayDates ? expandedDayDates.has(day.date) : day.date === defaultExpandedDayDate
+						}
+						onToggle={() => onToggleDay(day.date, defaultExpandedDayDate)}
 						recipeMap={recipeMap}
 						planId={plan.id}
 					/>

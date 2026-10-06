@@ -117,6 +117,18 @@ function setUserAgent(value: string) {
 }
 
 beforeEach(() => {
+	Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+		configurable: true,
+		value: function (this: HTMLDialogElement) {
+			this.setAttribute('open', '');
+		},
+	});
+	Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+		configurable: true,
+		value: function (this: HTMLDialogElement) {
+			this.removeAttribute('open');
+		},
+	});
 	searchState.expand = undefined;
 	navigateMock.mockReset();
 	vi.mocked(apiFetch).mockReset();
@@ -129,7 +141,7 @@ describe('PlanTabPage reminders export visibility and fallback', () => {
 		searchState.expand = futurePlan.id;
 		mockPlanApi(futurePlan);
 		renderPage();
-		expect(await screen.findByRole('button', { name: 'Export to Reminders' })).toBeInTheDocument();
+		expect(await screen.findByRole('button', { name: 'Shopping list' })).toBeInTheDocument();
 	});
 
 	it('opens review panel after export click', async () => {
@@ -137,10 +149,10 @@ describe('PlanTabPage reminders export visibility and fallback', () => {
 		mockPlanApi(plan, createRecipeDetail());
 		renderPage();
 		const user = userEvent.setup();
-		await user.click(await screen.findByRole('button', { name: 'Export to Reminders' }));
+		await user.click(await screen.findByRole('button', { name: 'Shopping list' }));
 		expect(await screen.findByTestId(`reminders-review-${plan.id}`)).toBeInTheDocument();
-		expect(screen.getByText('2 ingredients ready.')).toBeInTheDocument();
-		expect(screen.getByRole('button', { name: 'Send' })).toBeInTheDocument();
+		expect(screen.getByRole('dialog', { name: 'Shopping list' })).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: /Apple Reminders/ })).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
 	});
 
@@ -151,21 +163,68 @@ describe('PlanTabPage reminders export visibility and fallback', () => {
 		mockPlanApi(plan, createRecipeDetail());
 		renderPage();
 		const user = userEvent.setup();
-		await user.click(await screen.findByRole('button', { name: 'Export to Reminders' }));
+		await user.click(await screen.findByRole('button', { name: 'Shopping list' }));
 		const tomatoQuantity = await screen.findByLabelText('Quantity for Tomato');
 		await user.clear(tomatoQuantity);
 		await user.type(tomatoQuantity, '5');
 		await user.click(screen.getByRole('button', { name: 'Remove Flour' }));
-		await user.click(screen.getByRole('button', { name: 'Send' }));
+		await user.click(screen.getByRole('button', { name: /Apple Reminders/ }));
+		await user.click(screen.getByRole('button', { name: 'Open Shortcut' }));
 		await waitFor(() => expect(openSpy).toHaveBeenCalledTimes(1));
 		const text = new URL(String(openSpy.mock.calls[0][0])).searchParams.get('text');
-		expect(text).toContain('Tomato — 5 Piece');
+		expect(text).toBe('Tomato — 5 pcs');
 		expect(text).not.toContain('Flour');
 		openSpy.mockRestore();
 	});
 });
 
 describe('PlanTabPage reminders export bridge and errors', () => {
+	it('counts repeated meals while fetching each recipe only once', async () => {
+		const plan = createCurrentPlan();
+		const details = createPlanDetails(plan);
+		details.days[0].categories.Dinner = ['recipe-1'];
+		vi.mocked(apiFetch).mockImplementation(async (path: string) => {
+			if (path === '/plans') return [plan];
+			if (path === '/recipes/house') return [];
+			if (path === `/plans/${plan.id}`) return details;
+			if (path === '/recipes/recipe-1') return createRecipeDetail();
+			throw new Error(`Unhandled path: ${path}`);
+		});
+		renderPage();
+		await userEvent.setup().click(await screen.findByRole('button', { name: 'Shopping list' }));
+		expect(await screen.findByLabelText('Quantity for Tomato')).toHaveValue('4');
+		expect(screen.getByLabelText('Quantity for Flour')).toHaveValue('200');
+		expect(
+			vi.mocked(apiFetch).mock.calls.filter(([path]) => path === '/recipes/recipe-1'),
+		).toHaveLength(1);
+	});
+
+	it('keeps review open after removing the last ingredient', async () => {
+		const plan = createCurrentPlan();
+		mockPlanApi(plan, createRecipeDetail());
+		renderPage();
+		const user = userEvent.setup();
+		await user.click(await screen.findByRole('button', { name: 'Shopping list' }));
+		await user.click(await screen.findByRole('button', { name: 'Remove Tomato' }));
+		await user.click(screen.getByRole('button', { name: 'Remove Flour' }));
+		expect(screen.getByRole('dialog')).toBeInTheDocument();
+		expect(screen.getByText('Your shopping list is empty')).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Copy' })).toBeDisabled();
+	});
+
+	it('retries preparation after a fetch failure', async () => {
+		const plan = createCurrentPlan();
+		mockPlanApi(plan, new Error('boom'));
+		renderPage();
+		const user = userEvent.setup();
+		await user.click(await screen.findByRole('button', { name: 'Shopping list' }));
+		await screen.findByText('Could not fetch all recipe ingredients.');
+		mockPlanApi(plan, createRecipeDetail());
+		await user.click(screen.getByRole('button', { name: 'Retry' }));
+		expect(await screen.findByRole('dialog')).toBeInTheDocument();
+		expect(screen.queryByText('Could not fetch all recipe ingredients.')).not.toBeInTheDocument();
+	});
+
 	it('uses iOS shortcut bridge when device is iOS', async () => {
 		setUserAgent('Mozilla/5.0 (iPhone)');
 		const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
@@ -173,8 +232,9 @@ describe('PlanTabPage reminders export bridge and errors', () => {
 		mockPlanApi(plan, createRecipeDetail());
 		renderPage();
 		const user = userEvent.setup();
-		await user.click(await screen.findByRole('button', { name: 'Export to Reminders' }));
-		await user.click(await screen.findByRole('button', { name: 'Send' }));
+		await user.click(await screen.findByRole('button', { name: 'Shopping list' }));
+		await user.click(screen.getByRole('button', { name: /Apple Reminders/ }));
+		await user.click(screen.getByRole('button', { name: 'Open Shortcut' }));
 		await waitFor(() => expect(openSpy).toHaveBeenCalledTimes(1));
 		expect(openSpy.mock.calls[0][0]).toContain('shortcuts://run-shortcut?');
 		expect(openSpy.mock.calls[0][1]).toBe('_self');
@@ -188,8 +248,9 @@ describe('PlanTabPage reminders export bridge and errors', () => {
 		mockPlanApi(plan, createRecipeDetail());
 		renderPage();
 		const user = userEvent.setup();
-		await user.click(await screen.findByRole('button', { name: 'Export to Reminders' }));
-		await user.click(await screen.findByRole('button', { name: 'Send' }));
+		await user.click(await screen.findByRole('button', { name: 'Shopping list' }));
+		await user.click(screen.getByRole('button', { name: /Apple Reminders/ }));
+		await user.click(screen.getByRole('button', { name: 'Open Shortcut' }));
 		await waitFor(() => expect(openSpy).toHaveBeenCalledTimes(1));
 		expect(openSpy.mock.calls[0][0]).toContain('shortcuts://run-shortcut?');
 		expect(screen.queryByTestId(`reminders-fallback-${plan.id}`)).not.toBeInTheDocument();
@@ -201,7 +262,7 @@ describe('PlanTabPage reminders export bridge and errors', () => {
 		mockPlanApi(plan, new Error('boom'));
 		renderPage();
 		const user = userEvent.setup();
-		await user.click(await screen.findByRole('button', { name: 'Export to Reminders' }));
+		await user.click(await screen.findByRole('button', { name: 'Shopping list' }));
 		expect(await screen.findByText('Could not fetch all recipe ingredients.')).toBeInTheDocument();
 	});
 });

@@ -1,10 +1,10 @@
-import type { RecipeDetail, RecipeIngredient } from '@/pages/tabs/home/types';
+import type { RecipeDetail, RecipeIngredient, UnitType } from '@/pages/tabs/home/types';
 import { CATEGORY_TYPES, type PlanDetails } from '@/pages/tabs/plan/types';
 
 export type AggregatedIngredient = {
 	name: string;
 	normalizedName: string;
-	unitId: string;
+	unitId: UnitType;
 	quantity: number;
 };
 
@@ -18,10 +18,23 @@ export type EditableReminderItem = {
 	id: string;
 	name: string;
 	quantity: string;
-	unitId: string;
+	unitId: UnitType;
 };
 
 const SHORTCUT_NAME = 'SharePlate Add To Reminders';
+
+const UNIT_LABELS: Record<UnitType, string> = {
+	Kilogram: 'kg',
+	Gram: 'g',
+	Liter: 'l',
+	Milliliter: 'ml',
+	Piece: 'pcs',
+	Portion: 'portions',
+};
+
+export function formatIngredientUnit(unitId: UnitType): string {
+	return UNIT_LABELS[unitId];
+}
 
 function normalizeIngredientName(name: string): string {
 	return name.trim().replace(/\s+/gu, ' ').toLowerCase();
@@ -57,6 +70,20 @@ export function extractRecipeIdsFromPlan(plan: PlanDetails): string[] {
 	return [...ids];
 }
 
+export function buildPlanReminderExportPayload(plan: PlanDetails, recipes: RecipeDetail[]) {
+	const recipeMap = new Map(recipes.map((recipe) => [recipe.id, recipe]));
+	const occurrences = plan.days.flatMap((day) =>
+		CATEGORY_TYPES.flatMap((category) =>
+			day.categories[category].map((id) => {
+				const recipe = recipeMap.get(id);
+				if (!recipe) throw new Error('Could not fetch all recipe ingredients.');
+				return recipe;
+			}),
+		),
+	);
+	return buildReminderExportPayload(occurrences);
+}
+
 export function aggregateIngredients(recipes: RecipeDetail[]): AggregatedIngredient[] {
 	const aggregated = new Map<string, AggregatedIngredient>();
 	for (const recipe of recipes) {
@@ -81,7 +108,7 @@ export function aggregateIngredients(recipes: RecipeDetail[]): AggregatedIngredi
 export function formatReminderLines(ingredients: AggregatedIngredient[]): string[] {
 	return ingredients.map(
 		(ingredient) =>
-			`${ingredient.name} — ${formatQuantity(ingredient.quantity)} ${ingredient.unitId}`,
+			`${ingredient.name} — ${formatQuantity(ingredient.quantity)} ${formatIngredientUnit(ingredient.unitId)}`,
 	);
 }
 
@@ -116,7 +143,7 @@ export function toEditableReminderItems(
 }
 
 export function formatEditableReminderItem(item: EditableReminderItem): string {
-	return `${item.name.trim()} — ${item.quantity.trim()} ${item.unitId.trim()}`;
+	return `${item.name.trim()} — ${item.quantity.trim()} ${formatIngredientUnit(item.unitId)}`;
 }
 
 export function buildEditableReminderText(items: EditableReminderItem[]): string {

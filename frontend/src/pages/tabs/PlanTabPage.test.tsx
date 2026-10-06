@@ -130,6 +130,47 @@ describe('PlanTabPage', () => {
 		expect(screen.queryByText('No active plan today')).not.toBeInTheDocument();
 	});
 
+	it('keeps multiple recipe days open in the current plan', async () => {
+		const today = formatDateInput(new Date());
+		const tomorrow = addDays(today, 1);
+		const activePlan: PlanListItem = {
+			id: 'active-plan',
+			startDate: today,
+			endDate: tomorrow,
+			createdAt: '2026-04-01T10:00:00Z',
+			updatedAt: '2026-04-01T10:00:00Z',
+		};
+		const details: PlanDetails = {
+			...activePlan,
+			days: [today, tomorrow].map((date, index) => ({
+				date,
+				categories: {
+					Unnamed: [],
+					Morning: [],
+					Breakfast: [],
+					Lunch: [`recipe-${index + 1}`],
+					Dinner: [],
+				},
+			})),
+		};
+		mockApi([activePlan], { [activePlan.id]: details });
+		renderPage();
+
+		const todayLabel = new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(
+			new Date(`${today}T00:00:00`),
+		);
+		const tomorrowLabel = new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(
+			new Date(`${tomorrow}T00:00:00`),
+		);
+		const todayButton = await screen.findByRole('button', { name: new RegExp(todayLabel) });
+		const tomorrowButton = screen.getByRole('button', { name: new RegExp(tomorrowLabel) });
+		expect(todayButton).toHaveAttribute('aria-expanded', 'true');
+		await userEvent.setup().click(screen.getByRole('button', { name: new RegExp(tomorrowLabel) }));
+
+		expect(todayButton).toHaveAttribute('aria-expanded', 'true');
+		expect(tomorrowButton).toHaveAttribute('aria-expanded', 'true');
+	});
+
 	it('renders no-active placeholder when plans exist but none are active today', async () => {
 		const today = formatDateInput(new Date());
 		const pastPlan: PlanListItem = {

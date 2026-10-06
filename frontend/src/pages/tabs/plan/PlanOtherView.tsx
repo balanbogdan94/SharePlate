@@ -1,5 +1,5 @@
-import { useNavigate } from '@tanstack/react-router';
-import { CalendarRange, ChevronDown, ChevronUp, PenLine } from 'lucide-react';
+import { CalendarRange, ChevronDown, ChevronUp } from 'lucide-react';
+import { PlanOptions } from './PlanOptions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { RecipeSummary } from '@/pages/tabs/home/types';
 import type { ExportPhase } from '@/pages/usePlanExport';
@@ -26,8 +26,8 @@ type ExpandedProps = {
 	details: PlanDetails | undefined;
 	detailsLoading: boolean;
 	detailsError: unknown;
-	expandedDayDate: string | null;
-	onToggleDay: (date: string) => void;
+	expandedDayDates: ReadonlySet<string> | null;
+	onToggleDay: (date: string, defaultDate: string | null) => void;
 	recipeMap: Map<string, RecipeSummary>;
 	today: string;
 	exportProps: ExportProps;
@@ -38,14 +38,13 @@ function ExpandedPlanContent({
 	details,
 	detailsLoading,
 	detailsError,
-	expandedDayDate,
+	expandedDayDates,
 	onToggleDay,
 	recipeMap,
 	today,
 	exportProps,
 }: ExpandedProps) {
-	const navigate = useNavigate();
-	const activeDayDate = details ? (expandedDayDate ?? details.days[0]?.date ?? null) : null;
+	const defaultExpandedDayDate = details?.days[0]?.date ?? null;
 
 	return (
 		<div className="space-y-3 pb-4">
@@ -62,6 +61,7 @@ function ExpandedPlanContent({
 				<>
 					<div className="flex items-center justify-between gap-2">
 						<PlanRemindersExport
+							planDateLabel={`${formatDisplayDate(plan.startDate)} – ${formatDisplayDate(plan.endDate)}`}
 							planId={details.id}
 							onExport={exportProps.onExport}
 							isExporting={exportProps.isExporting}
@@ -73,26 +73,19 @@ function ExpandedPlanContent({
 							onCancelDraft={exportProps.onCancelDraft}
 							onSendDraft={exportProps.onSendDraft}
 						/>
-						{isFuturePlan(plan, today) && (
-							<button
-								type="button"
-								aria-label="Edit plan"
-								onClick={() =>
-									void navigate({ to: '/plans/$planId/edit', params: { planId: plan.id } })
-								}
-								className="flex h-10 w-10 items-center justify-center rounded-full bg-stone-100 text-stone-600 transition hover:bg-stone-200 active:scale-95 dark:bg-sp-surface-active dark:text-sp-text-primary dark:hover:bg-sp-surface-hover"
-							>
-								<PenLine className="h-4 w-4" />
-							</button>
-						)}
+						<PlanOptions plan={plan} canEdit={isFuturePlan(plan, today)} />
 					</div>
 					<div className="divide-y divide-stone-100 dark:divide-sp-separator">
 						{details.days.map((day) => (
 							<PlanDaySection
 								key={day.date}
 								day={day}
-								isExpanded={activeDayDate === day.date}
-								onToggle={() => onToggleDay(day.date)}
+								isExpanded={
+									expandedDayDates
+										? expandedDayDates.has(day.date)
+										: day.date === defaultExpandedDayDate
+								}
+								onToggle={() => onToggleDay(day.date, defaultExpandedDayDate)}
 								recipeMap={recipeMap}
 								planId={plan.id}
 							/>
@@ -160,9 +153,9 @@ type Props = {
 	details: PlanDetails | undefined;
 	detailsLoading: boolean;
 	detailsError: unknown;
-	expandedOtherDayDate: string | null;
+	expandedOtherDayDates: ReadonlySet<string> | null;
 	onTogglePlan: (planId: string) => void;
-	onToggleDay: (date: string) => void;
+	onToggleDay: (date: string, defaultDate: string | null) => void;
 	recipeMap: Map<string, RecipeSummary>;
 	today: string;
 	exportProps: ExportProps;
@@ -175,7 +168,7 @@ export function PlanOtherView({
 	details,
 	detailsLoading,
 	detailsError,
-	expandedOtherDayDate,
+	expandedOtherDayDates,
 	onTogglePlan,
 	onToggleDay,
 	recipeMap,
@@ -192,7 +185,7 @@ export function PlanOtherView({
 			details={expandedOtherPlanId === plan.id ? details : undefined}
 			detailsLoading={expandedOtherPlanId === plan.id ? detailsLoading : false}
 			detailsError={expandedOtherPlanId === plan.id ? detailsError : null}
-			expandedDayDate={expandedOtherPlanId === plan.id ? expandedOtherDayDate : null}
+			expandedDayDates={expandedOtherPlanId === plan.id ? expandedOtherDayDates : null}
 			onToggleDay={onToggleDay}
 			recipeMap={recipeMap}
 			exportProps={exportProps}

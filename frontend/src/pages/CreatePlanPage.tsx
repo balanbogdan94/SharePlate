@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCanGoBack, useNavigate, useParams, useRouter } from '@tanstack/react-router';
-import { ArrowDown, ArrowUp, CalendarDays, Check, CirclePlus, Loader2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, CalendarDays, CirclePlus, Loader2, X } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { useFeedback } from '@/lib/feedback/useFeedback';
 import { unlockAudio } from '@/lib/feedback/sound';
 import { useDraft, readDraftOnce } from '@/lib/useDraft';
 import type { RecipeSummary } from '@/pages/tabs/home/types';
+import { RecipeCard } from '@/pages/tabs/home/RecipeCard';
 import {
 	CATEGORY_TYPES,
 	type CategoryType,
@@ -774,15 +775,16 @@ export function CreatePlanPage() {
 				aria-hidden={!modalOpen}
 			>
 				<div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={closeModal} />
-				<div className="absolute inset-x-0 bottom-0 max-h-[92dvh] rounded-t-[1.6rem] border border-white/10 bg-[#1a1b20] p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_20px_60px_rgba(0,0,0,0.65)] sm:inset-x-3 sm:bottom-3 sm:top-[10%] sm:max-h-none sm:rounded-[2.2rem] sm:p-4">
+				<div className="absolute inset-x-0 bottom-0 h-[min(44rem,92dvh)] max-h-[92dvh] overflow-hidden rounded-t-[1.6rem] border border-white/10 bg-[#1a1b20] p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_20px_60px_rgba(0,0,0,0.65)] sm:inset-x-3 sm:bottom-3 sm:top-[10%] sm:h-auto sm:max-h-none sm:rounded-[2.2rem] sm:p-4">
 					<div className="flex h-full flex-col overflow-hidden">
-						<div className="sticky top-0 z-10 -mx-3 border-b border-white/10 bg-[#1a1b20]/95 px-3 pb-3 pt-1 backdrop-blur sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pb-4 sm:pt-0">
+						<div className="z-10 -mx-3 shrink-0 border-b border-white/10 bg-[#1a1b20]/95 px-3 pb-3 pt-1 backdrop-blur sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pb-4 sm:pt-0">
 							<div className="mb-3 flex items-center justify-between">
 								<h3 className="text-[1.75rem] font-extrabold text-white sm:text-[2rem]">
 									Add Recipes
 								</h3>
 								<button
 									type="button"
+									aria-label="Close recipe picker"
 									onClick={closeModal}
 									className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[#2f3237] text-[#d6d9df]"
 								>
@@ -800,7 +802,11 @@ export function CreatePlanPage() {
 							</div>
 						</div>
 
-						<div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-black/25 p-2.5 sm:rounded-[1.8rem] sm:p-3">
+						<div
+							role="region"
+							aria-label="Recipes to add"
+							className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain rounded-2xl border border-white/10 bg-black/25 p-2.5 sm:rounded-[1.8rem] sm:p-3"
+						>
 							{recipeSearchQuery.isLoading ? (
 								<div className="flex items-center gap-2 px-2 py-3 text-[#9ca2ab]">
 									<Loader2 className="h-4 w-4 animate-spin" />
@@ -810,68 +816,19 @@ export function CreatePlanPage() {
 								<p className="px-2 py-4 text-[#7d828a]">No recipes found.</p>
 							) : (
 								<div className="space-y-2.5 sm:space-y-3">
-									{recipesForModal.map((recipe) => {
-										const selected = selectedRecipeIds.includes(recipe.id);
-										return (
-											<button
-												key={recipe.id}
-												type="button"
-												onClick={() => toggleRecipeSelection(recipe.id)}
-												className={`w-full overflow-hidden rounded-2xl border text-left transition ${
-													selected
-														? 'border-[#6fdb68]/60 bg-[#141f14]'
-														: 'border-stone-800/80 bg-stone-900'
-												}`}
-											>
-												<div className="flex min-w-0">
-													<div className="relative h-[5.5rem] w-[5.5rem] shrink-0 sm:h-24 sm:w-24">
-														{recipe.imageUrl ? (
-															<img
-																src={recipe.imageUrl}
-																alt={recipe.title}
-																className="h-full w-full object-cover"
-															/>
-														) : (
-															<div className="h-full w-full bg-stone-700" />
-														)}
-														<div
-															className={`pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-r from-transparent ${selected ? 'to-[#141f14]' : 'to-stone-900'}`}
-														/>
-													</div>
-													<div className="min-w-0 flex-1 px-3 py-3">
-														<p className="line-clamp-2 text-sm font-bold leading-snug text-stone-100 sm:text-base">
-															{recipe.title}
-														</p>
-														<p className="mt-0.5 flex items-center gap-1 text-xs italic text-stone-400">
-															<Avatar
-																name={recipe.authorName}
-																photoUrl={recipe.authorAvatarUrl}
-																className="h-4 w-4"
-																fallbackClassName="bg-stone-700 text-[8px] text-stone-300"
-															/>
-															{recipe.authorName}
-														</p>
-													</div>
-													<div className="flex items-center pr-3">
-														<div
-															className={`flex h-6 w-6 items-center justify-center rounded-full border ${
-																selected
-																	? 'border-[#6fdb68] bg-[#6fdb68] text-[#05240f]'
-																	: 'border-stone-700 text-transparent'
-															}`}
-														>
-															<Check className="h-3.5 w-3.5" />
-														</div>
-													</div>
-												</div>
-											</button>
-										);
-									})}
+									{recipesForModal.map((recipe) => (
+										<RecipeCard
+											key={recipe.id}
+											recipe={recipe}
+											selected={selectedRecipeIds.includes(recipe.id)}
+											onSelect={() => toggleRecipeSelection(recipe.id)}
+										/>
+									))}
 								</div>
 							)}
 						</div>
 
-						<div className="sticky bottom-0 z-10 mt-3 -mx-3 border-t border-white/10 bg-[#1a1b20]/95 px-3 pt-3 backdrop-blur sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pt-4">
+						<div className="z-10 mt-3 -mx-3 shrink-0 border-t border-white/10 bg-[#1a1b20]/95 px-3 pt-3 backdrop-blur sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pt-4">
 							<Button
 								type="button"
 								disabled={selectedRecipeIds.length === 0}

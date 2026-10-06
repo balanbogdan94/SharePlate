@@ -3,10 +3,11 @@ import { Button } from '@/components/ui/button';
 import type { ExportPhase } from '@/pages/usePlanExport';
 import type { EditableReminderItem } from '@/pages/tabs/plan/remindersExport';
 import { PlanRemindersReviewModal } from '@/pages/tabs/plan/PlanRemindersReviewModal';
-import { SendIcon } from 'lucide-react';
+import { LoaderCircle, ShoppingBasket } from 'lucide-react';
 
 type PlanRemindersExportProps = {
 	planId: string;
+	planDateLabel?: string;
 	onExport: () => Promise<void>;
 	isExporting: boolean;
 	phase: ExportPhase;
@@ -35,12 +36,17 @@ export function PlanRemindersExport(props: PlanRemindersExportProps) {
 		<div className="space-y-2">
 			<Button
 				type="button"
-				aria-label="Export to Reminders"
+				aria-label="Shopping list"
 				onClick={onExport}
 				disabled={isExporting}
-				className={`${subtle ? 'h-8 w-8 bg-transparent text-stone-500 hover:bg-stone-100 dark:text-sp-text-secondary dark:hover:bg-sp-surface-active' : `${compact ? 'h-9 w-9' : 'h-10 w-10'} bg-green-600 text-white hover:bg-green-700 dark:bg-sp-primary dark:text-sp-text-on-primary dark:hover:bg-sp-primary-hover`} rounded-full p-0 shadow-none transition active:scale-95`}
+				className={`${subtle ? 'bg-stone-100 text-stone-700 hover:bg-stone-200 dark:bg-sp-surface-active dark:text-sp-text-primary dark:hover:bg-sp-surface-hover' : 'bg-green-50 text-green-700 hover:bg-green-100 dark:bg-sp-primary-subtle dark:text-sp-primary dark:hover:bg-sp-surface-active'} ${compact ? 'h-9' : 'h-10'} gap-1.5 rounded-full px-3 text-xs font-semibold shadow-none transition active:scale-95`}
 			>
-				<SendIcon className={subtle ? 'h-3.5 w-3.5' : compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
+				{isExporting ? (
+					<LoaderCircle className="h-4 w-4 animate-spin" />
+				) : (
+					<ShoppingBasket className="h-4 w-4" />
+				)}
+				Shopping list
 			</Button>
 			{phase === 'preparing' && (
 				<p className="text-xs text-stone-500 dark:text-sp-text-secondary">
@@ -49,8 +55,15 @@ export function PlanRemindersExport(props: PlanRemindersExportProps) {
 			)}
 			{errorMessage && !showReview && (
 				<Alert variant="destructive">
-					<AlertTitle>Could not export reminders</AlertTitle>
+					<AlertTitle>Could not prepare shopping list</AlertTitle>
 					<AlertDescription>{errorMessage}</AlertDescription>
+					<button
+						type="button"
+						onClick={() => void onExport()}
+						className="mt-2 text-sm font-semibold underline"
+					>
+						Retry
+					</button>
 				</Alert>
 			)}
 			{showReview && <PlanRemindersReviewModal {...props} />}

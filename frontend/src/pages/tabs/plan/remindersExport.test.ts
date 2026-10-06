@@ -4,6 +4,7 @@ import type { RecipeDetail } from '@/pages/tabs/home/types';
 import {
 	aggregateIngredients,
 	buildReminderExportPayload,
+	buildPlanReminderExportPayload,
 	buildShortcutUrl,
 	extractRecipeIdsFromPlan,
 	formatReminderLines,
@@ -86,15 +87,31 @@ describe('remindersExport', () => {
 			{ name: 'Tomato', normalizedName: 'tomato', quantity: 5, unitId: 'Piece' },
 			{ name: 'Flour', normalizedName: 'flour', quantity: 100, unitId: 'Gram' },
 		]);
-		expect(lines).toEqual(['Tomato — 5 Piece', 'Flour — 100 Gram']);
+		expect(lines).toEqual(['Tomato — 5 pcs', 'Flour — 100 g']);
 	});
 
 	it('builds reminder payload text', () => {
 		const payload = buildReminderExportPayload([
 			createRecipe('recipe-1', [{ name: 'Apple', quantity: 1, unitId: 'Piece' }]),
 		]);
-		expect(payload.lines).toEqual(['Apple — 1 Piece']);
-		expect(payload.text).toBe('Apple — 1 Piece');
+		expect(payload.lines).toEqual(['Apple — 1 pcs']);
+		expect(payload.text).toBe('Apple — 1 pcs');
+	});
+
+	it('counts each recipe occurrence across days and meals', () => {
+		const plan = createPlanDetails();
+		plan.days.push({ ...plan.days[0], date: '2026-05-06' });
+		const payload = buildPlanReminderExportPayload(plan, [
+			createRecipe('recipe-1', [{ name: 'Tomato', quantity: 200, unitId: 'Gram' }]),
+			createRecipe('recipe-2', [{ name: 'Tomato', quantity: 50, unitId: 'Gram' }]),
+		]);
+		expect(payload.text).toBe('Tomato — 900 g');
+	});
+
+	it('rejects missing recipes rather than generating a partial list', () => {
+		expect(() => buildPlanReminderExportPayload(createPlanDetails(), [])).toThrow(
+			'Could not fetch all recipe ingredients.',
+		);
 	});
 
 	it('builds encoded shortcuts URL', () => {

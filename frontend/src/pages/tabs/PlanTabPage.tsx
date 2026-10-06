@@ -23,9 +23,9 @@ export function PlanTabPage() {
 		otherPlanDetails,
 		otherPlanLoading,
 		otherPlanError,
-		expandedOtherDayDate,
+		expandedOtherDayDates,
 		onTogglePlan,
-		expandedDayDate,
+		expandedDayDates,
 		toggleDay,
 		toggleOtherDay,
 		recipeMap,
@@ -70,7 +70,7 @@ export function PlanTabPage() {
 						{visibleCurrentPlan && (
 							<PlanCurrentView
 								plan={visibleCurrentPlan}
-								expandedDayDate={expandedDayDate}
+								expandedDayDates={expandedDayDates}
 								onToggleDay={toggleDay}
 								recipeMap={recipeMap}
 								exportProps={exportPropsFor(visibleCurrentPlan.id)}
@@ -85,7 +85,7 @@ export function PlanTabPage() {
 							details={otherPlanDetails}
 							detailsLoading={otherPlanLoading}
 							detailsError={otherPlanError}
-							expandedOtherDayDate={expandedOtherDayDate}
+							expandedOtherDayDates={expandedOtherDayDates}
 							onTogglePlan={onTogglePlan}
 							onToggleDay={toggleOtherDay}
 							recipeMap={recipeMap}

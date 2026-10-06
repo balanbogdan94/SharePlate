@@ -4,7 +4,7 @@ import type { RecipeDetail } from '@/pages/tabs/home/types';
 import type { PlanDetails } from '@/pages/tabs/plan/types';
 import {
 	buildEditableReminderText,
-	buildReminderExportPayload,
+	buildPlanReminderExportPayload,
 	buildShortcutUrl,
 	type EditableReminderItem,
 	extractRecipeIdsFromPlan,
@@ -46,7 +46,7 @@ async function buildPlanDraftItems(plan: PlanDetails): Promise<EditableReminderI
 	const recipes = settledRecipes
 		.filter((r): r is PromiseFulfilledResult<RecipeDetail> => r.status === 'fulfilled')
 		.map((r) => r.value);
-	const payload = buildReminderExportPayload(recipes);
+	const payload = buildPlanReminderExportPayload(plan, recipes);
 	if (!payload.text.trim()) throw new Error('No ingredients found for this plan.');
 	return toEditableReminderItems(payload.ingredients);
 }
@@ -72,7 +72,7 @@ export function usePlanExport() {
 		} catch (error) {
 			setExportErrorByPlanId((current) => ({
 				...current,
-				[plan.id]: toErrorMessage(error, 'Could not prepare ingredients for reminders.'),
+				[plan.id]: toErrorMessage(error, 'Could not prepare your shopping list.'),
 			}));
 			setExportPhaseByPlanId((current) => ({ ...current, [plan.id]: 'error' }));
 		} finally {
@@ -115,7 +115,18 @@ export function usePlanExport() {
 				return;
 			}
 			setExportPhaseByPlanId((current) => ({ ...current, [planId]: 'openingShortcut' }));
-			window.open(buildShortcutUrl(buildEditableReminderText(items)), '_self');
+			try {
+				window.open(buildShortcutUrl(buildEditableReminderText(items)), '_self');
+			} catch (error) {
+				setExportErrorByPlanId((current) => ({
+					...current,
+					[planId]: toErrorMessage(
+						error,
+						'Could not open Shortcuts. Copy or share this list instead.',
+					),
+				}));
+				setExportPhaseByPlanId((current) => ({ ...current, [planId]: 'reviewing' }));
+			}
 		},
 		[draftItemsByPlanId],
 	);
