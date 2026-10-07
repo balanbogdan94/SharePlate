@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 type RecipeHeroActionsProps = {
 	recipeId: string;
 	recipeTitle: string;
+	shareText: string;
 	canManage: boolean;
 	isDeleting: boolean;
 	onDelete: () => void;
@@ -18,6 +19,7 @@ const buttonClassName =
 export function RecipeHeroActions({
 	recipeId,
 	recipeTitle,
+	shareText,
 	canManage,
 	isDeleting,
 	onDelete,
@@ -25,15 +27,18 @@ export function RecipeHeroActions({
 	const shareRecipe = async () => {
 		const url = window.location.href;
 		try {
-			if (typeof navigator.share === 'function') {
-				await navigator.share({ title: recipeTitle, url });
+			if (
+				window.matchMedia('(pointer: coarse)').matches &&
+				typeof navigator.share === 'function'
+			) {
+				await navigator.share({ title: recipeTitle, text: shareText, url });
 				return;
 			}
 			if (!navigator.clipboard?.writeText) {
-				throw new Error('Sharing is unavailable in this browser.');
+				throw new Error('Clipboard is unavailable in this browser.');
 			}
-			await navigator.clipboard.writeText(url);
-			toast.success('Recipe link copied');
+			await navigator.clipboard.writeText(shareText);
+			toast.success('Recipe details copied');
 		} catch (error) {
 			const cancelled =
 				typeof error === 'object' &&

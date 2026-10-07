@@ -18,6 +18,18 @@ function toErrorMessage(error: unknown, fallback: string): string {
 	return fallback;
 }
 
+function buildRecipeShareText(recipe: RecipeDetail): string {
+	const ingredients =
+		recipe.ingredients
+			.map(
+				(ingredient) =>
+					`- ${ingredient.ingredientName}: ${ingredient.quantity} ${ingredient.unitId}`,
+			)
+			.join('\n') || '- No ingredients yet.';
+	const chefNotes = recipe.notes?.trim() || 'No notes yet.';
+	return `${recipe.title}\n\nIngredients:\n${ingredients}\n\nChef's notes:\n${chefNotes}`;
+}
+
 export function RecipeDetailsPage() {
 	const { recipeId } = useParams({ from: '/app-layout/recipes/$recipeId' });
 	const queryClient = useQueryClient();
@@ -89,6 +101,7 @@ export function RecipeDetailsPage() {
 					<RecipeHeroActions
 						recipeId={recipeId}
 						recipeTitle={recipe.title}
+						shareText={buildRecipeShareText(recipe)}
 						canManage={canManageRecipe}
 						isDeleting={deleteRecipeMutation.isPending}
 						onDelete={onDeleteRecipe}

@@ -36,6 +36,7 @@ function renderActions(canManage = true) {
 		<RecipeHeroActions
 			recipeId="recipe-1"
 			recipeTitle="Tomato soup"
+			shareText={"Tomato soup\n\nIngredients:\n- Tomato: 2 Piece\n\nChef's notes:\nSimmer gently."}
 			canManage={canManage}
 			isDeleting={false}
 			onDelete={onDelete}
@@ -48,16 +49,25 @@ describe('RecipeHeroActions', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
+		vi.stubGlobal(
+			'matchMedia',
+			vi.fn(() => ({ matches: false })),
+		);
 	});
 
-	it('shares recipes and offers edit and delete actions to their owner', async () => {
+	it('opens native sharing on mobile and offers edit and delete actions to the owner', async () => {
 		const user = userEvent.setup();
 		const share = vi.fn().mockResolvedValue(undefined);
 		Object.defineProperty(navigator, 'share', { configurable: true, value: share });
+		window.matchMedia = vi.fn(() => ({ matches: true }) as MediaQueryList);
 		const { onDelete } = renderActions();
 
 		await user.click(screen.getByRole('button', { name: 'Share recipe' }));
-		expect(share).toHaveBeenCalledWith({ title: 'Tomato soup', url: window.location.href });
+		expect(share).toHaveBeenCalledWith({
+			title: 'Tomato soup',
+			text: "Tomato soup\n\nIngredients:\n- Tomato: 2 Piece\n\nChef's notes:\nSimmer gently.",
+			url: window.location.href,
+		});
 
 		await user.click(screen.getByRole('button', { name: 'Recipe options' }));
 		expect(screen.getByRole('link', { name: 'Edit recipe' })).toHaveAttribute(
@@ -68,14 +78,19 @@ describe('RecipeHeroActions', () => {
 		expect(onDelete).toHaveBeenCalledOnce();
 	});
 
-	it('copies the recipe link when native sharing is unavailable', async () => {
+	it('copies all recipe details on desktop even when native sharing is available', async () => {
+		const share = vi.fn().mockResolvedValue(undefined);
+		Object.defineProperty(navigator, 'share', { configurable: true, value: share });
 		const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
 		renderActions(false);
 
 		await userEvent.setup().click(screen.getByRole('button', { name: 'Share recipe' }));
 
-		expect(writeText).toHaveBeenCalledWith(window.location.href);
-		expect(toast.success).toHaveBeenCalledWith('Recipe link copied');
+		expect(writeText).toHaveBeenCalledWith(
+			"Tomato soup\n\nIngredients:\n- Tomato: 2 Piece\n\nChef's notes:\nSimmer gently.",
+		);
+		expect(share).not.toHaveBeenCalled();
+		expect(toast.success).toHaveBeenCalledWith('Recipe details copied');
 		expect(screen.queryByRole('button', { name: 'Recipe options' })).not.toBeInTheDocument();
 	});
 });
