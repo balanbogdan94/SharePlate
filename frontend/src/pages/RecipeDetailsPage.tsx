@@ -86,13 +86,13 @@ export function RecipeDetailsPage() {
 				recipeId={recipeId}
 				canEdit={canManageRecipe}
 				actions={
-					canManageRecipe && (
-						<RecipeHeroActions
-							recipeId={recipeId}
-							isDeleting={deleteRecipeMutation.isPending}
-							onDelete={onDeleteRecipe}
-						/>
-					)
+					<RecipeHeroActions
+						recipeId={recipeId}
+						recipeTitle={recipe.title}
+						canManage={canManageRecipe}
+						isDeleting={deleteRecipeMutation.isPending}
+						onDelete={onDeleteRecipe}
+					/>
 				}
 			/>
 			<div className="flex flex-col gap-3 px-4 pb-4">
