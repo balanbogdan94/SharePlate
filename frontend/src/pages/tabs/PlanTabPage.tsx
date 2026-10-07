@@ -8,7 +8,7 @@ import { PlanOtherView } from '@/pages/tabs/plan/PlanOtherView';
 import { usePlanTab } from '@/pages/usePlanTab';
 
 const tabTriggerClassName =
-	'min-h-9 px-3 py-1.5 text-xs sm:min-h-10 sm:px-3 sm:py-2 sm:text-sm rounded-full data-[state=active]:bg-white data-[state=active]:text-green-600 data-[state=active]:shadow-sm data-[state=inactive]:text-stone-500 dark:data-[state=active]:bg-sp-surface-active dark:data-[state=active]:text-sp-primary dark:data-[state=inactive]:text-sp-text-tertiary';
+	'min-h-9 px-3 py-1.5 text-xs sm:min-h-10 sm:px-3 sm:py-2 sm:text-sm rounded-full data-[state=active]:bg-white data-[state=active]:text-green-600 data-[state=active]:shadow-xs data-[state=inactive]:text-stone-500 dark:data-[state=active]:bg-sp-surface-active dark:data-[state=active]:text-sp-primary dark:data-[state=inactive]:text-sp-text-tertiary';
 
 export function PlanTabPage() {
 	const navigate = useNavigate();

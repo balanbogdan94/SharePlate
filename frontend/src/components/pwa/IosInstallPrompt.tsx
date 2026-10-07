@@ -55,7 +55,7 @@ export function IosInstallPrompt() {
 	};
 
 	return (
-		<div className='safe-bottom fixed bottom-[5.25rem] left-1/2 z-30 w-[calc(100%-1rem)] max-w-md -translate-x-1/2 rounded-2xl border border-stone-200 bg-white/95 p-3 shadow-xl backdrop-blur dark:border-stone-700 dark:bg-stone-900/95'>
+		<div className='safe-bottom fixed bottom-21 left-1/2 z-30 w-[calc(100%-1rem)] max-w-md -translate-x-1/2 rounded-2xl border border-stone-200 bg-white/95 p-3 shadow-xl backdrop-blur-sm dark:border-stone-700 dark:bg-stone-900/95'>
 			<p className='text-sm font-semibold text-stone-900 dark:text-stone-100'>
 				Install SharePlate
 			</p>

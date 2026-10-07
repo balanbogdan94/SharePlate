@@ -22,7 +22,7 @@ function SegmentedControl<T extends string>({
 					onClick={() => onChange(opt.value)}
 					className={`rounded-md px-3 py-1 text-sm font-medium transition-all ${
 						value === opt.value
-							? 'bg-white text-stone-900 shadow-sm dark:bg-stone-500 dark:text-white'
+							? 'bg-white text-stone-900 shadow-xs dark:bg-stone-500 dark:text-white'
 							: 'text-stone-500 dark:text-stone-400'
 					}`}
 				>
@@ -52,7 +52,7 @@ export function SettingsTabPage() {
 				<p className="px-4 text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
 					{t('shell.theme')}
 				</p>
-				<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+				<div className="overflow-hidden rounded-2xl bg-white shadow-xs dark:bg-stone-900">
 					<div className="flex min-h-[52px] items-center gap-3 px-4 py-2">
 						<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-indigo-500">
 							<Moon className="h-4 w-4 text-white" />
@@ -76,7 +76,7 @@ export function SettingsTabPage() {
 				<p className="px-4 text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
 					{t('shell.language')}
 				</p>
-				<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+				<div className="overflow-hidden rounded-2xl bg-white shadow-xs dark:bg-stone-900">
 					<div className="flex min-h-[52px] items-center gap-3 px-4 py-2">
 						<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-green-500">
 							<Globe className="h-4 w-4 text-white" />
@@ -100,7 +100,7 @@ export function SettingsTabPage() {
 				<p className="px-4 text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
 					{t('settings.notifications')}
 				</p>
-				<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+				<div className="overflow-hidden rounded-2xl bg-white shadow-xs dark:bg-stone-900">
 					<div className="flex min-h-[52px] items-center gap-3 px-4 py-2">
 						<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-amber-500">
 							<Volume2 className="h-4 w-4 text-white" />

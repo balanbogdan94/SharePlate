@@ -453,7 +453,7 @@ export function CreatePlanPage() {
 
 	if (isEditMode && planDetailQuery.isLoading) {
 		return (
-			<section className="rounded-2xl bg-[#090b0f] p-3 pb-24 text-[#f2f2f2] sm:rounded-[2rem] sm:p-5 sm:pb-28">
+			<section className="rounded-2xl bg-[#090b0f] p-3 pb-24 text-[#f2f2f2] sm:rounded-4xl sm:p-5 sm:pb-28">
 				<div className="flex items-center gap-3 text-sm text-[#8c949f]">
 					<Loader2 className="h-4 w-4 animate-spin" />
 					Loading plan...
@@ -463,7 +463,7 @@ export function CreatePlanPage() {
 	}
 
 	return (
-		<section className="relative flex flex-col justify-between  overflow-hidden rounded-2xl p-3 h-full text-[#f5f5f5] sm:rounded-[2rem] sm:p-5 sm:pb-28">
+		<section className="relative flex flex-col justify-between  overflow-hidden rounded-2xl p-3 h-full text-[#f5f5f5] sm:rounded-4xl sm:p-5 sm:pb-28">
 			<div className="relative space-y-4 sm:space-y-5 overflow-scroll">
 				<h1 className="text-[2.2rem] font-black leading-none tracking-tight text-[#f8f8f9] sm:text-[2.4rem]">
 					{isEditMode ? 'Edit plan' : 'Create plan'}
@@ -636,7 +636,7 @@ export function CreatePlanPage() {
 																}
 																className="flex min-w-0 w-full text-left"
 															>
-																<div className="relative h-[5.5rem] w-[5.5rem] shrink-0 sm:h-24 sm:w-24">
+																<div className="relative h-22 w-22 shrink-0 sm:h-24 sm:w-24">
 																	{recipe?.imageUrl ? (
 																		<img
 																			src={recipe.imageUrl}
@@ -646,7 +646,7 @@ export function CreatePlanPage() {
 																	) : (
 																		<div className="h-full w-full bg-stone-700" />
 																	)}
-																	<div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-r from-transparent to-stone-900" />
+																	<div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-linear-to-r from-transparent to-stone-900" />
 																</div>
 																<div className="min-w-0 flex-1 px-3 py-3">
 																	<p className="line-clamp-2 text-sm font-extrabold leading-snug text-stone-100 sm:text-base">
@@ -774,10 +774,10 @@ export function CreatePlanPage() {
 				}`}
 				aria-hidden={!modalOpen}
 			>
-				<div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={closeModal} />
+				<div className="absolute inset-0 bg-black/70 backdrop-blur-xs" onClick={closeModal} />
 				<div className="absolute inset-x-0 bottom-0 h-[min(44rem,92dvh)] max-h-[92dvh] overflow-hidden rounded-t-[1.6rem] border border-white/10 bg-[#1a1b20] p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_20px_60px_rgba(0,0,0,0.65)] sm:inset-x-3 sm:bottom-3 sm:top-[10%] sm:h-auto sm:max-h-none sm:rounded-[2.2rem] sm:p-4">
 					<div className="flex h-full flex-col overflow-hidden">
-						<div className="z-10 -mx-3 shrink-0 border-b border-white/10 bg-[#1a1b20]/95 px-3 pb-3 pt-1 backdrop-blur sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pb-4 sm:pt-0">
+						<div className="z-10 -mx-3 shrink-0 border-b border-white/10 bg-[#1a1b20]/95 px-3 pb-3 pt-1 backdrop-blur-sm sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pb-4 sm:pt-0">
 							<div className="mb-3 flex items-center justify-between">
 								<h3 className="text-[1.75rem] font-extrabold text-white sm:text-[2rem]">
 									Add Recipes
@@ -828,7 +828,7 @@ export function CreatePlanPage() {
 							)}
 						</div>
 
-						<div className="z-10 mt-3 -mx-3 shrink-0 border-t border-white/10 bg-[#1a1b20]/95 px-3 pt-3 backdrop-blur sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pt-4">
+						<div className="z-10 mt-3 -mx-3 shrink-0 border-t border-white/10 bg-[#1a1b20]/95 px-3 pt-3 backdrop-blur-sm sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pt-4">
 							<Button
 								type="button"
 								disabled={selectedRecipeIds.length === 0}

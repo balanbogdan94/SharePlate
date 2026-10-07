@@ -16,7 +16,7 @@ type IngredientFieldsProps = {
 
 function IngredientFields({ draft, units, defaultUnit, onChange }: IngredientFieldsProps) {
 	return (
-		<div className="space-y-3 rounded-2xl border border-stone-200/70 bg-white/80 p-3 shadow-sm dark:border-sp-border dark:bg-black/30">
+		<div className="space-y-3 rounded-2xl border border-stone-200/70 bg-white/80 p-3 shadow-xs dark:border-sp-border dark:bg-black/30">
 			<div className="block">
 				<p className="text-xs font-medium text-stone-500 dark:text-sp-text-tertiary">Ingredient</p>
 				<Input
@@ -28,7 +28,7 @@ function IngredientFields({ draft, units, defaultUnit, onChange }: IngredientFie
 					className="mt-1 h-11 rounded-xl bg-white dark:bg-sp-surface"
 				/>
 			</div>
-			<div className="grid grid-cols-[1fr,1.1fr] gap-3">
+			<div className="grid grid-cols-[1fr_1.1fr] gap-3">
 				<div className="block">
 					<p className="text-xs font-medium text-stone-500 dark:text-sp-text-tertiary">Quantity</p>
 					<Input
@@ -49,7 +49,7 @@ function IngredientFields({ draft, units, defaultUnit, onChange }: IngredientFie
 						id="ingredient-unit"
 						value={draft.unit}
 						onChange={(e) => onChange({ ...draft, unit: e.target.value as UnitType })}
-						className="mt-1 h-11 w-full rounded-xl border border-input bg-white px-3 text-sm text-stone-800 shadow-sm dark:border-sp-border dark:bg-sp-surface dark:text-sp-text-primary"
+						className="mt-1 h-11 w-full rounded-xl border border-input bg-white px-3 text-sm text-stone-800 shadow-xs dark:border-sp-border dark:bg-sp-surface dark:text-sp-text-primary"
 					>
 						{units?.map((unit) => (
 							<option key={unit.id} value={unit.id}>

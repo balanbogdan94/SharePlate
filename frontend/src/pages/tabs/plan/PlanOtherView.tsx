@@ -203,7 +203,7 @@ export function PlanOtherView({
 					<p className="mb-2 text-lg font-extrabold text-stone-900 dark:text-sp-text-primary">
 						Future plans
 					</p>
-					<div className="divide-y divide-stone-100 rounded-3xl border border-stone-200 bg-white px-4 shadow-sm dark:divide-sp-separator dark:border-sp-border dark:bg-sp-surface">
+					<div className="divide-y divide-stone-100 rounded-3xl border border-stone-200 bg-white px-4 shadow-xs dark:divide-sp-separator dark:border-sp-border dark:bg-sp-surface">
 						{futurePlans.map(makeAccordion)}
 					</div>
 				</div>
@@ -213,7 +213,7 @@ export function PlanOtherView({
 					<p className="mb-2 text-lg font-extrabold text-stone-900 dark:text-sp-text-primary">
 						Past plans
 					</p>
-					<div className="divide-y divide-stone-100 rounded-3xl border border-stone-200 bg-white px-4 shadow-sm dark:divide-sp-separator dark:border-sp-border dark:bg-sp-surface">
+					<div className="divide-y divide-stone-100 rounded-3xl border border-stone-200 bg-white px-4 shadow-xs dark:divide-sp-separator dark:border-sp-border dark:bg-sp-surface">
 						{pastPlans.map(makeAccordion)}
 					</div>
 				</div>

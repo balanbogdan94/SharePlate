@@ -27,7 +27,7 @@ export function ProfileAvatar() {
 	};
 
 	return (
-		<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+		<div className="overflow-hidden rounded-2xl bg-white shadow-xs dark:bg-stone-900">
 			<div className="flex min-h-[68px] items-center gap-4 px-4 py-3">
 				<button
 					type="button"
@@ -42,7 +42,7 @@ export function ProfileAvatar() {
 						className="h-12 w-12"
 						fallbackClassName="bg-green-500 text-lg text-white"
 					/>
-					<span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-stone-900 text-white shadow dark:bg-stone-700">
+					<span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-stone-900 text-white shadow-sm dark:bg-stone-700">
 						<Camera className="h-3 w-3" />
 					</span>
 				</button>

@@ -89,7 +89,7 @@ export function RecipeHeroActions({
 								<Link
 									to="/recipes/$recipeId/edit"
 									params={{ recipeId }}
-									className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 text-sm font-medium outline-none data-[highlighted]:bg-stone-100 dark:data-[highlighted]:bg-sp-surface-active"
+									className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 text-sm font-medium outline-hidden data-highlighted:bg-stone-100 dark:data-highlighted:bg-sp-surface-active"
 								>
 									<PenLine className="h-4 w-4" />
 									Edit recipe
@@ -99,7 +99,7 @@ export function RecipeHeroActions({
 							<DropdownMenu.Item
 								onSelect={onDelete}
 								disabled={isDeleting}
-								className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 text-sm font-medium text-red-600 outline-none data-[highlighted]:bg-red-50 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 dark:text-red-400 dark:data-[highlighted]:bg-red-500/10"
+								className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 text-sm font-medium text-red-600 outline-hidden data-highlighted:bg-red-50 data-disabled:cursor-not-allowed data-disabled:opacity-50 dark:text-red-400 dark:data-highlighted:bg-red-500/10"
 							>
 								<Trash2 className="h-4 w-4" />
 								Delete recipe

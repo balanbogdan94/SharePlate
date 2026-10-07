@@ -123,7 +123,7 @@ function AddRecipeForm({ recipeId, initialData }: AddRecipeFormProps) {
 						rows={4}
 						placeholder="Any special tips or instructions..."
 						onChange={(e) => s.setForm((p) => ({ ...p, notes: e.target.value }))}
-						className="w-full rounded-2xl border-0 bg-stone-100 px-4 py-3 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none dark:bg-sp-surface dark:text-sp-text-primary dark:placeholder:text-sp-text-tertiary"
+						className="w-full rounded-2xl border-0 bg-stone-100 px-4 py-3 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-hidden dark:bg-sp-surface dark:text-sp-text-primary dark:placeholder:text-sp-text-tertiary"
 					/>
 				</div>
 				{s.submitError && (
@@ -135,16 +135,16 @@ function AddRecipeForm({ recipeId, initialData }: AddRecipeFormProps) {
 				<Button
 					type="submit"
 					disabled={s.isSaveDisabled}
-					className="relative h-14 w-full overflow-hidden rounded-full bg-gradient-to-r from-green-500 to-emerald-600 text-base font-bold uppercase tracking-wide text-white shadow-[0_10px_30px_-8px_rgba(34,197,94,0.55)] transition hover:brightness-110 active:scale-95 dark:from-sp-primary dark:to-emerald-400 dark:text-sp-text-on-primary dark:shadow-[0_10px_30px_-8px_rgba(48,209,88,0.45)]"
+					className="relative h-14 w-full overflow-hidden rounded-full bg-linear-to-r from-green-500 to-emerald-600 text-base font-bold uppercase tracking-wide text-white shadow-[0_10px_30px_-8px_rgba(34,197,94,0.55)] transition hover:brightness-110 active:scale-95 dark:from-sp-primary dark:to-emerald-400 dark:text-sp-text-on-primary dark:shadow-[0_10px_30px_-8px_rgba(48,209,88,0.45)]"
 				>
-					<span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 to-transparent" />
+					<span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-linear-to-b from-white/25 to-transparent" />
 					<CircleCheck className="mr-2 h-5 w-5" />
 					{s.isPending ? 'Saving...' : s.isEditing ? 'Update Recipe' : 'Save Recipe'}
 				</Button>
 				<button
 					type="button"
 					onClick={() => void s.discard()}
-					className="flex h-14 w-full items-center justify-center rounded-full border border-stone-300 bg-white text-sm font-bold uppercase tracking-wide text-stone-600 shadow-sm transition hover:bg-stone-100 active:scale-95 dark:border-sp-border dark:bg-sp-surface dark:text-sp-text-secondary dark:hover:bg-sp-surface-hover"
+					className="flex h-14 w-full items-center justify-center rounded-full border border-stone-300 bg-white text-sm font-bold uppercase tracking-wide text-stone-600 shadow-xs transition hover:bg-stone-100 active:scale-95 dark:border-sp-border dark:bg-sp-surface dark:text-sp-text-secondary dark:hover:bg-sp-surface-hover"
 				>
 					<X className="mr-2 h-4 w-4" />
 					Discard

@@ -11,7 +11,7 @@ export type CurrentUser = {
 	updatedAt: string;
 };
 
-export const currentUserQueryKey = ['currentUser'] as const;
+const currentUserQueryKey = ['currentUser'] as const;
 
 export function useCurrentUser() {
 	const auth = useAuth();

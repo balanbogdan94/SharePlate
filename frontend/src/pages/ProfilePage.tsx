@@ -20,7 +20,7 @@ export function ProfilePage() {
 
 			<ProfileAvatar />
 
-			<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+			<div className="overflow-hidden rounded-2xl bg-white shadow-xs dark:bg-stone-900">
 				<Link
 					to="/house"
 					className="flex min-h-[52px] items-center gap-3 px-4 py-3 active:bg-stone-100 dark:active:bg-stone-800"
@@ -34,7 +34,7 @@ export function ProfilePage() {
 					<ChevronRight className="h-4 w-4 text-stone-400 dark:text-stone-500" />
 				</Link>
 
-				<div className="ml-[3.25rem] h-px bg-stone-200 dark:bg-stone-700/60" />
+				<div className="ml-13 h-px bg-stone-200 dark:bg-stone-700/60" />
 
 				<Link
 					to="/settings"
@@ -50,7 +50,7 @@ export function ProfilePage() {
 				</Link>
 			</div>
 
-			<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+			<div className="overflow-hidden rounded-2xl bg-white shadow-xs dark:bg-stone-900">
 				<button
 					type="button"
 					onClick={handleLogout}

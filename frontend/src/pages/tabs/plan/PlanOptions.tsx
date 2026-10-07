@@ -128,7 +128,7 @@ export function PlanOptions({ plan, canEdit = true }: Props) {
 									onSelect={() =>
 										void navigate({ to: '/plans/$planId/edit', params: { planId: plan.id } })
 									}
-									className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 text-sm font-medium outline-none data-[highlighted]:bg-stone-100 dark:data-[highlighted]:bg-sp-surface-active"
+									className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 text-sm font-medium outline-hidden data-highlighted:bg-stone-100 dark:data-highlighted:bg-sp-surface-active"
 								>
 									<PenLine className="h-4 w-4" />
 									Edit plan
@@ -138,7 +138,7 @@ export function PlanOptions({ plan, canEdit = true }: Props) {
 						)}
 						<DropdownMenu.Item
 							onSelect={() => setConfirmOpen(true)}
-							className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 text-sm font-medium text-red-600 outline-none data-[highlighted]:bg-red-50 dark:text-red-400 dark:data-[highlighted]:bg-red-500/10"
+							className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 text-sm font-medium text-red-600 outline-hidden data-highlighted:bg-red-50 dark:text-red-400 dark:data-highlighted:bg-red-500/10"
 						>
 							<Trash2 className="h-4 w-4" />
 							Delete plan

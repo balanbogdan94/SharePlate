@@ -27,21 +27,9 @@ export type RecipeIngredient = {
 	unitId: UnitType;
 };
 
-export type IngredientSearchItem = {
-	id: string;
-	name: string;
-	defaultUnitId: UnitType;
-};
-
 export type RecipeDetail = RecipeSummary & {
 	ingredients: RecipeIngredient[];
 	categories?: string[];
-};
-
-export type CreateRecipePayload = {
-	form: FormState;
-	ingredients: IngredientPayload[];
-	imageFile: File | null;
 };
 
 export type IngredientPayload = {
@@ -50,19 +38,8 @@ export type IngredientPayload = {
 	unit: UnitType;
 };
 
-export type IngredientEditPayload = {
-	quantity: number;
-	unitId: UnitType;
-};
-
 export type FormState = {
 	title: string;
 	notes: string;
 	imageUrl: string;
-};
-
-export type IngredientFormState = {
-	ingredientName: string;
-	quantity: string;
-	unitId: UnitType;
 };

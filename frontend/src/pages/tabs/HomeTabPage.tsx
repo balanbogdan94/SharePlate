@@ -24,7 +24,7 @@ export function HomeTabPage() {
 	return (
 		<section className="flex h-full flex-col gap-3 p-1 pt-3 sm:p-2 sm:pt-4">
 			{!isEmpty && (
-				<div className="flex items-center gap-3 rounded-full border border-green-500 bg-white px-4 py-2.5 shadow-sm dark:border-sp-border dark:bg-sp-search-background dark:focus-within:border-sp-search-focus">
+				<div className="flex items-center gap-3 rounded-full border border-green-500 bg-white px-4 py-2.5 shadow-xs dark:border-sp-border dark:bg-sp-search-background dark:focus-within:border-sp-search-focus">
 					<Search className="h-4 w-4 shrink-0 text-green-500 dark:text-sp-search-icon" />
 					<input
 						type="search"
@@ -32,7 +32,7 @@ export function HomeTabPage() {
 						placeholder="Search your recipes..."
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
-						className="flex-1 bg-transparent text-sm text-stone-900 placeholder-stone-400 outline-none dark:text-sp-search-text dark:placeholder-sp-search-placeholder"
+						className="flex-1 bg-transparent text-sm text-stone-900 placeholder-stone-400 outline-hidden dark:text-sp-search-text dark:placeholder-sp-search-placeholder"
 					/>
 					<button
 						type="button"

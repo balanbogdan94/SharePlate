@@ -68,7 +68,7 @@ export function AppShell() {
 					<Link
 						to="/profile"
 						aria-label={t('shell.profile')}
-						className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm transition hover:bg-stone-50 dark:border-sp-border dark:bg-sp-surface dark:text-sp-text-primary dark:hover:bg-sp-surface-hover"
+						className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-xs transition hover:bg-stone-50 dark:border-sp-border dark:bg-sp-surface dark:text-sp-text-primary dark:hover:bg-sp-surface-hover"
 					>
 						<Avatar
 							name={name}
@@ -94,7 +94,7 @@ export function AppShell() {
 							to={tab.to}
 							className={`relative flex min-h-11 min-w-24 flex-col items-center justify-center gap-1 rounded-xl px-6 py-2 text-xs font-semibold uppercase tracking-wide transition ${
 								isActive
-									? 'bg-green-100 text-green-700 shadow-sm dark:bg-transparent dark:text-sp-nav-active dark:shadow-none'
+									? 'bg-green-100 text-green-700 shadow-xs dark:bg-transparent dark:text-sp-nav-active dark:shadow-none'
 									: 'text-stone-500 hover:text-stone-700 dark:text-sp-nav-inactive dark:hover:text-sp-text-primary'
 							}`}
 						>

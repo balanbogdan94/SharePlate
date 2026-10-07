@@ -64,7 +64,7 @@ export function PlanCurrentView({
 					/>
 				</div>
 			</div>
-			<div className="divide-y divide-stone-100 rounded-3xl border border-stone-200 bg-white px-4 shadow-sm dark:divide-sp-separator dark:border-sp-border dark:bg-sp-surface">
+			<div className="divide-y divide-stone-100 rounded-3xl border border-stone-200 bg-white px-4 shadow-xs dark:divide-sp-separator dark:border-sp-border dark:bg-sp-surface">
 				{plan.days.map((day) => (
 					<PlanDaySection
 						key={day.date}

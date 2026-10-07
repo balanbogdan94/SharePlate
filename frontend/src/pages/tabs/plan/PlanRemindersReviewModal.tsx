@@ -41,14 +41,14 @@ function ReviewRows({
 		<div className="divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white dark:divide-sp-separator dark:bg-sp-surface">
 			{draftItems.map((item) => (
 				<div key={item.id} className="flex min-h-16 items-center gap-2 py-2 pl-4 pr-2">
-					<p className="min-w-0 flex-1 break-words text-[15px] font-medium">{item.name}</p>
+					<p className="min-w-0 flex-1 wrap-break-word text-[15px] font-medium">{item.name}</p>
 					<div className="flex shrink-0 items-center gap-1">
 						<input
 							aria-label={`Quantity for ${item.name}`}
 							inputMode="decimal"
 							value={item.quantity}
 							onChange={(event) => onUpdateQuantity(item.id, event.target.value)}
-							className="h-11 w-16 rounded-lg bg-transparent px-1 text-right text-[16px] tabular-nums outline-none focus:bg-stone-100 focus:ring-2 focus:ring-green-600 dark:focus:bg-sp-surface-active dark:focus:ring-sp-primary"
+							className="h-11 w-16 rounded-lg bg-transparent px-1 text-right text-[16px] tabular-nums outline-hidden focus:bg-stone-100 focus:ring-2 focus:ring-green-600 dark:focus:bg-sp-surface-active dark:focus:ring-sp-primary"
 						/>
 						<span className="text-sm text-stone-500 dark:text-sp-text-secondary">
 							{formatIngredientUnit(item.unitId)}
@@ -263,7 +263,7 @@ export function PlanRemindersReviewModal(props: Props) {
 									type="button"
 									disabled={disabled}
 									onClick={() => void runAction('share')}
-									className="h-12 flex-[2] gap-2 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700 dark:bg-sp-primary dark:text-sp-text-on-primary dark:hover:bg-sp-primary-hover"
+									className="h-12 flex-2 gap-2 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700 dark:bg-sp-primary dark:text-sp-text-on-primary dark:hover:bg-sp-primary-hover"
 								>
 									<Share className="h-4 w-4" />
 									Share list

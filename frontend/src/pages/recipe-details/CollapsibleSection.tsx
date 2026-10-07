@@ -18,7 +18,7 @@ export function CollapsibleSection({
 	children,
 }: CollapsibleSectionProps) {
 	return (
-		<div className="animate-in fade-in slide-in-from-bottom-2 overflow-hidden rounded-[1.75rem] border border-stone-200 bg-white shadow-sm duration-500 dark:border-sp-border dark:bg-sp-surface">
+		<div className="animate-in fade-in slide-in-from-bottom-2 overflow-hidden rounded-[1.75rem] border border-stone-200 bg-white shadow-xs duration-500 dark:border-sp-border dark:bg-sp-surface">
 			<button
 				type="button"
 				aria-expanded={open}

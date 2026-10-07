@@ -13,7 +13,7 @@ export function RecipeCard({ recipe, onSelect, selected = false }: RecipeCardPro
 	const className = `relative h-20 w-full grid grid-cols-[25%_1fr] align-middle transition active:scale-[0.9] active:bg-sp-card-background-hover overflow-hidden rounded-2xl border bg-sp-card-background shadow-sp-card text-left ${selected ? 'border-sp-primary ring-1 ring-sp-primary' : 'border-sp-card-border'}`;
 	const content = (
 		<>
-			<div className="h-full w-full overflow-hidden [mask-image:linear-gradient(to_right,black_58%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_right,black_58%,transparent_100%)]">
+			<div className="h-full w-full overflow-hidden mask-[linear-gradient(to_right,black_58%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_right,black_58%,transparent_100%)]">
 				{recipe.imageUrl ? (
 					<img src={recipe.imageUrl} alt={recipe.title} className="h-full w-full object-cover" />
 				) : (

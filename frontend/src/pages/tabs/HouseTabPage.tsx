@@ -326,7 +326,7 @@ export function HouseTabPage() {
 						<p className="px-4 text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
 							Join a House
 						</p>
-						<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+						<div className="overflow-hidden rounded-2xl bg-white shadow-xs dark:bg-stone-900">
 							<div className="px-4 py-4">
 								<div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-green-100 dark:bg-green-900/40">
 									<House className="h-8 w-8 text-green-600 dark:text-green-400" />
@@ -389,7 +389,7 @@ export function HouseTabPage() {
 
 			{state.canLeave && state.house && (
 				<div className="space-y-6">
-					<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+					<div className="overflow-hidden rounded-2xl bg-white shadow-xs dark:bg-stone-900">
 						<div className="flex min-h-[68px] items-center gap-4 px-4 py-3">
 							<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-100 dark:bg-green-900/40">
 								<Users className="h-6 w-6 text-green-600 dark:text-green-400" />
@@ -407,7 +407,7 @@ export function HouseTabPage() {
 						</p>
 					</div>
 
-					<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+					<div className="overflow-hidden rounded-2xl bg-white shadow-xs dark:bg-stone-900">
 						<button
 							type="button"
 							onClick={() => leaveHouseMutation.mutate()}
@@ -427,7 +427,7 @@ export function HouseTabPage() {
 
 			{!state.canLeave && state.house && (
 				<div className="space-y-6">
-					<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+					<div className="overflow-hidden rounded-2xl bg-white shadow-xs dark:bg-stone-900">
 						<div className="flex min-h-[68px] items-center gap-4 px-4 py-3">
 							<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-100 dark:bg-green-900/40">
 								<House className="h-6 w-6 text-green-600 dark:text-green-400" />
@@ -447,9 +447,9 @@ export function HouseTabPage() {
 						<p className="px-4 text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
 							Invite
 						</p>
-						<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+						<div className="overflow-hidden rounded-2xl bg-white shadow-xs dark:bg-stone-900">
 							<div className="flex justify-center px-6 py-6">
-								<div className="h-52 w-52 shrink-0 overflow-hidden rounded-2xl border border-stone-200 bg-white p-3 shadow-sm">
+								<div className="h-52 w-52 shrink-0 overflow-hidden rounded-2xl border border-stone-200 bg-white p-3 shadow-xs">
 									<img
 										src={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(state.house.code)}`}
 										alt="House QR code"
@@ -481,7 +481,7 @@ export function HouseTabPage() {
 						<p className="px-4 text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
 							Members
 						</p>
-						<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+						<div className="overflow-hidden rounded-2xl bg-white shadow-xs dark:bg-stone-900">
 							{membersQuery.isLoading && (
 								<p className="px-4 py-4 text-sm text-stone-500 dark:text-stone-400">
 									Loading members...
@@ -528,7 +528,7 @@ export function HouseTabPage() {
 											)}
 										</div>
 										{!isLast && (
-											<div className="ml-[3.5rem] h-px bg-stone-200 dark:bg-stone-700/60" />
+											<div className="ml-14 h-px bg-stone-200 dark:bg-stone-700/60" />
 										)}
 									</div>
 								);
@@ -541,7 +541,7 @@ export function HouseTabPage() {
 							<p className="px-4 text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
 								Pending Requests
 							</p>
-							<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+							<div className="overflow-hidden rounded-2xl bg-white shadow-xs dark:bg-stone-900">
 								{pendingQuery.data.map((request, index) => {
 									const isLast = index === (pendingQuery.data?.length ?? 0) - 1;
 									return (
@@ -585,7 +585,7 @@ export function HouseTabPage() {
 												</div>
 											</div>
 											{!isLast && (
-												<div className="ml-[3.5rem] h-px bg-stone-200 dark:bg-stone-700/60" />
+												<div className="ml-14 h-px bg-stone-200 dark:bg-stone-700/60" />
 											)}
 										</div>
 									);
@@ -598,7 +598,7 @@ export function HouseTabPage() {
 						<p className="px-4 text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
 							House Settings
 						</p>
-						<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+						<div className="overflow-hidden rounded-2xl bg-white shadow-xs dark:bg-stone-900">
 							{!renamingActive ? (
 								<button
 									type="button"
@@ -653,7 +653,7 @@ export function HouseTabPage() {
 						</p>
 						{state.pendingRequest ? (
 							<div className="space-y-3">
-								<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+								<div className="overflow-hidden rounded-2xl bg-white shadow-xs dark:bg-stone-900">
 									<div className="px-4 py-4">
 										<p className="text-xs font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">
 											Awaiting Approval
@@ -673,7 +673,7 @@ export function HouseTabPage() {
 										</span>
 									</div>
 								</div>
-								<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+								<div className="overflow-hidden rounded-2xl bg-white shadow-xs dark:bg-stone-900">
 									<button
 										type="button"
 										onClick={() => cancelRequestMutation.mutate(state.pendingRequest!.requestId)}
@@ -690,7 +690,7 @@ export function HouseTabPage() {
 								</div>
 							</div>
 						) : (
-							<div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+							<div className="overflow-hidden rounded-2xl bg-white shadow-xs dark:bg-stone-900">
 								<div className="px-4 py-4">
 									<p className="text-sm text-stone-500 dark:text-stone-400">
 										Enter a code to join another house. Your own house stays and pauses until you

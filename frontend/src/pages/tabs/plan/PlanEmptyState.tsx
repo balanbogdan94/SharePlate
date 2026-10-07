@@ -59,14 +59,14 @@ type PlanEmptyStateProps = {
 
 export function PlanEmptyState({ onCreate }: PlanEmptyStateProps) {
 	return (
-		<div className="animate-in fade-in zoom-in-95 flex flex-col items-center gap-4 rounded-3xl border border-stone-200 bg-white px-6 py-10 text-center shadow-sm duration-500 dark:border-sp-border dark:bg-sp-surface">
+		<div className="animate-in fade-in zoom-in-95 flex flex-col items-center gap-4 rounded-3xl border border-stone-200 bg-white px-6 py-10 text-center shadow-xs duration-500 dark:border-sp-border dark:bg-sp-surface">
 			<div className="relative">
 				<div className="absolute inset-0 -z-10 rounded-full bg-green-400/30 blur-2xl dark:bg-green-500/20" />
 				<PlanEmptyIllustration />
 			</div>
 			<div className="space-y-1.5">
 				<h2 className="text-lg font-bold text-stone-900 dark:text-sp-text-primary">No plans yet</h2>
-				<p className="max-w-[22rem] text-sm text-stone-500 dark:text-sp-text-secondary">
+				<p className="max-w-88 text-sm text-stone-500 dark:text-sp-text-secondary">
 					Create your first household meal plan and start organising your week together.
 				</p>
 			</div>

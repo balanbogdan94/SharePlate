@@ -142,7 +142,7 @@ export function toEditableReminderItems(
 	}));
 }
 
-export function formatEditableReminderItem(item: EditableReminderItem): string {
+function formatEditableReminderItem(item: EditableReminderItem): string {
 	return `${item.name.trim()} — ${item.quantity.trim()} ${formatIngredientUnit(item.unitId)}`;
 }
 

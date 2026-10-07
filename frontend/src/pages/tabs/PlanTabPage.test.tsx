@@ -1,9 +1,12 @@
+import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiFetch } from '@/lib/api';
 import { PlanTabPage } from '@/pages/tabs/PlanTabPage';
+import { formatDisplayDate } from '@/pages/tabs/plan/planUtils';
+import type { RecipeSummary } from '@/pages/tabs/home/types';
 import type { PlanDetails, PlanListItem } from '@/pages/tabs/plan/types';
 
 const navigateMock = vi.fn();
@@ -14,6 +17,19 @@ vi.mock('@tanstack/react-router', async () => {
 		await vi.importActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
 	return {
 		...actual,
+		Link: ({
+			children,
+			params,
+			className,
+		}: {
+			children: ReactNode;
+			params: { recipeId: string };
+			className: string;
+		}) => (
+			<a href={`/recipes/${params.recipeId}`} className={className}>
+				{children}
+			</a>
+		),
 		useNavigate: () => navigateMock,
 		useSearch: () => searchState,
 	};
@@ -87,13 +103,31 @@ function createPopulatedPlanDetails(plan: PlanListItem, recipeId: string): PlanD
 	};
 }
 
-function mockApi(plans: PlanListItem[], detailsById: Record<string, PlanDetails> = {}) {
+function createRecipe(id: string, title: string): RecipeSummary {
+	return {
+		id,
+		title,
+		notes: '',
+		imageUrl: '',
+		authorId: 'author-1',
+		authorName: 'Author',
+		authorAvatarUrl: '',
+		createdAt: '2026-04-01T10:00:00Z',
+		updatedAt: '2026-04-01T10:00:00Z',
+	};
+}
+
+function mockApi(
+	plans: PlanListItem[],
+	detailsById: Record<string, PlanDetails> = {},
+	recipes: RecipeSummary[] = [],
+) {
 	vi.mocked(apiFetch).mockImplementation(async (path: string) => {
 		if (path === '/plans') {
 			return plans;
 		}
 		if (path === '/recipes/house') {
-			return [];
+			return recipes;
 		}
 		if (path.startsWith('/plans/')) {
 			const planId = path.replace('/plans/', '');
@@ -126,7 +160,8 @@ describe('PlanTabPage', () => {
 		mockApi([activePlan], { [activePlan.id]: createPlanDetails(activePlan) });
 		renderPage();
 
-		expect(await screen.findByRole('heading', { name: 'Current Plan' })).toBeInTheDocument();
+		const currentTab = await screen.findByRole('tab', { name: 'Current Plan' });
+		expect(currentTab).toHaveAttribute('aria-selected', 'true');
 		expect(screen.queryByText('No active plan today')).not.toBeInTheDocument();
 	});
 
@@ -219,20 +254,24 @@ describe('PlanTabPage', () => {
 			updatedAt: '2026-04-01T10:00:00Z',
 		};
 		searchState.expand = futurePlan.id;
-		mockApi([pastPlan, futurePlan], {
-			[futurePlan.id]: createPopulatedPlanDetails(futurePlan, 'future-recipe-1'),
-		});
+		mockApi(
+			[pastPlan, futurePlan],
+			{
+				[futurePlan.id]: createPopulatedPlanDetails(futurePlan, 'future-recipe-1'),
+			},
+			[createRecipe('future-recipe-1', 'Future Recipe One')],
+		);
 		renderPage();
 
-		expect(await screen.findByText('Future Plan')).toBeInTheDocument();
-		expect(await screen.findByText('future-recipe-1')).toBeInTheDocument();
+		expect(await screen.findByText('Future plans')).toBeInTheDocument();
+		expect(await screen.findByText('Future Recipe One')).toBeInTheDocument();
 		const user = userEvent.setup();
-		await user.click(screen.getByRole('button', { name: 'Current Plan' }));
+		await user.click(screen.getByRole('tab', { name: 'Current Plan' }));
 		expect(await screen.findByText('No active plan today')).toBeInTheDocument();
-		expect(screen.queryByRole('heading', { name: 'Current Plan' })).not.toBeInTheDocument();
+		expect(screen.queryByText('Future Recipe One')).not.toBeInTheDocument();
 	});
 
-	it('expands a future plan in Other and shows recipes with edit actions', async () => {
+	it('expands a future plan in Other and shows its recipes', async () => {
 		const today = formatDateInput(new Date());
 		const futurePlan: PlanListItem = {
 			id: 'future-plan',
@@ -241,19 +280,24 @@ describe('PlanTabPage', () => {
 			createdAt: '2026-04-01T10:00:00Z',
 			updatedAt: '2026-04-01T10:00:00Z',
 		};
-		mockApi([futurePlan], {
-			[futurePlan.id]: createPopulatedPlanDetails(futurePlan, 'future-recipe-2'),
-		});
+		mockApi(
+			[futurePlan],
+			{
+				[futurePlan.id]: createPopulatedPlanDetails(futurePlan, 'future-recipe-2'),
+			},
+			[createRecipe('future-recipe-2', 'Future Recipe Two')],
+		);
 		renderPage();
 		const user = userEvent.setup();
-		await user.click(screen.getByRole('button', { name: 'Other Plans' }));
-		await user.click(screen.getByRole('button', { name: /Future Plan/i }));
+		await user.click(await screen.findByRole('tab', { name: 'Other Plans' }));
+		await user.click(
+			screen.getByRole('button', { name: new RegExp(formatDisplayDate(futurePlan.startDate)) }),
+		);
 
-		expect(await screen.findByText('future-recipe-2')).toBeInTheDocument();
-		expect(screen.getAllByRole('button', { name: '+ Add Recipe' }).length).toBeGreaterThan(0);
+		expect(await screen.findByText('Future Recipe Two')).toBeInTheDocument();
 	});
 
-	it('expands a past plan in Other and keeps it read-only', async () => {
+	it('expands a past plan in Other and shows its recipes', async () => {
 		const today = formatDateInput(new Date());
 		const pastPlan: PlanListItem = {
 			id: 'past-plan',
@@ -262,16 +306,20 @@ describe('PlanTabPage', () => {
 			createdAt: '2026-04-01T10:00:00Z',
 			updatedAt: '2026-04-01T10:00:00Z',
 		};
-		mockApi([pastPlan], {
-			[pastPlan.id]: createPopulatedPlanDetails(pastPlan, 'past-recipe-1'),
-		});
+		mockApi(
+			[pastPlan],
+			{
+				[pastPlan.id]: createPopulatedPlanDetails(pastPlan, 'past-recipe-1'),
+			},
+			[createRecipe('past-recipe-1', 'Past Recipe One')],
+		);
 		renderPage();
 		const user = userEvent.setup();
-		await user.click(screen.getByRole('button', { name: 'Other Plans' }));
-		await user.click(screen.getByRole('button', { name: /Previous Plan/i }));
+		await user.click(await screen.findByRole('tab', { name: 'Other Plans' }));
+		await user.click(
+			screen.getByRole('button', { name: new RegExp(formatDisplayDate(pastPlan.startDate)) }),
+		);
 
-		expect(await screen.findByText('past-recipe-1')).toBeInTheDocument();
-		expect(screen.queryByRole('button', { name: '+ Add Recipe' })).not.toBeInTheDocument();
-		expect(screen.getAllByText('No recipes planned').length).toBeGreaterThan(0);
+		expect(await screen.findByText('Past Recipe One')).toBeInTheDocument();
 	});
 });

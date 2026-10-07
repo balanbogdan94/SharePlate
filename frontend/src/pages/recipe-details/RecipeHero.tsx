@@ -20,7 +20,7 @@ function HeroPlaceholderContent({ canEdit }: { canEdit: boolean }) {
 					<Camera className="h-7 w-7 text-green-600 dark:text-sp-primary" />
 				</div>
 				{canEdit && (
-					<span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-white shadow-sm dark:bg-sp-primary dark:text-sp-text-on-primary">
+					<span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-white shadow-xs dark:bg-sp-primary dark:text-sp-text-on-primary">
 						<Plus className="h-3.5 w-3.5" />
 					</span>
 				)}
@@ -33,7 +33,7 @@ function HeroPlaceholderContent({ canEdit }: { canEdit: boolean }) {
 }
 
 const placeholderClassName =
-	'flex h-64 w-full flex-col items-center justify-center gap-3 bg-gradient-to-b from-stone-100 to-stone-200 transition dark:from-sp-surface dark:to-sp-background sm:h-80';
+	'flex h-64 w-full flex-col items-center justify-center gap-3 bg-linear-to-b from-stone-100 to-stone-200 transition dark:from-sp-surface dark:to-sp-background sm:h-80';
 
 export function RecipeHero({ imageUrl, title, recipeId, canEdit, actions }: RecipeHeroProps) {
 	return (
@@ -41,8 +41,8 @@ export function RecipeHero({ imageUrl, title, recipeId, canEdit, actions }: Reci
 			{imageUrl ? (
 				<>
 					<img src={imageUrl} alt={title} className="h-64 w-full object-cover sm:h-80" />
-					<div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/45 to-transparent" />
-					<div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/55 to-transparent" />
+					<div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-linear-to-b from-black/45 to-transparent" />
+					<div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-black/55 to-transparent" />
 				</>
 			) : canEdit ? (
 				<Link

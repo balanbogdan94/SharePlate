@@ -1,7 +1,7 @@
 import { env } from '@/lib/env';
 import { acquireApiAccessToken } from '@/auth/accessToken';
 
-export const apiBaseUrl = env.apiBaseUrl;
+const apiBaseUrl = env.apiBaseUrl;
 
 function getLocalDateHeaderValue(): string {
 	const now = new Date();

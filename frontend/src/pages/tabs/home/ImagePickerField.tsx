@@ -27,10 +27,10 @@ function DropZonePlaceholder() {
 	return (
 		<div className="flex flex-col items-center gap-3 p-6">
 			<div className="relative">
-				<div className="flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm dark:bg-sp-surface-active">
+				<div className="flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-xs dark:bg-sp-surface-active">
 					<Camera className="h-7 w-7 text-green-500 dark:text-sp-primary" />
 				</div>
-				<span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-white shadow-sm dark:bg-sp-primary dark:text-sp-text-on-primary">
+				<span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-white shadow-xs dark:bg-sp-primary dark:text-sp-text-on-primary">
 					<Plus className="h-3.5 w-3.5" />
 				</span>
 			</div>
@@ -50,12 +50,12 @@ function ImagePreview({ src, onRemove }: { src: string; onRemove: () => void }) 
 	return (
 		<div className="relative h-full w-full">
 			<img src={src} alt="Recipe cover" className="h-full w-full object-cover" />
-			<div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
+			<div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-black/40 to-transparent" />
 			<button
 				type="button"
 				aria-label="Remove image"
 				onClick={onRemove}
-				className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/70"
+				className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-xs transition hover:bg-black/70"
 			>
 				<X className="h-4 w-4" />
 			</button>
@@ -112,7 +112,7 @@ export function ImagePickerField({
 		? 'border-green-500 bg-green-500/10'
 		: value
 			? 'border-transparent'
-			: 'border-stone-300 bg-gradient-to-b from-stone-50 to-stone-100 hover:border-green-400 dark:border-sp-border dark:from-sp-surface dark:to-sp-surface dark:hover:border-sp-primary';
+			: 'border-stone-300 bg-linear-to-b from-stone-50 to-stone-100 hover:border-green-400 dark:border-sp-border dark:from-sp-surface dark:to-sp-surface dark:hover:border-sp-primary';
 	return (
 		<div className="space-y-2">
 			{label && (
