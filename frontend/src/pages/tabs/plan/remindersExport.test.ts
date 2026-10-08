@@ -117,8 +117,25 @@ describe('remindersExport', () => {
 	it('builds encoded shortcuts URL', () => {
 		const url = buildShortcutUrl('Tomato — 5 Piece\nFlour — 100 Gram');
 		expect(url).toContain('shortcuts://run-shortcut?');
-		expect(url).toContain('name=SharePlate+Add+To+Reminders');
+		expect(url).toContain('name=SharePlate%20Add%20To%20Reminders');
 		expect(url).toContain('input=text');
-		expect(url).toContain('text=Tomato+%E2%80%94+5+Piece%0AFlour+%E2%80%94+100+Gram');
+		expect(url).toContain('text=Tomato%20%E2%80%94%205%20Piece%0AFlour%20%E2%80%94%20100%20Gram');
+	});
+
+	it('preserves special characters for Shortcuts without form-style space decoding', () => {
+		const name = 'SharePlate + cumpărături & ingrediente';
+		const text = 'Roșii — 500 g\nA+B & sare — 1 pcs\n100%';
+		const url = buildShortcutUrl(text, name);
+		const params = Object.fromEntries(
+			url
+				.split('?')[1]
+				.split('&')
+				.map((param) => {
+					const [key, value] = param.split('=');
+					return [key, decodeURIComponent(value)];
+				}),
+		);
+		expect(url).not.toContain('+');
+		expect(params).toEqual({ name, input: 'text', text });
 	});
 });

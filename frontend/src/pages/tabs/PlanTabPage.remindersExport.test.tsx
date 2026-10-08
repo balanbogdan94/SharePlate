@@ -117,6 +117,7 @@ function setUserAgent(value: string) {
 }
 
 beforeEach(() => {
+	window.localStorage.removeItem('shareplate.reminders.shortcutSetup');
 	Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
 		configurable: true,
 		value: function (this: HTMLDialogElement) {
@@ -174,6 +175,26 @@ describe('PlanTabPage reminders export visibility and fallback', () => {
 		const text = new URL(String(openSpy.mock.calls[0][0])).searchParams.get('text');
 		expect(text).toBe('Tomato — 5 pcs');
 		expect(text).not.toContain('Flour');
+		openSpy.mockRestore();
+	});
+
+	it('opens the encoded shortcut directly after setup with the reviewed ingredients', async () => {
+		window.localStorage.setItem('shareplate.reminders.shortcutSetup', 'true');
+		setUserAgent('Mozilla/5.0 (iPhone)');
+		const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+		const plan = createCurrentPlan();
+		mockPlanApi(plan, createRecipeDetail());
+		renderPage();
+		const user = userEvent.setup();
+		await user.click(await screen.findByRole('button', { name: 'Shopping list' }));
+		await user.click(await screen.findByRole('button', { name: /Apple Reminders/ }));
+		expect(openSpy).toHaveBeenCalledTimes(1);
+		const url = String(openSpy.mock.calls[0][0]);
+		expect(url).toContain('name=SharePlate%20Add%20To%20Reminders');
+		expect(new URL(url).searchParams.get('text')).toBe('Flour — 100 g\nTomato — 2 pcs');
+		expect(screen.queryByText('Your list, in Apple Reminders')).not.toBeInTheDocument();
+		expect(screen.getByRole('status')).toHaveTextContent('Opening Shortcuts');
+		expect(screen.getByRole('button', { name: 'Copy' })).toBeEnabled();
 		openSpy.mockRestore();
 	});
 });

@@ -32,6 +32,8 @@ type Props = {
 	onSendDraft: () => void;
 };
 
+const SHORTCUT_SETUP_STORAGE_KEY = 'shareplate.reminders.shortcutSetup';
+
 function ReviewRows({
 	draftItems,
 	onUpdateQuantity,
@@ -69,10 +71,9 @@ function ReviewRows({
 }
 
 function ShortcutInstructions({
-	phase,
 	onSendDraft,
 	disabled,
-}: Pick<Props, 'phase' | 'onSendDraft'> & { disabled: boolean }) {
+}: Pick<Props, 'onSendDraft'> & { disabled: boolean }) {
 	return (
 		<div className="space-y-5">
 			<div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-green-100 text-green-700 dark:bg-sp-primary-subtle dark:text-sp-primary">
@@ -94,7 +95,8 @@ function ShortcutInstructions({
 			</ol>
 			<p className="text-xs leading-relaxed text-stone-500 dark:text-sp-text-secondary">
 				Already set up? Open your shortcut below and approve any prompts. SharePlate cannot confirm
-				whether reminders were created.
+				whether reminders were created. After this, Apple Reminders opens the shortcut directly on
+				this browser. You can revisit these instructions using Shortcut setup.
 			</p>
 			<Button
 				type="button"
@@ -104,12 +106,6 @@ function ShortcutInstructions({
 			>
 				Open Shortcut
 			</Button>
-			{phase === 'openingShortcut' && (
-				<p role="status" className="text-sm text-stone-500 dark:text-sp-text-secondary">
-					Opening Shortcuts. If nothing happens, check that your shortcut is installed, or go back
-					to Copy / Share.
-				</p>
-			)}
 		</div>
 	);
 }
@@ -124,6 +120,33 @@ export function PlanRemindersReviewModal(props: Props) {
 	const validationMessage = getEditableReminderValidationMessage(props.draftItems);
 	const disabled = Boolean(validationMessage) || busy;
 	const text = `Shopping list${props.planDateLabel ? ` · ${props.planDateLabel}` : ''}\n\n${buildEditableReminderText(props.draftItems)}`;
+	const openShortcut = () => {
+		setActionError(null);
+		try {
+			window.localStorage.setItem(SHORTCUT_SETUP_STORAGE_KEY, 'true');
+		} catch {
+			setActionError(
+				'Could not save your shortcut setup on this browser. Instructions will appear again next time.',
+			);
+		}
+		props.onSendDraft();
+	};
+	const exportToReminders = () => {
+		setActionError(null);
+		let setupComplete = false;
+		try {
+			setupComplete = window.localStorage.getItem(SHORTCUT_SETUP_STORAGE_KEY) === 'true';
+		} catch {
+			setActionError(
+				'Could not read your shortcut setup on this browser. Please review the setup.',
+			);
+		}
+		if (setupComplete) {
+			props.onSendDraft();
+		} else {
+			setShortcutView(true);
+		}
+	};
 	const runAction = async (action: 'copy' | 'share') => {
 		setStatus(null);
 		setActionError(null);
@@ -198,11 +221,7 @@ export function PlanRemindersReviewModal(props: Props) {
 				</header>
 				<div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5">
 					{shortcutView ? (
-						<ShortcutInstructions
-							phase={props.phase}
-							onSendDraft={props.onSendDraft}
-							disabled={disabled}
-						/>
+						<ShortcutInstructions onSendDraft={openShortcut} disabled={disabled} />
 					) : (
 						<>
 							{props.draftItems.length ? (
@@ -222,7 +241,8 @@ export function PlanRemindersReviewModal(props: Props) {
 							</p>
 							<button
 								type="button"
-								onClick={() => setShortcutView(true)}
+								onClick={exportToReminders}
+								disabled={disabled}
 								className="mt-3 flex min-h-16 w-full items-center gap-3 rounded-2xl bg-white px-4 py-3 text-left dark:bg-sp-surface"
 							>
 								<span className="flex h-9 w-9 items-center justify-center rounded-xl bg-green-50 text-green-600 dark:bg-sp-primary-subtle dark:text-sp-primary">
@@ -236,7 +256,20 @@ export function PlanRemindersReviewModal(props: Props) {
 								</span>
 								<ChevronRight className="h-4 w-4 text-stone-400" />
 							</button>
+							<button
+								type="button"
+								onClick={() => setShortcutView(true)}
+								className="mt-2 min-h-11 px-1 text-xs text-stone-500 underline dark:text-sp-text-secondary"
+							>
+								Shortcut setup
+							</button>
 						</>
+					)}
+					{props.phase === 'openingShortcut' && (
+						<p role="status" className="mt-4 text-sm text-stone-500 dark:text-sp-text-secondary">
+							Opening Shortcuts. If nothing happens, check Shortcut setup to make sure your shortcut
+							is installed, or use Copy / Share.
+						</p>
 					)}
 					{(props.errorMessage ||
 						actionError ||

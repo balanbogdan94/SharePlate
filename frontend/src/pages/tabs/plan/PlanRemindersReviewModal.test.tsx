@@ -11,6 +11,7 @@ const items: EditableReminderItem[] = [
 
 function renderModal(draftItems = items) {
 	const onCancelDraft = vi.fn();
+	const onSendDraft = vi.fn();
 	const { unmount } = render(
 		<PlanRemindersReviewModal
 			planId="plan"
@@ -21,13 +22,14 @@ function renderModal(draftItems = items) {
 			onUpdateQuantity={vi.fn()}
 			onDeleteDraft={vi.fn()}
 			onCancelDraft={onCancelDraft}
-			onSendDraft={vi.fn()}
+			onSendDraft={onSendDraft}
 		/>,
 	);
-	return { onCancelDraft, unmount };
+	return { onCancelDraft, onSendDraft, unmount };
 }
 
 beforeEach(() => {
+	window.localStorage.removeItem('shareplate.reminders.shortcutSetup');
 	vi.stubGlobal(
 		'matchMedia',
 		vi.fn(() => ({ matches: false })),
@@ -53,6 +55,68 @@ afterEach(() => {
 });
 
 describe('shopping list review', () => {
+	it('shows setup first and remembers it only after opening the shortcut', async () => {
+		const user = userEvent.setup();
+		const { onSendDraft, unmount } = renderModal();
+		await user.click(screen.getByRole('button', { name: /Apple Reminders/ }));
+		expect(screen.getByText('Your list, in Apple Reminders')).toBeInTheDocument();
+		expect(onSendDraft).not.toHaveBeenCalled();
+		expect(window.localStorage.getItem('shareplate.reminders.shortcutSetup')).toBeNull();
+		await user.click(screen.getByRole('button', { name: 'Open Shortcut' }));
+		expect(onSendDraft).toHaveBeenCalledTimes(1);
+		expect(window.localStorage.getItem('shareplate.reminders.shortcutSetup')).toBe('true');
+		unmount();
+		const reopened = renderModal();
+		await user.click(screen.getByRole('button', { name: /Apple Reminders/ }));
+		expect(reopened.onSendDraft).toHaveBeenCalledTimes(1);
+		expect(screen.queryByText('Your list, in Apple Reminders')).not.toBeInTheDocument();
+	});
+
+	it('keeps instructions available after setup without launching the shortcut', async () => {
+		window.localStorage.setItem('shareplate.reminders.shortcutSetup', 'true');
+		const user = userEvent.setup();
+		const { onSendDraft } = renderModal();
+		await user.click(screen.getByRole('button', { name: 'Shortcut setup' }));
+		expect(screen.getByText('Your list, in Apple Reminders')).toBeInTheDocument();
+		expect(onSendDraft).not.toHaveBeenCalled();
+	});
+
+	it.each([
+		{ reason: 'empty list', draftItems: [] },
+		{ reason: 'zero quantity', draftItems: [{ ...items[0], quantity: '0' }] },
+	])('disables direct export for $reason', ({ draftItems }) => {
+		window.localStorage.setItem('shareplate.reminders.shortcutSetup', 'true');
+		const { onSendDraft } = renderModal(draftItems);
+		expect(screen.getByRole('button', { name: /Apple Reminders/ })).toBeDisabled();
+		expect(onSendDraft).not.toHaveBeenCalled();
+	});
+
+	it('shows setup and an explicit error when storage cannot be read', async () => {
+		const user = userEvent.setup();
+		const { onSendDraft } = renderModal();
+		const read = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+			throw new DOMException('Blocked', 'SecurityError');
+		});
+		await user.click(screen.getByRole('button', { name: /Apple Reminders/ }));
+		expect(screen.getByRole('alert')).toHaveTextContent('Could not read your shortcut setup');
+		expect(screen.getByText('Your list, in Apple Reminders')).toBeInTheDocument();
+		expect(onSendDraft).not.toHaveBeenCalled();
+		read.mockRestore();
+	});
+
+	it('still opens the shortcut but reports when setup cannot be saved', async () => {
+		const user = userEvent.setup();
+		const { onSendDraft } = renderModal();
+		await user.click(screen.getByRole('button', { name: /Apple Reminders/ }));
+		const write = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+			throw new DOMException('Full', 'QuotaExceededError');
+		});
+		await user.click(screen.getByRole('button', { name: 'Open Shortcut' }));
+		expect(onSendDraft).toHaveBeenCalledTimes(1);
+		expect(screen.getByRole('alert')).toHaveTextContent('Could not save your shortcut setup');
+		write.mockRestore();
+	});
+
 	it('copies the reviewed list including the plan dates and readable units', async () => {
 		const user = userEvent.setup();
 		renderModal();

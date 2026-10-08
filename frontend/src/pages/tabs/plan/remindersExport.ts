@@ -118,7 +118,7 @@ export function buildShortcutUrl(text: string, shortcutName = SHORTCUT_NAME): st
 		input: 'text',
 		text,
 	});
-	return `shortcuts://run-shortcut?${params.toString()}`;
+	return `shortcuts://run-shortcut?${params.toString().replace(/\+/gu, '%20')}`;
 }
 
 export function buildReminderExportPayload(recipes: RecipeDetail[]): ReminderExportPayload {
