@@ -1,24 +1,28 @@
-name: Deploy Frontend
+name: CD Frontend
 
 on:
   push:
     branches: [main]
     paths:
       - "frontend/**"
-      - ".github/workflows/deploy-frontend.yml"
+      - ".github/workflows/cd-frontend.yml"
   workflow_dispatch:
 
 permissions:
-  id-token: write
   contents: read
+
+concurrency:
+  group: cd-frontend
+  cancel-in-progress: false
 
 env:
   AZURE_STATIC_WEB_APP_NAME: sharePlate-dev-webApp
   AZURE_RESOURCE_GROUP: rg-shareplate-dev
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -32,6 +36,8 @@ jobs:
       - name: Install dependencies
         working-directory: frontend
         run: npm ci
+        env:
+          HUSKY: "0"
 
       # Vite bakes these into the built bundle at compile time - must be set here, not at runtime.
       - name: Build
@@ -40,6 +46,28 @@ jobs:
         env:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
           VITE_ENTRA_REDIRECT_URI: ${{ vars.VITE_ENTRA_REDIRECT_URI }}
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
@@ -63,7 +91,6 @@ jobs:
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ steps.swa-token.outputs.token }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          app_location: "frontend/dist"
+          app_location: "dist"
           skip_app_build: true
