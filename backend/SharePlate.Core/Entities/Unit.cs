@@ -10,5 +10,5 @@ public sealed class Unit
     public string Name { get; private set; } = string.Empty;
     public string Symbol { get; private set; } = string.Empty;
     public UnitCategory Category { get; private set; }
-    public double ToBaseUnitFactor { get; private set; }
+    public double? ToBaseUnitFactor { get; private set; }
 }

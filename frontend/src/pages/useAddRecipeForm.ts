@@ -13,6 +13,8 @@ import type {
 } from '@/pages/tabs/home/types';
 import type { IngredientDraft } from './AddRecipeIngredientModal';
 import { useRecipeMutations } from './useRecipeMutations';
+import { useI18n } from '@/i18n/I18nContext';
+import { isUnitType, parseQuantity, MIN_QUANTITY } from '@/lib/measurements';
 
 const defaultRecipeForm: FormState = { title: '', notes: '', imageUrl: '' };
 type RecipeDraft = { form: FormState; ingredients: IngredientPayload[] };
@@ -41,6 +43,7 @@ function toInitIngredients(data?: RecipeDetail): IngredientPayload[] {
 type HookProps = { recipeId?: string; initialData?: RecipeDetail };
 
 export function useAddRecipeForm({ recipeId, initialData }: HookProps) {
+	const { t } = useI18n();
 	const isEditing = Boolean(recipeId);
 	const draftKey = recipeId ? `shareplate.draft.recipe.${recipeId}` : 'shareplate.draft.recipe.new';
 	const { write: writeDraft, clear: clearDraft } = useDraft(draftKey);
@@ -107,8 +110,17 @@ export function useAddRecipeForm({ recipeId, initialData }: HookProps) {
 	const closeModal = () => setIsModalOpen(false);
 	const addIngredient = () => {
 		const name = draft.name.trim();
-		const qty = Number(draft.quantity);
-		if (name.length < 2 || !Number.isFinite(qty) || qty <= 0) return;
+		const qty = parseQuantity(draft.quantity);
+		if (qty === null || !isUnitType(draft.unit)) {
+			setIngredientsError(
+				t(qty === null ? 'measurements.invalidQuantity' : 'measurements.invalidUnit'),
+			);
+			return;
+		}
+		if (name.length < 2) {
+			setIngredientsError('Enter an ingredient name with at least two characters.');
+			return;
+		}
 		setIngredients((prev) => [...prev, { name, quantity: qty, unit: draft.unit }]);
 		setIngredientsError(null);
 		setIsModalOpen(false);
@@ -125,6 +137,15 @@ export function useAddRecipeForm({ recipeId, initialData }: HookProps) {
 		unlockAudio();
 		if (ingredients.length === 0) {
 			setIngredientsError('Add at least one ingredient.');
+			return;
+		}
+		if (
+			ingredients.some(
+				(item) =>
+					!Number.isFinite(item.quantity) || item.quantity < MIN_QUANTITY || !isUnitType(item.unit),
+			)
+		) {
+			setIngredientsError(t('measurements.invalidQuantity'));
 			return;
 		}
 		if (isEditing) {
@@ -144,8 +165,8 @@ export function useAddRecipeForm({ recipeId, initialData }: HookProps) {
 			: null;
 	const isDraftValid =
 		draft.name.trim().length >= 2 &&
-		Number.isFinite(Number(draft.quantity)) &&
-		Number(draft.quantity) > 0;
+		parseQuantity(draft.quantity) !== null &&
+		isUnitType(draft.unit);
 	return {
 		form,
 		setForm,

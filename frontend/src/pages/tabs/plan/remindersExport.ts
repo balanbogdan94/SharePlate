@@ -1,5 +1,14 @@
 import type { RecipeDetail, RecipeIngredient, UnitType } from '@/pages/tabs/home/types';
 import { CATEGORY_TYPES, type PlanDetails } from '@/pages/tabs/plan/types';
+import type { Language } from '@/settings/UserSettingsContext';
+import { translations } from '@/i18n/translations';
+import {
+	formatMeasurement,
+	formatQuantity,
+	getUnitLabel,
+	parseQuantity,
+	isUnitType,
+} from '@/lib/measurements';
 
 export type AggregatedIngredient = {
 	name: string;
@@ -23,17 +32,12 @@ export type EditableReminderItem = {
 
 const SHORTCUT_NAME = 'SharePlate Add To Reminders';
 
-const UNIT_LABELS: Record<UnitType, string> = {
-	Kilogram: 'kg',
-	Gram: 'g',
-	Liter: 'l',
-	Milliliter: 'ml',
-	Piece: 'pcs',
-	Portion: 'portions',
-};
-
-export function formatIngredientUnit(unitId: UnitType): string {
-	return UNIT_LABELS[unitId];
+export function formatIngredientUnit(
+	unitId: UnitType,
+	language: Language = 'en',
+	quantity?: number,
+): string {
+	return getUnitLabel(unitId, language, quantity);
 }
 
 function normalizeIngredientName(name: string): string {
@@ -54,10 +58,6 @@ function sortIngredients(items: AggregatedIngredient[]): AggregatedIngredient[] 
 	});
 }
 
-function formatQuantity(quantity: number): string {
-	return Number.isInteger(quantity) ? String(quantity) : String(Number(quantity.toFixed(2)));
-}
-
 export function extractRecipeIdsFromPlan(plan: PlanDetails): string[] {
 	const ids = new Set<string>();
 	for (const day of plan.days) {
@@ -70,7 +70,11 @@ export function extractRecipeIdsFromPlan(plan: PlanDetails): string[] {
 	return [...ids];
 }
 
-export function buildPlanReminderExportPayload(plan: PlanDetails, recipes: RecipeDetail[]) {
+export function buildPlanReminderExportPayload(
+	plan: PlanDetails,
+	recipes: RecipeDetail[],
+	language: Language = 'en',
+) {
 	const recipeMap = new Map(recipes.map((recipe) => [recipe.id, recipe]));
 	const occurrences = plan.days.flatMap((day) =>
 		CATEGORY_TYPES.flatMap((category) =>
@@ -81,7 +85,7 @@ export function buildPlanReminderExportPayload(plan: PlanDetails, recipes: Recip
 			}),
 		),
 	);
-	return buildReminderExportPayload(occurrences);
+	return buildReminderExportPayload(occurrences, language);
 }
 
 export function aggregateIngredients(recipes: RecipeDetail[]): AggregatedIngredient[] {
@@ -105,10 +109,13 @@ export function aggregateIngredients(recipes: RecipeDetail[]): AggregatedIngredi
 	return sortIngredients([...aggregated.values()]);
 }
 
-export function formatReminderLines(ingredients: AggregatedIngredient[]): string[] {
+export function formatReminderLines(
+	ingredients: AggregatedIngredient[],
+	language: Language = 'en',
+): string[] {
 	return ingredients.map(
 		(ingredient) =>
-			`${ingredient.name} — ${formatQuantity(ingredient.quantity)} ${formatIngredientUnit(ingredient.unitId)}`,
+			`${ingredient.name} — ${formatMeasurement(ingredient.quantity, ingredient.unitId, language)}`,
 	);
 }
 
@@ -121,9 +128,12 @@ export function buildShortcutUrl(text: string, shortcutName = SHORTCUT_NAME): st
 	return `shortcuts://run-shortcut?${params.toString().replace(/\+/gu, '%20')}`;
 }
 
-export function buildReminderExportPayload(recipes: RecipeDetail[]): ReminderExportPayload {
+export function buildReminderExportPayload(
+	recipes: RecipeDetail[],
+	language: Language = 'en',
+): ReminderExportPayload {
 	const ingredients = aggregateIngredients(recipes);
-	const lines = formatReminderLines(ingredients);
+	const lines = formatReminderLines(ingredients, language);
 	return {
 		ingredients,
 		lines,
@@ -133,29 +143,40 @@ export function buildReminderExportPayload(recipes: RecipeDetail[]): ReminderExp
 
 export function toEditableReminderItems(
 	ingredients: AggregatedIngredient[],
+	language: Language = 'en',
 ): EditableReminderItem[] {
 	return ingredients.map((ingredient, index) => ({
 		id: `${ingredient.normalizedName}-${ingredient.unitId}-${index}`,
 		name: ingredient.name,
-		quantity: formatQuantity(ingredient.quantity),
+		quantity: formatQuantity(ingredient.quantity, language),
 		unitId: ingredient.unitId,
 	}));
 }
 
-function formatEditableReminderItem(item: EditableReminderItem): string {
-	return `${item.name.trim()} — ${item.quantity.trim()} ${formatIngredientUnit(item.unitId)}`;
+function formatEditableReminderItem(item: EditableReminderItem, language: Language): string {
+	const quantity = parseQuantity(item.quantity);
+	if (quantity === null) throw new Error(translations[language]['measurements.invalidQuantity']);
+	return `${item.name.trim()} — ${formatMeasurement(quantity, item.unitId, language)}`;
 }
 
-export function buildEditableReminderText(items: EditableReminderItem[]): string {
-	return items.map(formatEditableReminderItem).join('\n');
+export function buildEditableReminderText(
+	items: EditableReminderItem[],
+	language: Language = 'en',
+): string {
+	return items.map((item) => formatEditableReminderItem(item, language)).join('\n');
 }
 
-export function getEditableReminderValidationMessage(items: EditableReminderItem[]): string | null {
+export function getEditableReminderValidationMessage(
+	items: EditableReminderItem[],
+	language: Language = 'en',
+): string | null {
 	if (items.length === 0) {
-		return 'Keep at least one ingredient before sending.';
+		return translations[language]['measurements.emptyList'];
 	}
-	if (items.some((item) => !Number.isFinite(Number(item.quantity)) || Number(item.quantity) <= 0)) {
-		return 'Every ingredient needs a quantity greater than zero.';
+	if (items.some((item) => parseQuantity(item.quantity) === null)) {
+		return translations[language]['measurements.invalidQuantity'];
 	}
+	if (items.some((item) => !isUnitType(item.unitId)))
+		return translations[language]['measurements.invalidUnit'];
 	return null;
 }

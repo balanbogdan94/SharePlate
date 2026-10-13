@@ -6,6 +6,7 @@ import { apiFetch } from '@/lib/api';
 import { PlanTabPage } from '@/pages/tabs/PlanTabPage';
 import type { PlanDetails, PlanListItem } from '@/pages/tabs/plan/types';
 import type { RecipeDetail } from '@/pages/tabs/home/types';
+import { MeasurementProviders } from '@/test/MeasurementProviders';
 
 const navigateMock = vi.fn();
 const searchState: { expand?: string } = {};
@@ -43,6 +44,7 @@ function renderPage() {
 		<QueryClientProvider client={queryClient}>
 			<PlanTabPage />
 		</QueryClientProvider>,
+		{ wrapper: MeasurementProviders },
 	);
 }
 

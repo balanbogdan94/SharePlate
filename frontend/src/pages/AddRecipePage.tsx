@@ -9,6 +9,8 @@ import { apiFetch } from '@/lib/api';
 import type { IngredientPayload, RecipeDetail } from '@/pages/tabs/home/types';
 import { AddRecipeIngredientModal } from './AddRecipeIngredientModal';
 import { useAddRecipeForm } from './useAddRecipeForm';
+import { useI18n } from '@/i18n/I18nContext';
+import { formatMeasurement } from '@/lib/measurements';
 
 const LABEL_CLS =
 	'mb-2 block text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-sp-text-tertiary';
@@ -17,10 +19,11 @@ type AddRecipeFormProps = { recipeId?: string; initialData?: RecipeDetail };
 type IngredientRowProps = { ingredient: IngredientPayload; onRemove: () => void };
 
 function IngredientRow({ ingredient, onRemove }: IngredientRowProps) {
+	const { language } = useI18n();
 	return (
 		<li className="flex items-center justify-between rounded-2xl bg-stone-100 px-4 py-3 dark:bg-sp-surface">
 			<span className="text-sm font-medium text-stone-800 dark:text-sp-text-primary">
-				{ingredient.quantity} {ingredient.unit} {ingredient.name}
+				{ingredient.name} — {formatMeasurement(ingredient.quantity, ingredient.unit, language)}
 			</span>
 			<button
 				type="button"

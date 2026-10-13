@@ -1,4 +1,6 @@
 import { useCallback, useState } from 'react';
+import { useI18n } from '@/i18n/I18nContext';
+import type { Language } from '@/settings/UserSettingsContext';
 import { apiFetch } from '@/lib/api';
 import type { RecipeDetail } from '@/pages/tabs/home/types';
 import type { PlanDetails } from '@/pages/tabs/plan/types';
@@ -34,7 +36,10 @@ function withoutPlanDraft(current: Record<string, EditableReminderItem[]>, planI
 	return next;
 }
 
-async function buildPlanDraftItems(plan: PlanDetails): Promise<EditableReminderItem[]> {
+async function buildPlanDraftItems(
+	plan: PlanDetails,
+	language: Language,
+): Promise<EditableReminderItem[]> {
 	const recipeIds = extractRecipeIdsFromPlan(plan);
 	if (recipeIds.length === 0) throw new Error('No recipes found in this plan.');
 	const settledRecipes = await Promise.allSettled(
@@ -46,39 +51,43 @@ async function buildPlanDraftItems(plan: PlanDetails): Promise<EditableReminderI
 	const recipes = settledRecipes
 		.filter((r): r is PromiseFulfilledResult<RecipeDetail> => r.status === 'fulfilled')
 		.map((r) => r.value);
-	const payload = buildPlanReminderExportPayload(plan, recipes);
+	const payload = buildPlanReminderExportPayload(plan, recipes, language);
 	if (!payload.text.trim()) throw new Error('No ingredients found for this plan.');
-	return toEditableReminderItems(payload.ingredients);
+	return toEditableReminderItems(payload.ingredients, language);
 }
 
 export function usePlanExport() {
+	const { language } = useI18n();
 	const [exportingPlanId, setExportingPlanId] = useState<string | null>(null);
 	const [exportErrorByPlanId, setExportErrorByPlanId] = useState<Record<string, string | null>>({});
 	const [exportPhaseByPlanId, setExportPhaseByPlanId] = useState<Record<string, ExportPhase>>({});
 	const [draftItemsByPlanId, setDraftItemsByPlanId] = useState<
 		Record<string, EditableReminderItem[]>
 	>({});
-	const preparePlanIngredients = useCallback(async (plan: PlanDetails) => {
-		setExportErrorByPlanId((current) => ({ ...current, [plan.id]: null }));
-		setExportPhaseByPlanId((current) => ({ ...current, [plan.id]: 'preparing' }));
-		setExportingPlanId(plan.id);
-		try {
-			const draftItems = await buildPlanDraftItems(plan);
-			setDraftItemsByPlanId((current) => ({
-				...current,
-				[plan.id]: draftItems,
-			}));
-			setExportPhaseByPlanId((current) => ({ ...current, [plan.id]: 'reviewing' }));
-		} catch (error) {
-			setExportErrorByPlanId((current) => ({
-				...current,
-				[plan.id]: toErrorMessage(error, 'Could not prepare your shopping list.'),
-			}));
-			setExportPhaseByPlanId((current) => ({ ...current, [plan.id]: 'error' }));
-		} finally {
-			setExportingPlanId((current) => (current === plan.id ? null : current));
-		}
-	}, []);
+	const preparePlanIngredients = useCallback(
+		async (plan: PlanDetails) => {
+			setExportErrorByPlanId((current) => ({ ...current, [plan.id]: null }));
+			setExportPhaseByPlanId((current) => ({ ...current, [plan.id]: 'preparing' }));
+			setExportingPlanId(plan.id);
+			try {
+				const draftItems = await buildPlanDraftItems(plan, language);
+				setDraftItemsByPlanId((current) => ({
+					...current,
+					[plan.id]: draftItems,
+				}));
+				setExportPhaseByPlanId((current) => ({ ...current, [plan.id]: 'reviewing' }));
+			} catch (error) {
+				setExportErrorByPlanId((current) => ({
+					...current,
+					[plan.id]: toErrorMessage(error, 'Could not prepare your shopping list.'),
+				}));
+				setExportPhaseByPlanId((current) => ({ ...current, [plan.id]: 'error' }));
+			} finally {
+				setExportingPlanId((current) => (current === plan.id ? null : current));
+			}
+		},
+		[language],
+	);
 	const updateDraftQuantity = useCallback((planId: string, itemId: string, quantity: string) => {
 		setDraftItemsByPlanId((current) => ({
 			...current,
@@ -101,7 +110,7 @@ export function usePlanExport() {
 	const sendDraftToShortcuts = useCallback(
 		(planId: string) => {
 			const items = draftItemsByPlanId[planId] ?? [];
-			const validationMessage = getEditableReminderValidationMessage(items);
+			const validationMessage = getEditableReminderValidationMessage(items, language);
 			if (validationMessage) {
 				setExportErrorByPlanId((current) => ({ ...current, [planId]: validationMessage }));
 				return;
@@ -116,7 +125,7 @@ export function usePlanExport() {
 			}
 			setExportPhaseByPlanId((current) => ({ ...current, [planId]: 'openingShortcut' }));
 			try {
-				window.open(buildShortcutUrl(buildEditableReminderText(items)), '_self');
+				window.open(buildShortcutUrl(buildEditableReminderText(items, language)), '_self');
 			} catch (error) {
 				setExportErrorByPlanId((current) => ({
 					...current,
@@ -128,7 +137,7 @@ export function usePlanExport() {
 				setExportPhaseByPlanId((current) => ({ ...current, [planId]: 'reviewing' }));
 			}
 		},
-		[draftItemsByPlanId],
+		[draftItemsByPlanId, language],
 	);
 	return {
 		exportingPlanId,

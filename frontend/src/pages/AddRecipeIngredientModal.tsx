@@ -1,5 +1,13 @@
 import { Input } from '@/components/ui/input';
 import type { Unit, UnitType } from '@/pages/tabs/home/types';
+import { useI18n } from '@/i18n/I18nContext';
+import {
+	getUnitOptionLabel,
+	isUnitType,
+	parseQuantity,
+	UNIT_GROUP_ORDER,
+	UNIT_GROUPS,
+} from '@/lib/measurements';
 
 export type IngredientDraft = {
 	name: string;
@@ -15,6 +23,18 @@ type IngredientFieldsProps = {
 };
 
 function IngredientFields({ draft, units, defaultUnit, onChange }: IngredientFieldsProps) {
+	const { language, t } = useI18n();
+	const invalidQuantity = Boolean(draft.quantity.trim()) && parseQuantity(draft.quantity) === null;
+	const unitGroup = UNIT_GROUPS[draft.unit];
+	const unitHint =
+		draft.unit === 'Pinch'
+			? t('measurements.pinchHint')
+			: unitGroup === 'packaging'
+				? t('measurements.packageHint')
+				: unitGroup === 'count'
+					? t('measurements.countHint')
+					: null;
+	if (units?.some((unit) => !isUnitType(unit.id))) throw new Error(t('measurements.invalidUnit'));
 	return (
 		<div className="space-y-3 rounded-2xl border border-stone-200/70 bg-white/80 p-3 shadow-xs dark:border-sp-border dark:bg-black/30">
 			<div className="block">
@@ -28,7 +48,7 @@ function IngredientFields({ draft, units, defaultUnit, onChange }: IngredientFie
 					className="mt-1 h-11 rounded-xl bg-white dark:bg-sp-surface"
 				/>
 			</div>
-			<div className="grid grid-cols-[1fr_1.1fr] gap-3">
+			<div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-[minmax(5rem,0.65fr)_minmax(0,1.65fr)]">
 				<div className="block">
 					<p className="text-xs font-medium text-stone-500 dark:text-sp-text-tertiary">Quantity</p>
 					<Input
@@ -37,6 +57,8 @@ function IngredientFields({ draft, units, defaultUnit, onChange }: IngredientFie
 						value={draft.quantity}
 						onChange={(e) => onChange({ ...draft, quantity: e.target.value })}
 						inputMode="decimal"
+						aria-invalid={invalidQuantity}
+						aria-describedby="ingredient-quantity-help"
 						placeholder="2"
 						className="mt-1 h-11 rounded-xl bg-white dark:bg-sp-surface"
 					/>
@@ -48,17 +70,44 @@ function IngredientFields({ draft, units, defaultUnit, onChange }: IngredientFie
 					<select
 						id="ingredient-unit"
 						value={draft.unit}
-						onChange={(e) => onChange({ ...draft, unit: e.target.value as UnitType })}
+						aria-describedby={unitHint ? 'ingredient-unit-help' : undefined}
+						onChange={(e) => {
+							if (!isUnitType(e.target.value)) throw new Error(t('measurements.invalidUnit'));
+							onChange({ ...draft, unit: e.target.value });
+						}}
 						className="mt-1 h-11 w-full rounded-xl border border-input bg-white px-3 text-sm text-stone-800 shadow-xs dark:border-sp-border dark:bg-sp-surface dark:text-sp-text-primary"
 					>
-						{units?.map((unit) => (
-							<option key={unit.id} value={unit.id}>
-								{unit.name}
-							</option>
-						)) ?? <option value={defaultUnit}>{defaultUnit}</option>}
+						{units ? (
+							UNIT_GROUP_ORDER.map((group) => {
+								const options = units.filter((unit) => UNIT_GROUPS[unit.id] === group);
+								return options.length ? (
+									<optgroup key={group} label={t(`measurements.group.${group}`)}>
+										{options.map((unit) => (
+											<option key={unit.id} value={unit.id}>
+												{getUnitOptionLabel(unit.id, language)}
+											</option>
+										))}
+									</optgroup>
+								) : null;
+							})
+						) : (
+							<option value={defaultUnit}>{getUnitOptionLabel(defaultUnit, language)}</option>
+						)}
 					</select>
 				</label>
 			</div>
+			<p
+				id="ingredient-quantity-help"
+				role={invalidQuantity ? 'alert' : undefined}
+				className={`text-xs ${invalidQuantity ? 'text-red-600 dark:text-red-400' : 'text-stone-500 dark:text-sp-text-secondary'}`}
+			>
+				{t(invalidQuantity ? 'measurements.invalidQuantity' : 'measurements.decimalHint')}
+			</p>
+			{unitHint && (
+				<p id="ingredient-unit-help" className="text-xs text-stone-500 dark:text-sp-text-secondary">
+					{unitHint}
+				</p>
+			)}
 		</div>
 	);
 }

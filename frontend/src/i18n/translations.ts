@@ -2,6 +2,22 @@ import type { Language } from '@/settings/UserSettingsContext';
 
 export const translations = {
 	en: {
+		'measurements.group.weight': 'Weight',
+		'measurements.group.volume': 'Volume',
+		'measurements.group.kitchen': 'Kitchen measures',
+		'measurements.group.count': 'Pieces & portions',
+		'measurements.group.packaging': 'Packaging',
+		'measurements.decimalHint': 'Decimals work with a point or comma, e.g. 0.5 or 0,5.',
+		'measurements.packageHint':
+			'Use the package size stated in your recipe; sizes vary by product.',
+		'measurements.pinchHint': 'A pinch is approximate, not a fixed weight or volume.',
+		'measurements.countHint': 'Sizes vary. Partial pieces and portions are allowed.',
+		'measurements.invalidQuantity':
+			'Enter a quantity of at least 0.001 using a decimal point or comma.',
+		'measurements.invalidUnit': 'Choose a valid unit.',
+		'measurements.variableSize':
+			'Package sizes and approximate measures vary; no automatic conversion.',
+		'measurements.emptyList': 'Keep at least one ingredient before sending.',
 		'app.brand': 'SharePlate',
 		'app.tagline': 'Cook together. Plan together. Eat better.',
 		'app.subtitle':
@@ -163,6 +179,22 @@ export const translations = {
 		'plan.error.deleteRecipe': 'Could not remove the planned recipe.',
 	},
 	ro: {
+		'measurements.group.weight': 'Greutate',
+		'measurements.group.volume': 'Volum',
+		'measurements.group.kitchen': 'Măsuri de bucătărie',
+		'measurements.group.count': 'Bucăți și porții',
+		'measurements.group.packaging': 'Ambalaje',
+		'measurements.decimalHint': 'Poți folosi virgula sau punctul, de exemplu 0,5 sau 0.5.',
+		'measurements.packageHint':
+			'Folosește mărimea ambalajului din rețetă; aceasta diferă între produse.',
+		'measurements.pinchHint': 'Un praf este aproximativ, nu o greutate sau un volum fix.',
+		'measurements.countHint': 'Mărimile variază. Poți folosi și fracții de bucăți sau porții.',
+		'measurements.invalidQuantity':
+			'Introdu o cantitate de minimum 0,001 folosind virgula sau punctul.',
+		'measurements.invalidUnit': 'Alege o unitate valida.',
+		'measurements.variableSize':
+			'Marimea ambalajelor si masurile aproximative variaza; fara conversie automata.',
+		'measurements.emptyList': 'Pastreaza cel putin un ingredient inainte de trimitere.',
 		'app.brand': 'SharePlate',
 		'app.tagline': 'Gatiti impreuna. Planificati impreuna. Mancati mai bine.',
 		'app.subtitle':

@@ -10,5 +10,14 @@ public enum UnitType
     Liter = 3,
     Milliliter = 4,
     Piece = 5,
-    Portion = 6
+    Portion = 6,
+    Teaspoon = 7,
+    Tablespoon = 8,
+    Can = 9,
+    Cup = 10,
+    Pinch = 11,
+    Clove = 12,
+    Bunch = 13,
+    Slice = 14,
+    Package = 15
 }
