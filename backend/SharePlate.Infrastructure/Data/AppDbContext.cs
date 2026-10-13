@@ -112,8 +112,17 @@ public class AppDbContext : DbContext
             new { Id = UnitType.Gram, Name = "Gram", Symbol = "g", Category = UnitCategory.Weight, ToBaseUnitFactor = 0.001 },
             new { Id = UnitType.Liter, Name = "Liter", Symbol = "l", Category = UnitCategory.Volume, ToBaseUnitFactor = 1.0 },
             new { Id = UnitType.Milliliter, Name = "Milliliter", Symbol = "ml", Category = UnitCategory.Volume, ToBaseUnitFactor = 0.001 },
-            new { Id = UnitType.Piece, Name = "Piece", Symbol = "pc", Category = UnitCategory.Quantity, ToBaseUnitFactor = 1.0 },
-            new { Id = UnitType.Portion, Name = "Portion", Symbol = "ptn", Category = UnitCategory.Quantity, ToBaseUnitFactor = 1.0 }
+            new { Id = UnitType.Piece, Name = "Piece", Symbol = "pc", Category = UnitCategory.Quantity, ToBaseUnitFactor = (double?)null },
+            new { Id = UnitType.Portion, Name = "Portion", Symbol = "ptn", Category = UnitCategory.Quantity, ToBaseUnitFactor = (double?)null },
+            new { Id = UnitType.Teaspoon, Name = "Teaspoon", Symbol = "tsp", Category = UnitCategory.Volume, ToBaseUnitFactor = 0.005 },
+            new { Id = UnitType.Tablespoon, Name = "Tablespoon", Symbol = "tbsp", Category = UnitCategory.Volume, ToBaseUnitFactor = 0.015 },
+            new { Id = UnitType.Can, Name = "Can", Symbol = "can", Category = UnitCategory.Quantity, ToBaseUnitFactor = (double?)null },
+            new { Id = UnitType.Cup, Name = "Cup", Symbol = "cup", Category = UnitCategory.Volume, ToBaseUnitFactor = 0.25 },
+            new { Id = UnitType.Pinch, Name = "Pinch", Symbol = "pinch", Category = UnitCategory.Quantity, ToBaseUnitFactor = (double?)null },
+            new { Id = UnitType.Clove, Name = "Clove", Symbol = "clove", Category = UnitCategory.Quantity, ToBaseUnitFactor = (double?)null },
+            new { Id = UnitType.Bunch, Name = "Bunch", Symbol = "bunch", Category = UnitCategory.Quantity, ToBaseUnitFactor = (double?)null },
+            new { Id = UnitType.Slice, Name = "Slice", Symbol = "slice", Category = UnitCategory.Quantity, ToBaseUnitFactor = (double?)null },
+            new { Id = UnitType.Package, Name = "Package", Symbol = "pkg", Category = UnitCategory.Quantity, ToBaseUnitFactor = (double?)null }
         );
     }
 }

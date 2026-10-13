@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PlanRemindersReviewModal } from './PlanRemindersReviewModal';
 import type { EditableReminderItem } from './remindersExport';
+import { MeasurementProviders } from '@/test/MeasurementProviders';
 
 const items: EditableReminderItem[] = [
 	{ id: 'tomato', name: 'Tomato', quantity: '600', unitId: 'Gram' },
@@ -24,6 +25,7 @@ function renderModal(draftItems = items) {
 			onCancelDraft={onCancelDraft}
 			onSendDraft={onSendDraft}
 		/>,
+		{ wrapper: MeasurementProviders },
 	);
 	return { onCancelDraft, onSendDraft, unmount };
 }
@@ -180,7 +182,7 @@ describe('shopping list review', () => {
 
 	it('disables export for invalid quantities', () => {
 		renderModal([{ ...items[0], quantity: '0' }]);
-		expect(screen.getByRole('alert')).toHaveTextContent('greater than zero');
+		expect(screen.getByRole('alert')).toHaveTextContent('at least 0.001');
 		expect(screen.getByRole('button', { name: 'Copy' })).toBeDisabled();
 	});
 

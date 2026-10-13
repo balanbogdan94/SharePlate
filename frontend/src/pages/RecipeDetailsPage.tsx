@@ -10,6 +10,9 @@ import { RecipeHero } from './recipe-details/RecipeHero';
 import { RecipeHeroActions } from './recipe-details/RecipeHeroActions';
 import { RecipeMeta } from './recipe-details/RecipeMeta';
 import type { RecipeDetail } from '@/pages/tabs/home/types';
+import { useI18n } from '@/i18n/I18nContext';
+import type { Language } from '@/settings/UserSettingsContext';
+import { formatMeasurement } from '@/lib/measurements';
 
 function toErrorMessage(error: unknown, fallback: string): string {
 	if (error instanceof Error && error.message.trim()) {
@@ -18,12 +21,12 @@ function toErrorMessage(error: unknown, fallback: string): string {
 	return fallback;
 }
 
-function buildRecipeShareText(recipe: RecipeDetail): string {
+function buildRecipeShareText(recipe: RecipeDetail, language: Language): string {
 	const ingredients =
 		recipe.ingredients
 			.map(
 				(ingredient) =>
-					`- ${ingredient.ingredientName}: ${ingredient.quantity} ${ingredient.unitId}`,
+					`- ${ingredient.ingredientName}: ${formatMeasurement(ingredient.quantity, ingredient.unitId, language)}`,
 			)
 			.join('\n') || '- No ingredients yet.';
 	const chefNotes = recipe.notes?.trim() || 'No notes yet.';
@@ -31,6 +34,7 @@ function buildRecipeShareText(recipe: RecipeDetail): string {
 }
 
 export function RecipeDetailsPage() {
+	const { language } = useI18n();
 	const { recipeId } = useParams({ from: '/app-layout/recipes/$recipeId' });
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
@@ -101,7 +105,7 @@ export function RecipeDetailsPage() {
 					<RecipeHeroActions
 						recipeId={recipeId}
 						recipeTitle={recipe.title}
-						shareText={buildRecipeShareText(recipe)}
+						shareText={buildRecipeShareText(recipe, language)}
 						canManage={canManageRecipe}
 						isDeleting={deleteRecipeMutation.isPending}
 						onDelete={onDeleteRecipe}

@@ -17,7 +17,7 @@ namespace SharePlate.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.3")
+                .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -402,7 +402,7 @@ namespace SharePlate.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<double>("ToBaseUnitFactor")
+                    b.Property<double?>("ToBaseUnitFactor")
                         .HasColumnType("double precision");
 
                     b.HasKey("Id");
@@ -447,16 +447,80 @@ namespace SharePlate.Infrastructure.Migrations
                             Id = 5,
                             Category = 3,
                             Name = "Piece",
-                            Symbol = "pc",
-                            ToBaseUnitFactor = 1.0
+                            Symbol = "pc"
                         },
                         new
                         {
                             Id = 6,
                             Category = 3,
                             Name = "Portion",
-                            Symbol = "ptn",
-                            ToBaseUnitFactor = 1.0
+                            Symbol = "ptn"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Category = 2,
+                            Name = "Teaspoon",
+                            Symbol = "tsp",
+                            ToBaseUnitFactor = 0.0050000000000000001
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Category = 2,
+                            Name = "Tablespoon",
+                            Symbol = "tbsp",
+                            ToBaseUnitFactor = 0.014999999999999999
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Category = 3,
+                            Name = "Can",
+                            Symbol = "can"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Category = 2,
+                            Name = "Cup",
+                            Symbol = "cup",
+                            ToBaseUnitFactor = 0.25
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Category = 3,
+                            Name = "Pinch",
+                            Symbol = "pinch"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            Category = 3,
+                            Name = "Clove",
+                            Symbol = "clove"
+                        },
+                        new
+                        {
+                            Id = 13,
+                            Category = 3,
+                            Name = "Bunch",
+                            Symbol = "bunch"
+                        },
+                        new
+                        {
+                            Id = 14,
+                            Category = 3,
+                            Name = "Slice",
+                            Symbol = "slice"
+                        },
+                        new
+                        {
+                            Id = 15,
+                            Category = 3,
+                            Name = "Package",
+                            Symbol = "pkg"
                         });
                 });
 

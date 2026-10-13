@@ -1,4 +1,19 @@
-export type UnitType = 'Kilogram' | 'Gram' | 'Liter' | 'Milliliter' | 'Piece' | 'Portion';
+export type UnitType =
+	| 'Kilogram'
+	| 'Gram'
+	| 'Liter'
+	| 'Milliliter'
+	| 'Piece'
+	| 'Portion'
+	| 'Teaspoon'
+	| 'Tablespoon'
+	| 'Can'
+	| 'Cup'
+	| 'Pinch'
+	| 'Clove'
+	| 'Bunch'
+	| 'Slice'
+	| 'Package';
 
 export type Unit = {
 	id: UnitType;

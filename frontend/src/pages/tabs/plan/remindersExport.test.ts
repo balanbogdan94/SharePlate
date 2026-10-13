@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PlanDetails } from '@/pages/tabs/plan/types';
-import type { RecipeDetail } from '@/pages/tabs/home/types';
+import type { RecipeDetail, UnitType } from '@/pages/tabs/home/types';
 import {
 	aggregateIngredients,
 	buildReminderExportPayload,
@@ -12,7 +12,7 @@ import {
 
 function createRecipe(
 	id: string,
-	ingredients: Array<{ name: string; quantity: number; unitId: 'Gram' | 'Piece' }>,
+	ingredients: Array<{ name: string; quantity: number; unitId: UnitType }>,
 ): RecipeDetail {
 	return {
 		id,
@@ -57,6 +57,29 @@ function createPlanDetails(): PlanDetails {
 }
 
 describe('remindersExport', () => {
+	it('keeps packaging, counts and convertible physical units distinct', () => {
+		const unitIds: UnitType[] = [
+			'Can',
+			'Package',
+			'Piece',
+			'Gram',
+			'Kilogram',
+			'Teaspoon',
+			'Tablespoon',
+			'Milliliter',
+		];
+		const recipes = [
+			createRecipe(
+				'one',
+				unitIds.map((unitId) => ({ name: 'Ingredient', quantity: 0.125, unitId })),
+			),
+			createRecipe('two', [{ name: ' Ingredient ', quantity: 0.125, unitId: 'Can' }]),
+		];
+		const result = aggregateIngredients(recipes);
+		expect(result).toHaveLength(unitIds.length);
+		expect(result.find((item) => item.unitId === 'Can')?.quantity).toBe(0.25);
+		expect(result.find((item) => item.unitId === 'Package')?.quantity).toBe(0.125);
+	});
 	it('extracts unique recipe ids from plan categories', () => {
 		const recipeIds = extractRecipeIdsFromPlan(createPlanDetails());
 		expect(recipeIds).toEqual(['recipe-1', 'recipe-2']);

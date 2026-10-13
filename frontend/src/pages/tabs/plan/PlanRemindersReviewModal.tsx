@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useI18n } from '@/i18n/I18nContext';
+import { parseQuantity } from '@/lib/measurements';
 import { usePlanSheet } from './usePlanSheet';
 import {
 	ArrowLeft,
@@ -39,6 +41,7 @@ function ReviewRows({
 	onUpdateQuantity,
 	onDeleteDraft,
 }: Pick<Props, 'draftItems' | 'onUpdateQuantity' | 'onDeleteDraft'>) {
+	const { language } = useI18n();
 	return (
 		<div className="divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white dark:divide-sp-separator dark:bg-sp-surface">
 			{draftItems.map((item) => (
@@ -53,7 +56,11 @@ function ReviewRows({
 							className="h-11 w-16 rounded-lg bg-transparent px-1 text-right text-[16px] tabular-nums outline-hidden focus:bg-stone-100 focus:ring-2 focus:ring-green-600 dark:focus:bg-sp-surface-active dark:focus:ring-sp-primary"
 						/>
 						<span className="text-sm text-stone-500 dark:text-sp-text-secondary">
-							{formatIngredientUnit(item.unitId)}
+							{formatIngredientUnit(
+								item.unitId,
+								language,
+								parseQuantity(item.quantity) ?? undefined,
+							)}
 						</span>
 					</div>
 					<button
@@ -111,15 +118,18 @@ function ShortcutInstructions({
 }
 
 export function PlanRemindersReviewModal(props: Props) {
+	const { language } = useI18n();
 	const { dialogProps, closeModal } = usePlanSheet(props.onCancelDraft);
 	const [shortcutView, setShortcutView] = useState(false);
 	const [status, setStatus] = useState<string | null>(null);
 	const [actionError, setActionError] = useState<string | null>(null);
 	const [busy, setBusy] = useState(false);
 	const hasShare = typeof navigator.share === 'function';
-	const validationMessage = getEditableReminderValidationMessage(props.draftItems);
+	const validationMessage = getEditableReminderValidationMessage(props.draftItems, language);
 	const disabled = Boolean(validationMessage) || busy;
-	const text = `Shopping list${props.planDateLabel ? ` · ${props.planDateLabel}` : ''}\n\n${buildEditableReminderText(props.draftItems)}`;
+	const text = validationMessage
+		? ''
+		: `Shopping list${props.planDateLabel ? ` · ${props.planDateLabel}` : ''}\n\n${buildEditableReminderText(props.draftItems, language)}`;
 	const openShortcut = () => {
 		setActionError(null);
 		try {
@@ -148,6 +158,10 @@ export function PlanRemindersReviewModal(props: Props) {
 		}
 	};
 	const runAction = async (action: 'copy' | 'share') => {
+		if (validationMessage) {
+			setActionError(validationMessage);
+			return;
+		}
 		setStatus(null);
 		setActionError(null);
 		setBusy(true);
