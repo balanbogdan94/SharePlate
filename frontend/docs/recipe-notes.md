@@ -12,8 +12,11 @@ become `name (URL)`; pasted formatting is limited to paragraphs, line breaks,
 lists and URLs. Deeper lists are flattened with a notification, preserving text.
 
 The editor grows with its content up to half the screen, including its toolbar.
-When the software keyboard is detected, it uses the visible viewport instead
-and keeps the caret visible. Controls are at least 44×44 CSS pixels and the
+When the software keyboard is detected, it uses the visible viewport instead.
+The toolbar stays sticky while the text scrolls. Viewport handling only sizes
+the editor on focus/viewport changes; it does not reposition the page or text
+on each keystroke. Normal browser/editor caret scrolling remains in place.
+Controls are at least 44×44 CSS pixels and the
 editable text is 16px to avoid iOS input zoom. Validate on real iOS Safari and
 Android Chrome: desktop viewport emulation does not reproduce software keyboards.
 
@@ -41,6 +44,7 @@ From the repository root:
 ```sh
 cd frontend && npm test -- src/lib/recipeNotes.test.ts src/components/recipe-notes src/pages/useAddRecipeForm.test.tsx src/pages/useRecipeMutations.test.tsx
 cd frontend && npm run lint
+cd frontend && npm run deps:check
 cd frontend && npm run build
 ```
 
