@@ -144,7 +144,7 @@ function EditableNotes({
 		onCreate: ({ editor: current }) => publish(current),
 		onUpdate: ({ editor: current }) => publish(current),
 	});
-	useNotesViewport(container, editor);
+	useNotesViewport(container);
 	useEffect(() => {
 		if (!editor) return;
 		const current = parseNotesDocument({ version: 1, content: editor.getJSON() });

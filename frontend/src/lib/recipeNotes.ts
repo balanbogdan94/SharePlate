@@ -37,12 +37,12 @@ const paragraphSchema = z.object({
 });
 
 export type NotesInline = z.infer<typeof inlineSchema>;
-export type NotesParagraph = z.infer<typeof paragraphSchema>;
-export type NotesListItem = {
+type NotesParagraph = z.infer<typeof paragraphSchema>;
+type NotesListItem = {
 	type: 'listItem';
 	content: [NotesParagraph, ...(NotesParagraph | NotesList)[]];
 };
-export type NotesList = {
+type NotesList = {
 	type: 'bulletList' | 'orderedList';
 	attrs?: { start?: number };
 	content: NotesListItem[];

@@ -2,7 +2,7 @@
 	display: flex;
 	flex-direction: column;
 	max-height: var(--notes-editor-limit, 50dvh);
-	overflow: hidden;
+	overflow: clip;
 	border: 1px solid var(--color-stone-200);
 	border-radius: 1rem;
 	background: var(--color-stone-50);
@@ -17,6 +17,9 @@
 }
 
 .notes-toolbar {
+	position: sticky;
+	top: 0;
+	z-index: 1;
 	display: flex;
 	flex-shrink: 0;
 	gap: 0.25rem;
