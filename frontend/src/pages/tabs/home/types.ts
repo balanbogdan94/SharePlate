@@ -1,3 +1,5 @@
+import type { NotesDocument } from '@/lib/recipeNotes';
+
 export type UnitType =
 	| 'Kilogram'
 	| 'Gram'
@@ -26,6 +28,7 @@ export type RecipeSummary = {
 	id: string;
 	title: string;
 	notes: string;
+	notesDocument?: NotesDocument | null;
 	imageUrl: string;
 	authorId: string;
 	authorName: string;
@@ -56,5 +59,6 @@ export type IngredientPayload = {
 export type FormState = {
 	title: string;
 	notes: string;
+	notesDocument?: NotesDocument | null;
 	imageUrl: string;
 };

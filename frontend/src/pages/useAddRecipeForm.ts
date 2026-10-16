@@ -26,7 +26,12 @@ function toErrorMessage(error: unknown, fallback: string): string {
 
 function toInitForm(data?: RecipeDetail): FormState {
 	return data
-		? { title: data.title, notes: data.notes ?? '', imageUrl: data.imageUrl ?? '' }
+		? {
+				title: data.title,
+				notes: data.notes ?? '',
+				notesDocument: data.notesDocument,
+				imageUrl: data.imageUrl ?? '',
+			}
 		: defaultRecipeForm;
 }
 
@@ -55,6 +60,7 @@ export function useAddRecipeForm({ recipeId, initialData }: HookProps) {
 		() => savedDraft?.ingredients ?? toInitIngredients(initialData),
 	);
 	const [ingredientsError, setIngredientsError] = useState<string | null>(null);
+	const [notesError, setNotesError] = useState<string | null>(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [draft, setDraft] = useState<IngredientDraft>({ name: '', quantity: '', unit: 'Piece' });
 
@@ -134,6 +140,7 @@ export function useAddRecipeForm({ recipeId, initialData }: HookProps) {
 	};
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
+		if (notesError) return;
 		unlockAudio();
 		if (ingredients.length === 0) {
 			setIngredientsError('Add at least one ingredient.');
@@ -157,12 +164,15 @@ export function useAddRecipeForm({ recipeId, initialData }: HookProps) {
 		createMutation.mutate();
 	};
 	const isPending = createMutation.isPending || updateMutation.isPending;
-	const isSaveDisabled = isPending || !form.title.trim() || ingredients.length === 0;
-	const submitError = createMutation.isError
-		? toErrorMessage(createMutation.error, 'Could not create recipe.')
-		: updateMutation.isError
-			? toErrorMessage(updateMutation.error, 'Could not update recipe.')
-			: null;
+	const isSaveDisabled =
+		isPending || !form.title.trim() || ingredients.length === 0 || Boolean(notesError);
+	const submitError =
+		notesError ??
+		(createMutation.isError
+			? toErrorMessage(createMutation.error, 'Could not create recipe.')
+			: updateMutation.isError
+				? toErrorMessage(updateMutation.error, 'Could not update recipe.')
+				: null);
 	const isDraftValid =
 		draft.name.trim().length >= 2 &&
 		parseQuantity(draft.quantity) !== null &&
@@ -170,6 +180,7 @@ export function useAddRecipeForm({ recipeId, initialData }: HookProps) {
 	return {
 		form,
 		setForm,
+		setNotesError,
 		imageFile,
 		setImageFile,
 		ingredients,

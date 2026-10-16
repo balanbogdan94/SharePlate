@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from '@tanstack/react-router';
 import { CircleCheck, CirclePlus, X } from 'lucide-react';
@@ -11,6 +12,11 @@ import { AddRecipeIngredientModal } from './AddRecipeIngredientModal';
 import { useAddRecipeForm } from './useAddRecipeForm';
 import { useI18n } from '@/i18n/I18nContext';
 import { formatMeasurement } from '@/lib/measurements';
+const RecipeNotesEditor = lazy(() =>
+	import('@/components/recipe-notes/RecipeNotesEditor').then((module) => ({
+		default: module.RecipeNotesEditor,
+	})),
+);
 
 const LABEL_CLS =
 	'mb-2 block text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-sp-text-tertiary';
@@ -117,18 +123,29 @@ function AddRecipeForm({ recipeId, initialData }: AddRecipeFormProps) {
 					onAdd={s.openModal}
 					onRemove={s.removeIngredient}
 				/>
-				<div>
-					<p className={LABEL_CLS}>Chef&apos;s Notes</p>
-					<textarea
-						id="recipe-notes"
-						aria-label="Chef's notes"
-						value={s.form.notes}
-						rows={4}
-						placeholder="Any special tips or instructions..."
-						onChange={(e) => s.setForm((p) => ({ ...p, notes: e.target.value }))}
-						className="w-full rounded-2xl border-0 bg-stone-100 px-4 py-3 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-hidden dark:bg-sp-surface dark:text-sp-text-primary dark:placeholder:text-sp-text-tertiary"
+				<Suspense
+					fallback={
+						<div
+							role="status"
+							className="h-64 animate-pulse rounded-2xl bg-stone-100 dark:bg-sp-surface"
+						>
+							Loading editor…
+						</div>
+					}
+				>
+					<RecipeNotesEditor
+						notes={s.form.notes}
+						document={s.form.notesDocument}
+						onChange={(document, notes) =>
+							s.setForm((previous) => ({
+								...previous,
+								notes,
+								notesDocument: document,
+							}))
+						}
+						onError={s.setNotesError}
 					/>
-				</div>
+				</Suspense>
 				{s.submitError && (
 					<Alert variant="destructive">
 						<AlertTitle>Could not save recipe</AlertTitle>
