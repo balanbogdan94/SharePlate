@@ -1,10 +1,15 @@
+using SharePlate.Core.ValueObjects;
+
 namespace SharePlate.Core.Entities;
 
 public sealed class Recipe : BaseEntity
 {
     private Recipe() { }
 
-    public static Recipe Create(string title, string notes, Guid authorId, string imageUrl = "")
+    public static Recipe Create(string title, string notes, Guid authorId, string imageUrl = "", string? notesDocument = null)
+        => Create(title, RecipeNotes.Create(notes, notesDocument), authorId, imageUrl);
+
+    public static Recipe Create(string title, RecipeNotes notes, Guid authorId, string imageUrl = "")
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
 
@@ -12,7 +17,8 @@ public sealed class Recipe : BaseEntity
         {
             Id = Guid.NewGuid(),
             Title = title,
-            Notes = notes,
+            Notes = notes.Text,
+            NotesDocument = notes.Document,
             AuthorId = authorId,
             ImageUrl = imageUrl,
             CreatedAt = DateTime.UtcNow,
@@ -22,6 +28,7 @@ public sealed class Recipe : BaseEntity
 
     public string Title { get; private set; } = string.Empty;
     public string Notes { get; private set; } = string.Empty;
+    public string? NotesDocument { get; private set; }
     public string ImageUrl { get; private set; } = string.Empty;
 
     public Guid AuthorId { get; private set; }
@@ -36,9 +43,13 @@ public sealed class Recipe : BaseEntity
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void UpdateNotes(string notes)
+    public void UpdateNotes(string notes, string? notesDocument = null)
+        => UpdateNotes(RecipeNotes.Create(notes, notesDocument));
+
+    public void UpdateNotes(RecipeNotes notes)
     {
-        Notes = notes;
+        Notes = notes.Text;
+        NotesDocument = notes.Document;
         UpdatedAt = DateTime.UtcNow;
     }
 

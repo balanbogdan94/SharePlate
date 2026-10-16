@@ -2,6 +2,16 @@ import type { Language } from '@/settings/UserSettingsContext';
 
 export const translations = {
 	en: {
+		'notes.label': "Chef's Notes",
+		'notes.formatting': 'Notes formatting',
+		'notes.bullets': 'Bulleted list',
+		'notes.numbered': 'Numbered list',
+		'notes.indent': 'Indent list item',
+		'notes.outdent': 'Outdent list item',
+		'notes.placeholder': 'Let the dough rest for 20 minutes.\n\nThen bake until golden…',
+		'notes.empty': 'No notes yet.',
+		'notes.pasteSimplified': 'Pasted lists were simplified to three levels. All text was kept.',
+		'notes.invalidDocument': 'These notes could not be opened. Reload the page before saving.',
 		'measurements.group.weight': 'Weight',
 		'measurements.group.volume': 'Volume',
 		'measurements.group.kitchen': 'Kitchen measures',
@@ -179,6 +189,18 @@ export const translations = {
 		'plan.error.deleteRecipe': 'Could not remove the planned recipe.',
 	},
 	ro: {
+		'notes.label': 'Notițele bucătarului',
+		'notes.formatting': 'Formatarea notițelor',
+		'notes.bullets': 'Listă cu buline',
+		'notes.numbered': 'Listă numerotată',
+		'notes.indent': 'Mărește indentarea',
+		'notes.outdent': 'Micșorează indentarea',
+		'notes.placeholder': 'Lasă aluatul la odihnit 20 de minute.\n\nApoi coace până se rumenește…',
+		'notes.empty': 'Nu există încă notițe.',
+		'notes.pasteSimplified':
+			'Listele lipite au fost simplificate la trei niveluri. Tot textul a fost păstrat.',
+		'notes.invalidDocument':
+			'Notițele nu au putut fi deschise. Reîncarcă pagina înainte de salvare.',
 		'measurements.group.weight': 'Greutate',
 		'measurements.group.volume': 'Volum',
 		'measurements.group.kitchen': 'Măsuri de bucătărie',

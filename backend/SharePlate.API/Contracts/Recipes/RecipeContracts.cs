@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SharePlate.Core.Enums;
@@ -26,6 +27,9 @@ public sealed class CreateRecipeRequest
     [FromForm]
     public string Notes { get; init; } = "";
 
+    [FromForm]
+    public string? NotesDocument { get; init; }
+
     public IFormFile? Image { get; init; }
 
     // JSON-encoded array: [{"name":"Flour","quantity":200,"unit":"Gram"},...]
@@ -44,6 +48,9 @@ public sealed class UpdateRecipeRequest
     public string Notes { get; init; } = "";
 
     [FromForm]
+    public string? NotesDocument { get; init; }
+
+    [FromForm]
     public bool RemoveImage { get; init; }
 
     public IFormFile? Image { get; init; }
@@ -58,6 +65,7 @@ public record RecipeResponse(
     Guid Id,
     string Title,
     string Notes,
+    JsonElement? NotesDocument,
     string ImageUrl,
     Guid AuthorId,
     string AuthorName,
@@ -78,6 +86,7 @@ public record RecipeWithIngredientsResponse(
     Guid Id,
     string Title,
     string Notes,
+    JsonElement? NotesDocument,
     string ImageUrl,
     Guid AuthorId,
     string AuthorName,

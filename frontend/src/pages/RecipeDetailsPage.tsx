@@ -13,6 +13,7 @@ import type { RecipeDetail } from '@/pages/tabs/home/types';
 import { useI18n } from '@/i18n/I18nContext';
 import type { Language } from '@/settings/UserSettingsContext';
 import { formatMeasurement } from '@/lib/measurements';
+import { RecipeNotesContent } from '@/components/recipe-notes/RecipeNotesContent';
 
 function toErrorMessage(error: unknown, fallback: string): string {
 	if (error instanceof Error && error.message.trim()) {
@@ -127,9 +128,7 @@ export function RecipeDetailsPage() {
 					open={notesOpen}
 					onToggle={() => setNotesOpen((o) => !o)}
 				>
-					<p className="text-sm leading-relaxed text-stone-600 dark:text-sp-text-secondary">
-						{recipe.notes?.trim() || 'No notes yet.'}
-					</p>
+					<RecipeNotesContent notes={recipe.notes ?? ''} document={recipe.notesDocument} />
 				</CollapsibleSection>
 				<CollapsibleSection
 					title="Ingredients"

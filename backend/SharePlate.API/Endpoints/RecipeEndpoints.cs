@@ -6,6 +6,7 @@ using SharePlate.Core.Entities;
 using SharePlate.Core.Extensions.Security;
 using SharePlate.Core.Repositories;
 using SharePlate.Core.Services;
+using SharePlate.Core.ValueObjects;
 
 namespace SharePlate.API.Endpoints;
 
@@ -38,6 +39,7 @@ public static class RecipeEndpoints
 
             return Results.Ok(filteredRecipes.Select(ToResponse).ToList());
         })
+        .Produces<List<RecipeResponse>>()
         .WithName("SearchRecipes")
         .WithSummary("Search shared house recipes, or list all if no query given");
 
@@ -51,6 +53,7 @@ public static class RecipeEndpoints
             var recipes = await uow.Recipes.GetByAuthorAsync(actorUserId, ct);
             return Results.Ok(recipes.Select(ToResponse).ToList());
         })
+        .Produces<List<RecipeResponse>>()
         .WithName("GetMyRecipes")
         .WithSummary("Get all recipes created by the current user");
 
@@ -79,6 +82,7 @@ public static class RecipeEndpoints
                 .Select(ToResponse)
                 .ToList());
         })
+        .Produces<List<RecipeResponse>>()
         .WithName("GetHouseRecipes")
         .WithSummary("Get all recipes created by members of the current house");
 
@@ -108,6 +112,7 @@ public static class RecipeEndpoints
 
             return Results.Ok(ToDetailResponse(recipe));
         })
+        .Produces<RecipeWithIngredientsResponse>()
         .WithName("GetRecipeById")
         .WithSummary("Get a recipe with its ingredients (author or same-house members)");
 
@@ -127,6 +132,13 @@ public static class RecipeEndpoints
             if (ingredients.Count == 0)
                 return Results.BadRequest("At least one ingredient is required.");
 
+            RecipeNotes notes;
+            try { notes = RecipeNotes.Create(req.Notes, req.NotesDocument); }
+            catch (RecipeNotesValidationException exception)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["NotesDocument"] = [exception.Message] });
+            }
+
             var imageUrl = "";
             if (req.Image is not null)
             {
@@ -135,13 +147,14 @@ public static class RecipeEndpoints
                 imageUrl = await storage.UploadImageAsync(req.Image.OpenReadStream(), req.Image.FileName, req.Image.ContentType, ct);
             }
 
-            var recipe = Recipe.Create(req.Title, req.Notes, actorUserId, imageUrl);
+            var recipe = Recipe.Create(req.Title, notes, actorUserId, imageUrl);
             await uow.Recipes.AddAsync(recipe, ct);
             await AddIngredientsAsync(recipe.Id, ingredients, uow, ct);
             await uow.SaveChangesAsync(ct);
 
             return Results.Created($"/api/recipes/{recipe.Id}", ToResponse(recipe));
         })
+        .Produces<RecipeResponse>(StatusCodes.Status201Created)
         .WithName("CreateRecipe")
         .WithSummary("Create a new recipe")
         .DisableAntiforgery();
@@ -168,8 +181,15 @@ public static class RecipeEndpoints
             if (recipe.AuthorId != actorUserId)
                 return Results.Forbid();
 
+            RecipeNotes notes;
+            try { notes = RecipeNotes.Create(req.Notes, req.NotesDocument); }
+            catch (RecipeNotesValidationException exception)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["NotesDocument"] = [exception.Message] });
+            }
+
             recipe.UpdateTitle(req.Title);
-            recipe.UpdateNotes(req.Notes);
+            recipe.UpdateNotes(notes);
 
             if (req.RemoveImage)
             {
@@ -193,6 +213,7 @@ public static class RecipeEndpoints
 
             return Results.Ok(ToResponse(recipe));
         })
+        .Produces<RecipeResponse>()
         .WithName("UpdateRecipe")
         .WithSummary("Update a recipe's details (author only)")
         .DisableAntiforgery();
@@ -255,12 +276,22 @@ public static class RecipeEndpoints
         && file.Length is > 0 and <= MaxImageSizeBytes;
 
     private static RecipeResponse ToResponse(Core.Entities.Recipe r) =>
-        new(r.Id, r.Title, r.Notes, r.ImageUrl, r.AuthorId, r.Author?.Name ?? string.Empty, r.Author?.ProfilePictureUrl ?? string.Empty, r.CreatedAt, r.UpdatedAt);
+        new(r.Id, r.Title, r.Notes, ParseNotesDocument(r.NotesDocument), r.ImageUrl, r.AuthorId, r.Author?.Name ?? string.Empty, r.Author?.ProfilePictureUrl ?? string.Empty, r.CreatedAt, r.UpdatedAt);
 
     private static RecipeIngredientResponse ToIngredientResponse(RecipeIngredient ri) =>
         new(ri.Id, ri.IngredientId, ri.Ingredient?.Name ?? string.Empty, ri.Quantity, ri.UnitId);
 
     private static RecipeWithIngredientsResponse ToDetailResponse(Core.Entities.Recipe r) =>
-        new(r.Id, r.Title, r.Notes, r.ImageUrl, r.AuthorId, r.Author?.Name ?? string.Empty, r.Author?.ProfilePictureUrl ?? string.Empty, r.CreatedAt, r.UpdatedAt,
+        new(r.Id, r.Title, r.Notes, ParseNotesDocument(r.NotesDocument), r.ImageUrl, r.AuthorId, r.Author?.Name ?? string.Empty, r.Author?.ProfilePictureUrl ?? string.Empty, r.CreatedAt, r.UpdatedAt,
             r.RecipeIngredients.Select(ToIngredientResponse).ToList());
+
+    private static JsonElement? ParseNotesDocument(string? document)
+    {
+        if (document is null)
+            return null;
+        using var parsed = JsonDocument.Parse(document);
+        if (parsed.RootElement.ValueKind != JsonValueKind.Object)
+            throw new JsonException("Persisted recipe notes document must be an object.");
+        return parsed.RootElement.Clone();
+    }
 }

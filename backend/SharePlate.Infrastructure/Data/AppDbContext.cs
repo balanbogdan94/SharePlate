@@ -60,6 +60,11 @@ public class AppDbContext : DbContext
             b.HasIndex(h => h.Code).IsUnique();
         });
 
+        modelBuilder.Entity<Recipe>(b =>
+        {
+            b.Property(r => r.NotesDocument).HasColumnType("text").IsRequired(false);
+        });
+
         modelBuilder.Entity<HouseMember>(b =>
         {
             b.HasIndex(m => new { m.HouseId, m.UserId }).IsUnique();

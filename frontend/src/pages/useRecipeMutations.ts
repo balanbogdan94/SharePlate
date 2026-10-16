@@ -36,6 +36,7 @@ export function useRecipeMutations({
 			const fd = new FormData();
 			fd.append('Title', form.title);
 			fd.append('Notes', form.notes ?? '');
+			if (form.notesDocument) fd.append('NotesDocument', JSON.stringify(form.notesDocument));
 			if (imageFile) fd.append('Image', imageFile, imageFile.name);
 			fd.append('Ingredients', serializeIngredients(ingredients));
 			return apiFetch('/recipes', { method: 'POST', body: fd });
@@ -68,6 +69,7 @@ export function useRecipeMutations({
 			const fd = new FormData();
 			fd.append('Title', form.title);
 			fd.append('Notes', form.notes ?? '');
+			if (form.notesDocument) fd.append('NotesDocument', JSON.stringify(form.notesDocument));
 			fd.append('RemoveImage', String(Boolean(initialData?.imageUrl) && !form.imageUrl));
 			if (imageFile) fd.append('Image', imageFile, imageFile.name);
 			fd.append('Ingredients', serializeIngredients(ingredients));
