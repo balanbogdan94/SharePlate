@@ -8,6 +8,7 @@ import { PlanTabPage } from '@/pages/tabs/PlanTabPage';
 import { formatDisplayDate } from '@/pages/tabs/plan/planUtils';
 import type { RecipeSummary } from '@/pages/tabs/home/types';
 import type { PlanDetails, PlanListItem } from '@/pages/tabs/plan/types';
+import { MeasurementProviders } from '@/test/MeasurementProviders';
 
 const navigateMock = vi.fn();
 const searchState: { expand?: string } = {};
@@ -64,6 +65,7 @@ function renderPage() {
 		<QueryClientProvider client={queryClient}>
 			<PlanTabPage />
 		</QueryClientProvider>,
+		{ wrapper: MeasurementProviders },
 	);
 }
 
