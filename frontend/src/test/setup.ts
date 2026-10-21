@@ -4,6 +4,7 @@ import { server } from '@/test/mocks/server';
 
 beforeAll(() => {
 	server.listen({ onUnhandledRequest: 'error' });
+	if (typeof HTMLDialogElement === 'undefined') return;
 	Object.defineProperties(HTMLDialogElement.prototype, {
 		showModal: {
 			configurable: true,
