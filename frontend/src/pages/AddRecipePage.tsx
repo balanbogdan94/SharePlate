@@ -173,10 +173,16 @@ function AddRecipeForm({ recipeId, initialData }: AddRecipeFormProps) {
 			<AddRecipeIngredientModal
 				isOpen={s.isModalOpen}
 				draft={s.draft}
+				batch={s.ingredientBatch}
 				units={s.units}
-				defaultUnit={s.defaultUnit}
 				isDraftValid={s.isDraftValid}
-				onClose={s.closeModal}
+				hasUnaddedInput={s.hasUnaddedIngredient}
+				error={s.ingredientDraftError}
+				isDiscardConfirmationOpen={s.isDiscardConfirmationOpen}
+				onComplete={s.completeIngredientBatch}
+				onRequestDismiss={s.requestDismissModal}
+				onCancelDiscard={s.cancelDiscardIngredientBatch}
+				onDiscard={s.discardIngredientBatch}
 				onAdd={s.addIngredient}
 				onChange={s.setDraft}
 			/>

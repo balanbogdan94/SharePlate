@@ -1,181 +1,257 @@
-import { Input } from '@/components/ui/input';
-import type { Unit, UnitType } from '@/pages/tabs/home/types';
+import { useEffect, useRef } from 'react';
+import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useI18n } from '@/i18n/I18nContext';
-import {
-	getUnitOptionLabel,
-	isUnitType,
-	parseQuantity,
-	UNIT_GROUP_ORDER,
-	UNIT_GROUPS,
-} from '@/lib/measurements';
-
-export type IngredientDraft = {
-	name: string;
-	quantity: string;
-	unit: UnitType;
-};
-
-type IngredientFieldsProps = {
-	draft: IngredientDraft;
-	units: Unit[] | undefined;
-	defaultUnit: UnitType;
-	onChange: (draft: IngredientDraft) => void;
-};
-
-function IngredientFields({ draft, units, defaultUnit, onChange }: IngredientFieldsProps) {
-	const { language, t } = useI18n();
-	const invalidQuantity = Boolean(draft.quantity.trim()) && parseQuantity(draft.quantity) === null;
-	const unitGroup = UNIT_GROUPS[draft.unit];
-	const unitHint =
-		draft.unit === 'Pinch'
-			? t('measurements.pinchHint')
-			: unitGroup === 'packaging'
-				? t('measurements.packageHint')
-				: unitGroup === 'count'
-					? t('measurements.countHint')
-					: null;
-	if (units?.some((unit) => !isUnitType(unit.id))) throw new Error(t('measurements.invalidUnit'));
-	return (
-		<div className="space-y-3 rounded-2xl border border-stone-200/70 bg-white/80 p-3 shadow-xs dark:border-sp-border dark:bg-black/30">
-			<div className="block">
-				<p className="text-xs font-medium text-stone-500 dark:text-sp-text-tertiary">Ingredient</p>
-				<Input
-					id="ingredient-name"
-					aria-label="Ingredient name"
-					value={draft.name}
-					onChange={(e) => onChange({ ...draft, name: e.target.value })}
-					placeholder="e.g. Cherry tomatoes"
-					className="mt-1 h-11 rounded-xl bg-white dark:bg-sp-surface"
-				/>
-			</div>
-			<div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-[minmax(5rem,0.65fr)_minmax(0,1.65fr)]">
-				<div className="block">
-					<p className="text-xs font-medium text-stone-500 dark:text-sp-text-tertiary">Quantity</p>
-					<Input
-						id="ingredient-qty"
-						aria-label="Ingredient quantity"
-						value={draft.quantity}
-						onChange={(e) => onChange({ ...draft, quantity: e.target.value })}
-						inputMode="decimal"
-						aria-invalid={invalidQuantity}
-						aria-describedby="ingredient-quantity-help"
-						placeholder="2"
-						className="mt-1 h-11 rounded-xl bg-white dark:bg-sp-surface"
-					/>
-				</div>
-				<label htmlFor="ingredient-unit" className="block">
-					<span className="block text-xs font-medium text-stone-500 dark:text-sp-text-tertiary">
-						Unit
-					</span>
-					<select
-						id="ingredient-unit"
-						value={draft.unit}
-						aria-describedby={unitHint ? 'ingredient-unit-help' : undefined}
-						onChange={(e) => {
-							if (!isUnitType(e.target.value)) throw new Error(t('measurements.invalidUnit'));
-							onChange({ ...draft, unit: e.target.value });
-						}}
-						className="mt-1 h-11 w-full rounded-xl border border-input bg-white px-3 text-sm text-stone-800 shadow-xs dark:border-sp-border dark:bg-sp-surface dark:text-sp-text-primary"
-					>
-						{units ? (
-							UNIT_GROUP_ORDER.map((group) => {
-								const options = units.filter((unit) => UNIT_GROUPS[unit.id] === group);
-								return options.length ? (
-									<optgroup key={group} label={t(`measurements.group.${group}`)}>
-										{options.map((unit) => (
-											<option key={unit.id} value={unit.id}>
-												{getUnitOptionLabel(unit.id, language)}
-											</option>
-										))}
-									</optgroup>
-								) : null;
-							})
-						) : (
-							<option value={defaultUnit}>{getUnitOptionLabel(defaultUnit, language)}</option>
-						)}
-					</select>
-				</label>
-			</div>
-			<p
-				id="ingredient-quantity-help"
-				role={invalidQuantity ? 'alert' : undefined}
-				className={`text-xs ${invalidQuantity ? 'text-red-600 dark:text-red-400' : 'text-stone-500 dark:text-sp-text-secondary'}`}
-			>
-				{t(invalidQuantity ? 'measurements.invalidQuantity' : 'measurements.decimalHint')}
-			</p>
-			{unitHint && (
-				<p id="ingredient-unit-help" className="text-xs text-stone-500 dark:text-sp-text-secondary">
-					{unitHint}
-				</p>
-			)}
-		</div>
-	);
-}
+import { formatMeasurement } from '@/lib/measurements';
+import type { IngredientPayload, Unit } from '@/pages/tabs/home/types';
+import { RecipeIngredientFields, type IngredientDraft } from './RecipeIngredientFields';
 
 type ModalProps = {
 	isOpen: boolean;
 	draft: IngredientDraft;
+	batch: IngredientPayload[];
 	units: Unit[] | undefined;
-	defaultUnit: UnitType;
 	isDraftValid: boolean;
-	onClose: () => void;
+	hasUnaddedInput: boolean;
+	error: string | null;
+	isDiscardConfirmationOpen: boolean;
+	onComplete: () => void;
+	onRequestDismiss: () => void;
+	onCancelDiscard: () => void;
+	onDiscard: () => void;
 	onAdd: () => void;
 	onChange: (draft: IngredientDraft) => void;
 };
 
+function DiscardIngredientBatchDialog({
+	count,
+	hasUnaddedInput,
+	onContinue,
+	onDiscard,
+}: {
+	count: number;
+	hasUnaddedInput: boolean;
+	onContinue: () => void;
+	onDiscard: () => void;
+}) {
+	const { t } = useI18n();
+	const dialogRef = useRef<HTMLDialogElement>(null);
+	const continueRef = useRef<HTMLButtonElement>(null);
+	useEffect(() => {
+		const dialog = dialogRef.current;
+		const previousFocus = document.activeElement;
+		dialog?.showModal();
+		continueRef.current?.focus({ preventScroll: true });
+		return () => {
+			dialog?.close();
+			if (previousFocus instanceof HTMLElement) previousFocus.focus({ preventScroll: true });
+		};
+	}, []);
+	return (
+		<dialog
+			ref={dialogRef}
+			role="alertdialog"
+			aria-modal="true"
+			aria-labelledby="discard-ingredient-title"
+			aria-describedby="discard-ingredient-description"
+			onCancel={(event) => {
+				event.preventDefault();
+				event.stopPropagation();
+				onContinue();
+			}}
+			onKeyDown={(event) => {
+				if (event.key !== 'Escape' || event.nativeEvent.isComposing) return;
+				event.preventDefault();
+				event.stopPropagation();
+				onContinue();
+			}}
+			onClick={(event) => {
+				if (event.target === event.currentTarget) onContinue();
+			}}
+			className="fixed left-1/2 top-[calc(var(--ingredient-viewport-top,0px)+var(--ingredient-viewport-height,100dvh)/2)] m-0 max-h-[calc(var(--ingredient-viewport-height,100dvh)-2rem)] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-stone-200 bg-white p-5 text-stone-900 shadow-2xl backdrop:bg-black/40 dark:border-sp-border dark:bg-sp-surface dark:text-sp-text-primary"
+		>
+			<h3 id="discard-ingredient-title" className="text-lg font-bold">
+				{t('ingredientEntry.discardTitle')}
+			</h3>
+			<div id="discard-ingredient-description" className="mt-2 space-y-2 text-sm">
+				{count > 0 && (
+					<p>
+						{t(count === 1 ? 'ingredientEntry.discardOne' : 'ingredientEntry.discardMany').replace(
+							'{count}',
+							String(count),
+						)}
+					</p>
+				)}
+				{hasUnaddedInput && <p>{t('ingredientEntry.discardUnadded')}</p>}
+				<p>{t('ingredientEntry.previousKept')}</p>
+			</div>
+			<div className="mt-5 flex flex-col gap-2">
+				<Button ref={continueRef} type="button" onClick={onContinue} className="min-h-11">
+					{t('ingredientEntry.continue')}
+				</Button>
+				<Button type="button" variant="destructive" onClick={onDiscard} className="min-h-11">
+					{t('ingredientEntry.discard')}
+				</Button>
+			</div>
+		</dialog>
+	);
+}
+
 export function AddRecipeIngredientModal({
 	isOpen,
 	draft,
+	batch,
 	units,
-	defaultUnit,
 	isDraftValid,
-	onClose,
+	hasUnaddedInput,
+	error,
+	isDiscardConfirmationOpen,
+	onComplete,
+	onRequestDismiss,
+	onCancelDiscard,
+	onDiscard,
 	onAdd,
 	onChange,
 }: ModalProps) {
-	const containerCls = isOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0';
-	const panelCls = isOpen ? 'translate-y-0' : 'translate-y-8';
+	const { language, t } = useI18n();
+	const dialogRef = useRef<HTMLDialogElement>(null);
+	const nameRef = useRef<HTMLInputElement>(null);
+	const latest = batch.at(-1);
+	useEffect(() => {
+		const dialog = dialogRef.current;
+		if (!isOpen || !dialog) return;
+		const previousFocus = document.activeElement;
+		const viewport = window.visualViewport;
+		const updateViewport = () => {
+			const height = `${viewport?.height ?? window.innerHeight}px`;
+			const top = `${viewport?.offsetTop ?? 0}px`;
+			dialog.style.height = height;
+			dialog.style.top = top;
+			dialog.style.setProperty('--ingredient-viewport-height', height);
+			dialog.style.setProperty('--ingredient-viewport-top', top);
+		};
+		updateViewport();
+		dialog.showModal();
+		nameRef.current?.focus({ preventScroll: true });
+		viewport?.addEventListener('resize', updateViewport);
+		viewport?.addEventListener('scroll', updateViewport);
+		window.addEventListener('resize', updateViewport);
+		return () => {
+			viewport?.removeEventListener('resize', updateViewport);
+			viewport?.removeEventListener('scroll', updateViewport);
+			window.removeEventListener('resize', updateViewport);
+			dialog.close();
+			if (previousFocus instanceof HTMLElement) previousFocus.focus({ preventScroll: true });
+		};
+	}, [isOpen]);
+	const add = () => {
+		if (!isDraftValid) return;
+		onAdd();
+		nameRef.current?.focus();
+	};
 	return (
-		<div
-			className={`fixed inset-0 z-40 transition-all duration-300 ${containerCls}`}
-			aria-hidden={!isOpen}
+		<dialog
+			ref={dialogRef}
+			aria-modal="true"
+			aria-labelledby="ingredient-sheet-title"
+			aria-describedby="ingredient-sheet-description"
+			onCancel={(event) => {
+				event.preventDefault();
+				onRequestDismiss();
+			}}
+			onKeyDown={(event) => {
+				if (event.key !== 'Escape' || event.nativeEvent.isComposing) return;
+				event.preventDefault();
+				event.stopPropagation();
+				onRequestDismiss();
+			}}
+			onClick={(event) => {
+				if (event.target === event.currentTarget) onRequestDismiss();
+			}}
+			className="fixed inset-x-0 top-0 m-0 h-dvh max-h-none w-full max-w-none overflow-hidden border-0 bg-transparent p-0 text-stone-900 backdrop:bg-stone-900/30 backdrop:backdrop-blur-[3px] open:flex open:items-end open:justify-center dark:text-sp-text-primary"
 		>
-			<button
-				type="button"
-				aria-label="Close modal"
-				className="absolute inset-0 w-full bg-stone-900/30 backdrop-blur-[3px]"
-				onClick={onClose}
-			/>
-			<div
-				className={`absolute bottom-0 left-0 right-0 mx-auto w-full max-w-2xl rounded-t-[28px] border border-stone-200/70 bg-white/85 px-4 pb-8 pt-4 shadow-2xl backdrop-blur-2xl transition-transform duration-300 dark:border-sp-border dark:bg-black/70 ${panelCls}`}
-			>
-				<div className="relative mb-4 grid grid-cols-3 items-center text-sm font-semibold">
+			<div className="flex max-h-full w-full max-w-2xl flex-col rounded-t-[28px] border border-stone-200/70 bg-white px-4 pt-3 shadow-2xl motion-safe:animate-in motion-safe:slide-in-from-bottom-8 motion-safe:duration-200 dark:border-sp-border dark:bg-sp-background">
+				<header className="flex shrink-0 items-center justify-between gap-3">
+					<h2 id="ingredient-sheet-title" className="text-lg font-bold">
+						{t('ingredientEntry.title')}
+					</h2>
 					<button
 						type="button"
-						onClick={onClose}
-						className="justify-self-start text-stone-500 transition hover:text-stone-700 dark:text-sp-text-secondary dark:hover:text-sp-text-primary"
+						aria-label={t('ingredientEntry.dismiss')}
+						onClick={onRequestDismiss}
+						className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100 focus-visible:outline-2 dark:text-sp-text-secondary dark:hover:bg-sp-surface"
 					>
-						Cancel
+						<X className="h-5 w-5" />
 					</button>
-					<p className="justify-self-center text-base font-semibold text-stone-900 dark:text-sp-text-primary">
-						New Ingredient
+				</header>
+				<div className="min-h-0 space-y-3 overflow-y-auto overscroll-contain py-3">
+					<p
+						id="ingredient-sheet-description"
+						className="text-xs text-stone-500 dark:text-sp-text-secondary"
+					>
+						{t('ingredientEntry.description')}
 					</p>
-					<button
-						type="button"
-						onClick={onAdd}
-						disabled={!isDraftValid}
-						className={`justify-self-end font-bold transition ${isDraftValid ? 'text-green-600 hover:text-green-700 dark:text-sp-primary dark:hover:text-sp-primary-hover' : 'pointer-events-none text-stone-400 dark:text-sp-text-disabled'}`}
-					>
-						Add
-					</button>
+					<RecipeIngredientFields
+						draft={draft}
+						units={units}
+						onChange={onChange}
+						nameRef={nameRef}
+						onAdd={add}
+						isDraftValid={isDraftValid}
+					/>
+					{error && (
+						<p role="alert" className="text-sm text-red-600 dark:text-red-400">
+							{error}
+						</p>
+					)}
+					{hasUnaddedInput && (
+						<p className="text-xs text-stone-500 dark:text-sp-text-secondary">
+							{t('ingredientEntry.unadded')}
+						</p>
+					)}
+					<div role="status" aria-live="polite" aria-atomic="true" className="text-sm">
+						{latest && (
+							<div className="rounded-xl bg-green-50 p-3 text-green-800 dark:bg-sp-primary/10 dark:text-sp-primary">
+								<p className="break-words">
+									{t('ingredientEntry.latest')} {latest.name} —{' '}
+									{formatMeasurement(latest.quantity, latest.unit, language)}
+								</p>
+								<p className="mt-1 text-xs font-semibold">
+									{t(
+										batch.length === 1 ? 'ingredientEntry.countOne' : 'ingredientEntry.countMany',
+									).replace('{count}', String(batch.length))}
+								</p>
+							</div>
+						)}
+					</div>
 				</div>
-				<IngredientFields
-					draft={draft}
-					units={units}
-					defaultUnit={defaultUnit}
-					onChange={onChange}
-				/>
+				<footer className="flex shrink-0 gap-3 border-t border-stone-200/70 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] dark:border-sp-border">
+					<Button
+						type="button"
+						onClick={add}
+						disabled={!isDraftValid}
+						className="h-11 flex-1 rounded-xl bg-green-600 font-bold text-white hover:bg-green-700 dark:bg-sp-primary dark:text-sp-text-on-primary"
+					>
+						{t('ingredientEntry.add')}
+					</Button>
+					<Button
+						type="button"
+						variant="outline"
+						onClick={onComplete}
+						className="h-11 flex-1 rounded-xl font-bold"
+					>
+						{t('ingredientEntry.close')}
+					</Button>
+				</footer>
 			</div>
-		</div>
+			{isOpen && isDiscardConfirmationOpen && (
+				<DiscardIngredientBatchDialog
+					count={batch.length}
+					hasUnaddedInput={hasUnaddedInput}
+					onContinue={onCancelDiscard}
+					onDiscard={onDiscard}
+				/>
+			)}
+		</dialog>
 	);
 }

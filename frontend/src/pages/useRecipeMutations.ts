@@ -15,6 +15,7 @@ type MutationsConfig = {
 	recipeId?: string;
 	initialData?: RecipeDetail;
 	onReset: () => void;
+	onSaved: () => void;
 };
 
 export function useRecipeMutations({
@@ -24,6 +25,7 @@ export function useRecipeMutations({
 	recipeId,
 	initialData,
 	onReset,
+	onSaved,
 }: MutationsConfig) {
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
@@ -47,6 +49,7 @@ export function useRecipeMutations({
 				bodyKey: 'recipe.create.successBody',
 			});
 			onReset();
+			onSaved();
 			void queryClient.invalidateQueries({ queryKey: ['recipes', 'my'] });
 			void queryClient.invalidateQueries({ queryKey: ['recipes', 'house'] });
 			if (canGoBack) {
@@ -80,6 +83,7 @@ export function useRecipeMutations({
 				titleKey: 'recipe.update.success',
 				bodyKey: 'recipe.update.successBody',
 			});
+			onSaved();
 			void queryClient.invalidateQueries({ queryKey: ['recipes', 'my'] });
 			void queryClient.invalidateQueries({ queryKey: ['recipes', 'house'] });
 			void queryClient.invalidateQueries({ queryKey: ['recipes', 'detail', recipeId] });

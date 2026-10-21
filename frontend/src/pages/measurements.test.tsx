@@ -34,7 +34,10 @@ vi.mock('@/lib/api', () => ({ apiFetch: async () => [] }));
 vi.mock('./useRecipeMutations', () => ({
 	useRecipeMutations: () => ({ createMutation: {}, updateMutation: {} }),
 }));
-beforeEach(() => window.localStorage.clear());
+beforeEach(() => {
+	window.localStorage.clear();
+	window.sessionStorage.clear();
+});
 afterEach(cleanup);
 
 describe('measurement UI', () => {
@@ -46,9 +49,13 @@ describe('measurement UI', () => {
 			</MeasurementProviders>
 		);
 		const { result, unmount } = renderHook(() => useAddRecipeForm({ recipeId: unit }), { wrapper });
+		act(() => result.current.openModal());
 		act(() => result.current.setDraft({ name: 'Ingredient', quantity: '0,5', unit }));
 		expect(result.current.isDraftValid).toBe(true);
 		act(() => result.current.addIngredient());
+		expect(result.current.ingredients).toEqual([]);
+		expect(result.current.ingredientBatch).toEqual([{ name: 'Ingredient', quantity: 0.5, unit }]);
+		act(() => result.current.completeIngredientBatch());
 		expect(result.current.ingredients).toEqual([{ name: 'Ingredient', quantity: 0.5, unit }]);
 		unmount();
 		client.clear();
@@ -79,9 +86,15 @@ describe('measurement UI', () => {
 				isOpen
 				draft={{ name: 'Salt', quantity: '0,0001', unit: 'Teaspoon' }}
 				units={units.map((id) => ({ id, name: id, symbol: id, category: '' }))}
-				defaultUnit="Piece"
 				isDraftValid={false}
-				onClose={vi.fn()}
+				batch={[]}
+				hasUnaddedInput
+				error={null}
+				isDiscardConfirmationOpen={false}
+				onComplete={vi.fn()}
+				onRequestDismiss={vi.fn()}
+				onCancelDiscard={vi.fn()}
+				onDiscard={vi.fn()}
 				onAdd={vi.fn()}
 				onChange={vi.fn()}
 			/>,
