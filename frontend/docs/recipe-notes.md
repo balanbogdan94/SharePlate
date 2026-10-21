@@ -56,8 +56,10 @@ authentication flow; no preview-specific authentication bypass is provided.
 For a parallel worktree, use a separate port and the development API proxy:
 
 ```sh
-cd frontend && VITE_API_BASE_URL=/api DEV_API_TARGET=http://localhost:5212 VITE_ENTRA_REDIRECT_URI=http://localhost:5175 npm run dev -- --host 127.0.0.1 --port 5175 --strictPort
+cd frontend && VITE_API_BASE_URL=/api DEV_API_TARGET=http://localhost:5212 VITE_ENTRA_REDIRECT_URI=http://localhost:5175/redirect.html npm run dev -- --host 127.0.0.1 --port 5175 --strictPort
 ```
+
+Register the callback URL as described in [authentication setup](./authentication.md).
 
 Start the updated backend on port 5212 first. Do not replace an existing server
 or apply migrations to a shared/remote database without permission.

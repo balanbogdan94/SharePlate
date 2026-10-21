@@ -1,5 +1,5 @@
 const STATIC_CACHE = 'shareplate-static-v2';
-const RUNTIME_CACHE = 'shareplate-runtime-v1';
+const RUNTIME_CACHE = 'shareplate-runtime-v2';
 
 const APP_SHELL = [
 	'/',
@@ -41,6 +41,11 @@ self.addEventListener('fetch', (event) => {
 		return;
 	}
 
+	const url = new URL(request.url);
+	if (url.origin === self.location.origin && url.pathname === '/redirect.html') {
+		return;
+	}
+
 	if (request.mode === 'navigate') {
 		event.respondWith(
 			fetch(request)
@@ -57,7 +62,6 @@ self.addEventListener('fetch', (event) => {
 		return;
 	}
 
-	const url = new URL(request.url);
 	if (url.origin !== self.location.origin) {
 		return;
 	}

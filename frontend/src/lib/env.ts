@@ -32,7 +32,7 @@ const envSchema = z.object({
 		.string()
 		.min(1)
 		.default('api://009e0524-06fc-42ab-9124-c27633d315b4/access_as_user'),
-	VITE_ENTRA_REDIRECT_URI: z.url().default('http://localhost:5173'),
+	VITE_ENTRA_REDIRECT_URI: z.url().default('http://localhost:5173/redirect.html'),
 });
 
 const parseResult = envSchema.safeParse({
