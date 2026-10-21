@@ -7,14 +7,16 @@ import {
 import { env } from '@/lib/env';
 
 const authorityHost = new URL(env.entraAuthority).host;
+const redirectUri = new URL('/redirect.html', env.entraRedirectUri).href;
+const postLogoutRedirectUri = new URL('/', env.entraRedirectUri).href;
 
 const msalConfig: Configuration = {
 	auth: {
 		clientId: env.entraClientId,
 		authority: env.entraAuthority,
 		knownAuthorities: [authorityHost],
-		redirectUri: env.entraRedirectUri,
-		postLogoutRedirectUri: env.entraRedirectUri,
+		redirectUri,
+		postLogoutRedirectUri,
 	},
 	cache: {
 		cacheLocation: BrowserCacheLocation.LocalStorage,
