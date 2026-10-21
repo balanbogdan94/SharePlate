@@ -11,13 +11,29 @@ import type {
 	Unit,
 	UnitType,
 } from '@/pages/tabs/home/types';
-import type { IngredientDraft } from './AddRecipeIngredientModal';
+import type { IngredientDraft } from './RecipeIngredientFields';
 import { useRecipeMutations } from './useRecipeMutations';
 import { useI18n } from '@/i18n/I18nContext';
 import { isUnitType, parseQuantity, MIN_QUANTITY } from '@/lib/measurements';
 
 const defaultRecipeForm: FormState = { title: '', notes: '', imageUrl: '' };
-type RecipeDraft = { form: FormState; ingredients: IngredientPayload[] };
+type RecipeDraft = {
+	form: FormState;
+	ingredients: IngredientPayload[];
+	ingredientBatch?: IngredientPayload[];
+};
+type IngredientState = {
+	ingredients: IngredientPayload[];
+	batch: IngredientPayload[];
+	draft: IngredientDraft;
+	isOpen: boolean;
+	confirmDiscard: boolean;
+	error: string | null;
+};
+
+function hasUnaddedInput(draft: IngredientDraft) {
+	return Boolean(draft.name.trim() || draft.quantity.trim());
+}
 
 function toErrorMessage(error: unknown, fallback: string): string {
 	if (error instanceof Error && error.message.trim()) return error.message;
@@ -56,13 +72,17 @@ export function useAddRecipeForm({ recipeId, initialData }: HookProps) {
 
 	const [form, setForm] = useState<FormState>(() => savedDraft?.form ?? toInitForm(initialData));
 	const [imageFile, setImageFile] = useState<File | null>(null);
-	const [ingredients, setIngredients] = useState<IngredientPayload[]>(
-		() => savedDraft?.ingredients ?? toInitIngredients(initialData),
-	);
+	const [ingredientState, setIngredientState] = useState<IngredientState>(() => ({
+		ingredients: savedDraft?.ingredients ?? toInitIngredients(initialData),
+		batch: savedDraft?.ingredientBatch ?? [],
+		draft: { name: '', quantity: '', unit: savedDraft?.ingredientBatch?.at(-1)?.unit ?? 'Piece' },
+		isOpen: Boolean(savedDraft?.ingredientBatch?.length),
+		confirmDiscard: false,
+		error: null,
+	}));
+	const { ingredients, batch: ingredientBatch, draft, isOpen: isModalOpen } = ingredientState;
 	const [ingredientsError, setIngredientsError] = useState<string | null>(null);
 	const [notesError, setNotesError] = useState<string | null>(null);
-	const [isModalOpen, setIsModalOpen] = useState(false);
-	const [draft, setDraft] = useState<IngredientDraft>({ name: '', quantity: '', unit: 'Piece' });
 
 	const navigate = useNavigate();
 	const router = useRouter();
@@ -75,8 +95,12 @@ export function useAddRecipeForm({ recipeId, initialData }: HookProps) {
 	const defaultUnit = useMemo<UnitType>(() => units?.[0]?.id ?? 'Piece', [units]);
 
 	useEffect(() => {
-		writeDraft({ form, ingredients });
-	}, [form, ingredients, writeDraft]);
+		writeDraft({
+			form,
+			ingredients,
+			...(ingredientBatch.length ? { ingredientBatch } : {}),
+		});
+	}, [form, ingredients, ingredientBatch, writeDraft]);
 
 	useEffect(() => {
 		if (!form.imageUrl.startsWith('data:')) return;
@@ -88,10 +112,17 @@ export function useAddRecipeForm({ recipeId, initialData }: HookProps) {
 	const resetForm = useCallback(() => {
 		setForm(defaultRecipeForm);
 		setImageFile(null);
-		setIngredients([]);
+		setIngredientState({
+			ingredients: [],
+			batch: [],
+			draft: { name: '', quantity: '', unit: defaultUnit },
+			isOpen: false,
+			confirmDiscard: false,
+			error: null,
+		});
 		setIngredientsError(null);
 		clearDraft();
-	}, [clearDraft]);
+	}, [clearDraft, defaultUnit]);
 
 	const discard = useCallback(async () => {
 		clearDraft();
@@ -108,39 +139,82 @@ export function useAddRecipeForm({ recipeId, initialData }: HookProps) {
 		recipeId,
 		initialData,
 		onReset: resetForm,
+		onSaved: clearDraft,
 	});
 	const openModal = () => {
-		setDraft({ name: '', quantity: '', unit: defaultUnit });
-		setIsModalOpen(true);
+		setIngredientState((previous) => ({
+			...previous,
+			draft:
+				hasUnaddedInput(previous.draft) || previous.batch.length
+					? previous.draft
+					: { name: '', quantity: '', unit: defaultUnit },
+			isOpen: true,
+			confirmDiscard: false,
+			error: null,
+		}));
 	};
-	const closeModal = () => setIsModalOpen(false);
-	const addIngredient = () => {
-		const name = draft.name.trim();
-		const qty = parseQuantity(draft.quantity);
-		if (qty === null || !isUnitType(draft.unit)) {
-			setIngredientsError(
-				t(qty === null ? 'measurements.invalidQuantity' : 'measurements.invalidUnit'),
-			);
-			return;
-		}
-		if (name.length < 2) {
-			setIngredientsError('Enter an ingredient name with at least two characters.');
-			return;
-		}
-		setIngredients((prev) => [...prev, { name, quantity: qty, unit: draft.unit }]);
+	const setDraft = (value: IngredientDraft) =>
+		setIngredientState((previous) => ({ ...previous, draft: value, error: null }));
+	const completeIngredientBatch = () => {
+		setIngredientState((previous) => ({
+			...previous,
+			ingredients: [...previous.ingredients, ...previous.batch],
+			batch: [],
+			isOpen: false,
+			confirmDiscard: false,
+			error: null,
+		}));
 		setIngredientsError(null);
-		setIsModalOpen(false);
+	};
+	const requestDismissModal = () =>
+		setIngredientState((previous) => ({
+			...previous,
+			confirmDiscard: Boolean(previous.batch.length || hasUnaddedInput(previous.draft)),
+			isOpen: Boolean(previous.batch.length || hasUnaddedInput(previous.draft)),
+		}));
+	const cancelDiscardIngredientBatch = () =>
+		setIngredientState((previous) => ({ ...previous, confirmDiscard: false }));
+	const discardIngredientBatch = () =>
+		setIngredientState((previous) => ({
+			...previous,
+			batch: [],
+			draft: { name: '', quantity: '', unit: defaultUnit },
+			isOpen: false,
+			confirmDiscard: false,
+			error: null,
+		}));
+	const addIngredient = () => {
+		setIngredientState((previous) => {
+			if (!previous.isOpen || previous.confirmDiscard) return previous;
+			const name = previous.draft.name.trim();
+			const quantity = parseQuantity(previous.draft.quantity);
+			if (quantity === null || !isUnitType(previous.draft.unit)) {
+				return {
+					...previous,
+					error: t(quantity === null ? 'measurements.invalidQuantity' : 'measurements.invalidUnit'),
+				};
+			}
+			if (name.length < 2) {
+				return { ...previous, error: t('ingredientEntry.invalidName') };
+			}
+			return {
+				...previous,
+				batch: [...previous.batch, { name, quantity, unit: previous.draft.unit }],
+				draft: { ...previous.draft, name: '', quantity: '' },
+				error: null,
+			};
+		});
 	};
 	const removeIngredient = (index: number) => {
-		setIngredients((prev) => {
-			const next = prev.filter((_, i) => i !== index);
-			if (next.length === 0) setIngredientsError('Add at least one ingredient.');
-			return next;
-		});
+		setIngredientState((previous) => ({
+			...previous,
+			ingredients: previous.ingredients.filter((_, i) => i !== index),
+		}));
+		if (ingredients.length === 1) setIngredientsError('Add at least one ingredient.');
 	};
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
-		if (notesError) return;
+		if (isModalOpen || notesError) return;
 		unlockAudio();
 		if (ingredients.length === 0) {
 			setIngredientsError('Add at least one ingredient.');
@@ -165,7 +239,11 @@ export function useAddRecipeForm({ recipeId, initialData }: HookProps) {
 	};
 	const isPending = createMutation.isPending || updateMutation.isPending;
 	const isSaveDisabled =
-		isPending || !form.title.trim() || ingredients.length === 0 || Boolean(notesError);
+		isPending ||
+		isModalOpen ||
+		!form.title.trim() ||
+		ingredients.length === 0 ||
+		Boolean(notesError);
 	const submitError =
 		notesError ??
 		(createMutation.isError
@@ -186,9 +264,16 @@ export function useAddRecipeForm({ recipeId, initialData }: HookProps) {
 		ingredients,
 		ingredientsError,
 		isModalOpen,
+		ingredientBatch,
+		ingredientDraftError: ingredientState.error,
+		isDiscardConfirmationOpen: ingredientState.confirmDiscard,
+		hasUnaddedIngredient: hasUnaddedInput(draft),
 		draft,
 		setDraft,
-		closeModal,
+		completeIngredientBatch,
+		requestDismissModal,
+		cancelDiscardIngredientBatch,
+		discardIngredientBatch,
 		units,
 		defaultUnit,
 		isSaveDisabled,
