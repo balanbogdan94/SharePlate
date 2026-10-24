@@ -6,4 +6,5 @@ void broadcastResponseToMainFrame().catch((error: unknown) => {
 	if (status) {
 		status.textContent = 'Unable to complete sign-in. Return to SharePlate and try again.';
 	}
+	document.getElementById('auth-return')?.removeAttribute('hidden');
 });

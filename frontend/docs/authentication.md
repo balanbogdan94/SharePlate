@@ -9,6 +9,23 @@ full-page sign-in, it preserves the response in MSAL's temporary storage and
 returns to the original page, where `MsalProvider` completes authentication.
 Existing return URLs, including their query strings and fragments, remain in use.
 
+## Splash screen
+
+Startup (MSAL initialization and `/session/provision`) shows a branded splash
+instead of a spinner. The same markup and styles (`public/splash.css`) are used in
+three places so hand-off is seamless:
+
+- `index.html` renders the splash inside `#root` before any JavaScript runs.
+- `SplashScreen` (React) replaces it while `auth.status === 'loading'`, for at
+  least 600ms on first load to avoid flicker. Provisioning errors skip the
+  minimum and use the existing error screen.
+- `redirect.html` uses it too, without React or the router.
+
+`public/splash-theme.js` applies the saved theme (`shareplate.user.settings`, or
+the system preference) before first paint. The router mounts only after the
+splash, so signed-in users land directly on the opened URL (`/` → `/plans`) and
+signed-out users on `/login`, with no intermediate screen.
+
 ## Entra registration and rollout
 
 Before deploying this change, add the following **Single-page application**

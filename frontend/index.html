@@ -12,10 +12,22 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
   <title>SharePlate</title>
+  <link rel="stylesheet" href="/splash.css" />
+  <script src="/splash-theme.js"></script>
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <main class="sp-splash" role="status" aria-busy="true" aria-label="SharePlate">
+      <div class="sp-splash__bg" aria-hidden="true">
+        <div class="sp-splash__blob sp-splash__blob--green"></div>
+        <div class="sp-splash__blob sp-splash__blob--sky"></div>
+        <div class="sp-splash__blob sp-splash__blob--emerald"></div>
+      </div>
+      <div class="sp-splash__logo"><img src="/icons/icon-512.png" alt="" /></div>
+      <p class="sp-splash__brand">SharePlate</p>
+    </main>
+  </div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

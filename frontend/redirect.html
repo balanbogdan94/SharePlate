@@ -4,11 +4,20 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>SharePlate authentication</title>
+		<link rel="stylesheet" href="/splash.css" />
+		<script src="/splash-theme.js"></script>
 	</head>
 	<body>
-		<main>
-			<p id="auth-status" role="status">Completing sign-in...</p>
-			<a href="/">Return to SharePlate</a>
+		<main class="sp-splash" aria-busy="true">
+			<div class="sp-splash__bg" aria-hidden="true">
+				<div class="sp-splash__blob sp-splash__blob--green"></div>
+				<div class="sp-splash__blob sp-splash__blob--sky"></div>
+				<div class="sp-splash__blob sp-splash__blob--emerald"></div>
+			</div>
+			<div class="sp-splash__logo"><img src="/icons/icon-512.png" alt="" /></div>
+			<p class="sp-splash__brand">SharePlate</p>
+			<p id="auth-status" role="status" class="sp-splash__status"></p>
+			<a id="auth-return" class="sp-splash__status" href="/" hidden>Return to SharePlate</a>
 		</main>
 		<script type="module" src="/src/auth/redirect.ts"></script>
 	</body>
