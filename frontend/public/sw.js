@@ -1,11 +1,13 @@
-const STATIC_CACHE = 'shareplate-static-v2';
-const RUNTIME_CACHE = 'shareplate-runtime-v2';
+const STATIC_CACHE = 'shareplate-static-v3';
+const RUNTIME_CACHE = 'shareplate-runtime-v3';
 
 const APP_SHELL = [
 	'/',
 	'/index.html',
 	'/manifest.webmanifest',
 	'/offline.html',
+	'/splash.css',
+	'/splash-theme.js',
 	'/icons/icon-192.png',
 	'/icons/icon-512.png',
 	'/icons/icon-maskable-512.png',

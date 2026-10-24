@@ -65,7 +65,7 @@ describe('service-worker authentication callback handling', () => {
 		expect(respondWith).toHaveBeenCalledOnce();
 		expect(await respondWith.mock.calls[0]?.[0]).toBe(response);
 		expect(fetchMock).toHaveBeenCalledWith(request);
-		expect(cacheOpen).toHaveBeenCalledWith('shareplate-runtime-v2');
+		expect(cacheOpen).toHaveBeenCalledWith('shareplate-runtime-v3');
 		expect(cachePut).toHaveBeenCalledWith(request, expect.any(Response));
 	});
 });
