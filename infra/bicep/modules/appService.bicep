@@ -42,14 +42,21 @@ resource appService 'Microsoft.Web/sites@2025-03-01' = {
           value: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/PostgresConnectionString)'
         }
         {
-          // Exact name expected by both the codeless auto-instrumentation agent and the Azure Monitor SDKs.
+          // SDK telemetry is filtered inside the API before export.
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
           value: appInsightsConnectionString
         }
         {
-          // Enables the App Insights site extension - what the Portal's "Turn on Application Insights" button does.
+          name: 'Telemetry__Enabled'
+          value: 'true'
+        }
+        {
           name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
-          value: '~3'
+          value: 'disabled'
+        }
+        {
+          name: 'APPINSIGHTS_JAVASCRIPT_ENABLED'
+          value: 'false'
         }
         {
           // No connection string/key here - BlobStorageService uses this URI with DefaultAzureCredential,

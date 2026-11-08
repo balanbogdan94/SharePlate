@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from 'react';
 import { apiTokenRequest } from '@/auth/msal';
 import { apiFetch } from '@/lib/api';
+import { reportFailure } from '@/lib/telemetry';
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'error';
 
@@ -71,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			})
 			.catch((provisioningError: unknown) => {
 				if (cancelled) return;
+				reportFailure(provisioningError, 'auth.provision.failed');
 				setProvisioningResult({
 					accountId,
 					attempt: retryCount,
@@ -88,13 +90,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	const login = useCallback(
 		async (returnTo = '/plans') => {
 			const redirectStartPage = new URL(returnTo, window.location.origin).toString();
-			await instance.loginRedirect({ ...apiTokenRequest, redirectStartPage });
+			await instance
+				.loginRedirect({ ...apiTokenRequest, redirectStartPage })
+				.catch((error: unknown) => {
+					reportFailure(error, 'auth.login.failed');
+					throw error;
+				});
 		},
 		[instance],
 	);
 
 	const logout = useCallback(async () => {
-		await instance.logoutRedirect({ account });
+		await instance.logoutRedirect({ account }).catch((error: unknown) => {
+			reportFailure(error, 'auth.logout.failed');
+			throw error;
+		});
 	}, [account, instance]);
 
 	const retryProvisioning = useCallback(() => {

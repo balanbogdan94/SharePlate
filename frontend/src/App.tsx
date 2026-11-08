@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 import { MsalProvider } from '@azure/msal-react';
 import { AuthProvider, useAuth } from '@/auth/AuthContext';
@@ -9,9 +9,14 @@ import { Toaster } from '@/components/ui/sonner';
 import { I18nProvider } from '@/i18n/I18nContext';
 import { useMinimumDuration } from '@/lib/useMinimumDuration';
 import { UserSettingsProvider } from '@/settings/UserSettingsContext';
+import { AppErrorBoundary } from '@/components/layout/AppErrorBoundary';
+import { reportFailure } from '@/lib/telemetry';
 import { router } from './router';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+	queryCache: new QueryCache({ onError: (error) => reportFailure(error, 'query.failed') }),
+	mutationCache: new MutationCache({ onError: (error) => reportFailure(error, 'mutation.failed') }),
+});
 const MIN_SPLASH_MS = 600;
 
 function AppRouter() {
@@ -41,17 +46,19 @@ function AppRouter() {
 
 export default function App() {
 	return (
-		<MsalProvider instance={msalInstance}>
-			<QueryClientProvider client={queryClient}>
-				<UserSettingsProvider>
-					<I18nProvider>
-						<AuthProvider>
-							<AppRouter />
-							<Toaster />
-						</AuthProvider>
-					</I18nProvider>
-				</UserSettingsProvider>
-			</QueryClientProvider>
-		</MsalProvider>
+		<AppErrorBoundary>
+			<MsalProvider instance={msalInstance}>
+				<QueryClientProvider client={queryClient}>
+					<UserSettingsProvider>
+						<I18nProvider>
+							<AuthProvider>
+								<AppRouter />
+								<Toaster />
+							</AuthProvider>
+						</I18nProvider>
+					</UserSettingsProvider>
+				</QueryClientProvider>
+			</MsalProvider>
+		</AppErrorBoundary>
 	);
 }
