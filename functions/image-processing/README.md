@@ -18,6 +18,9 @@ no Azure SDK, PostgreSQL, trigger, HTTP endpoint, CLI or frontend dependency.
 3. `encode(original, width)` returns
    `{ content: Buffer, width, height }` for a static WebP variant. It validates
    the input limits, format and absence of animation even without `inspect`.
+   All three entry points (`inspect`, `encode`, `encodeAvatar`) preserve
+   validation error codes and report decoder failures as
+   `InvalidImage('invalid_decode')`, retaining the original error in `cause`.
 
 ```ts
 import { encode, inspect, widthsFor } from './conversion.js';
@@ -78,6 +81,11 @@ sequence brands. The HEIC fixture is a generated 80x120 red image, encoded using
 macOS `sips`. Two-frame AVIF/APNG fixtures use FFmpeg's generated `testsrc`
 pattern. None of the fixtures contains a user photograph; these tools are not
 required to run the tests.
+The Display P3 HEIC fixture starts as an 80x120 sRGB colour patch
+`[170, 120, 80]`, converted to Display P3 by sharp and encoded by `sips`.
+Its NCLX-only counterpart uses the same encoded pixels but expresses Display P3
+using primaries 12 and transfer 13 instead of an ICC profile. Tests compare
+decoded output colours against the original sRGB patch, not only profile tags.
 
 ## Phone formats
 
@@ -86,6 +94,16 @@ extensions. In particular, sharp reports both AVIF and HEIC/HEIF as `heif`.
 AVIF is decoded by sharp. HEVC-compressed HEIC/HEIF is decoded using
 `heic-decode` (libheif WebAssembly), then its pixels are passed to sharp;
 no system HEVC codec or custom libvips build is required.
+Before passing HEIC pixels to sharp, LittleCMS converts the source RGB ICC
+profile to sRGB. ICC-free NCLX Display P3 (primaries 12, transfer 13) is also
+converted; sRGB or unspecified NCLX primaries/transfer values use sRGB.
+The profile applies to the primary image, not an unrelated tile/thumbnail.
+Conversion preserves alpha and limits WASM scratch memory to small pixel chunks.
+The output strips profiles and EXIF only after colour conversion.
+
+Other ICC-free HEIC colour encodings, including HDR PQ/HLG transfer functions,
+are explicitly rejected with `invalid_decode` and an explanatory cause rather
+than silently relabelled sRGB. Tone mapping those inputs is not implemented.
 
 Camera RAW/DNG, including Apple ProRAW, and TIFF are not supported. Support
 does not imply every phone image fits the limits: photographs above 60 MP
@@ -106,7 +124,8 @@ perceived quality on real photographs. Those validations belong to later slices.
 
 ## Licenses
 
-sharp is Apache-2.0 and heic-decode is ISC. libvips, libheif and bundled codecs
+sharp is Apache-2.0, heic-decode is ISC, and lcms-wasm/LittleCMS are MIT.
+libvips, libheif and bundled codecs
 have their own licenses.
 Retain the installed package notices when distributing native binaries.
 See [sharp](https://sharp.pixelplumbing.com/) and

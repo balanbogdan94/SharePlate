@@ -1,5 +1,6 @@
 import decodeHeic from 'heic-decode';
 import sharp, { type Sharp } from 'sharp';
+import { normaliseHeicColour } from './heic-colour.js';
 
 export type ImageInfo = { width: number };
 export type EncodedImage = { content: Buffer; width: number; height: number };
@@ -85,6 +86,7 @@ async function openImage(
 			const decoded = await decodeHeic({ buffer: content });
 			if (decoded.width * decoded.height > maxInputPixels)
 				throw new InvalidImage('invalid_dimensions');
+			await normaliseHeicColour(content, metadata.icc, decoded.data);
 			// libheif applies HEIF rotation/mirroring while decoding.
 			return {
 				image: sharp(
@@ -112,17 +114,23 @@ async function openImage(
 	};
 }
 
-export async function inspect(content: Buffer): Promise<ImageInfo> {
+async function withImageErrors<T>(operation: () => Promise<T>): Promise<T> {
 	try {
-		const { image, width } = await openImage(content);
-		await image.stats();
-		return { width };
+		return await operation();
 	} catch (error) {
 		if (error instanceof InvalidImage) throw error;
 		if (error instanceof Error)
 			throw new InvalidImage('invalid_decode', { cause: error });
 		throw error;
 	}
+}
+
+export function inspect(content: Buffer): Promise<ImageInfo> {
+	return withImageErrors(async () => {
+		const { image, width } = await openImage(content);
+		await image.stats();
+		return { width };
+	});
 }
 
 async function encodeImage(
@@ -160,9 +168,9 @@ async function encodeImage(
 }
 
 export function encode(content: Buffer, width: number): Promise<EncodedImage> {
-	return encodeImage(content, width);
+	return withImageErrors(() => encodeImage(content, width));
 }
 
 export function encodeAvatar(content: Buffer): Promise<EncodedImage> {
-	return encodeImage(content, avatarSize, true);
+	return withImageErrors(() => encodeImage(content, avatarSize, true));
 }

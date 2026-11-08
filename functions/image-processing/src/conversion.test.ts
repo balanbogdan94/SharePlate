@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { crc32 } from 'node:zlib';
 import sharp from 'sharp';
+import decodeHeic from 'heic-decode';
 import { encode, encodeAvatar, inspect, InvalidImage, widthsFor } from './conversion.js';
+import { normaliseHeicColour } from './heic-colour.js';
 
 async function fixture(format: 'jpeg' | 'png' | 'webp' | 'avif', width = 2400, height = 1600): Promise<Buffer> {
   const pixels = Buffer.alloc(width * height * 3);
@@ -95,6 +97,32 @@ test('invalid sizes, corrupt data and unsupported image formats are rejected', a
   const tiff = await sharp({ create: { width: 10, height: 10, channels: 3, background: 'red' } }).tiff().toBuffer();
   await assert.rejects(inspect(tiff), error => error instanceof InvalidImage && error.message === 'invalid_format');
 });
+
+const entryPoints = [
+  { name: 'inspect', run: inspect },
+  { name: 'encode', run: (content: Buffer) => encode(content, 40) },
+  { name: 'encodeAvatar', run: encodeAvatar },
+];
+
+for (const { name, run } of entryPoints) {
+  test(`${name}: corrupt metadata and pixel data use InvalidImage with the original cause`, async () => {
+    const jpeg = await sharp({ create: { width: 80, height: 60, channels: 3, background: 'green' } }).jpeg().toBuffer();
+    const truncated = jpeg.subarray(0, jpeg.length - 20);
+    assert.equal((await sharp(truncated).metadata()).width, 80);
+    for (const content of [Buffer.from('not an image'), truncated]) {
+      await assert.rejects(run(content), error =>
+        error instanceof InvalidImage && error.message === 'invalid_decode' && error.cause instanceof Error);
+    }
+  });
+
+  test(`${name}: validation errors retain their original codes without being wrapped`, async () => {
+    const gif = await sharp({ create: { width: 10, height: 10, channels: 3, background: 'red' } }).gif().toBuffer();
+    for (const [content, code] of [[Buffer.alloc(0), 'invalid_size'], [gif, 'invalid_format']] as const) {
+      await assert.rejects(run(content), error =>
+        error instanceof InvalidImage && error.message === code && error.cause === undefined);
+    }
+  });
+}
 
 test('valid images above 5 MiB and exactly at the 100 MiB limit are accepted', async () => {
   const original = await fixture('jpeg', 80, 60);
@@ -196,6 +224,78 @@ test('HEIC/HEIF bytes are decoded into a static WebP without native HEVC support
   assert.equal(avatarMetadata.format, 'webp');
   assert.equal(avatarMetadata.width, 80);
   assert.equal(avatarMetadata.height, 80);
+});
+
+for (const file of ['phone-p3.heic', 'phone-p3-nclx.heic']) {
+  test(`${file}: recipe and avatar pixels are converted from Display P3 to sRGB before metadata removal`, async () => {
+    const content = await readFile(new URL(`../src/fixtures/${file}`, import.meta.url));
+    const metadata = await sharp(content).metadata();
+    assert.equal(metadata.hasProfile, file === 'phone-p3.heic');
+    const decoded = await decodeHeic({ buffer: content });
+    const expected = [170, 120, 80];
+    assert.ok(Math.abs(decoded.data[0]! - expected[0]!) > 5, 'fixture must distinguish P3 pixels from sRGB');
+    assert.deepEqual(await inspect(content), { width: 80 });
+    for (const output of [await encode(content, 40), await encodeAvatar(content)]) {
+      const stats = await sharp(output.content).stats();
+      for (let channel = 0; channel < 3; channel++) {
+        assert.ok(Math.abs(stats.channels[channel]!.mean - expected[channel]!) <= 4,
+          `${file}: channel ${channel} should be close to ${expected[channel]}, got ${stats.channels[channel]!.mean}`);
+      }
+      const resultMetadata = await sharp(output.content).metadata();
+      assert.equal(resultMetadata.icc, undefined);
+      assert.equal(resultMetadata.exif, undefined);
+    }
+  });
+}
+
+test('HEIC colour conversion preserves alpha and handles multiple bounded chunks', async () => {
+  const content = await readFile(new URL('../src/fixtures/phone-p3.heic', import.meta.url));
+  const { icc } = await sharp(content).metadata();
+  assert.ok(icc);
+  const pixels = new Uint8ClampedArray(70_000 * 4);
+  for (let offset = 0; offset < pixels.length; offset += 4)
+    pixels.set([162, 122, 86, (offset / 4) % 256], offset);
+  await normaliseHeicColour(content, icc, pixels);
+  for (let offset = 0; offset < pixels.length; offset += 4) {
+    assert.ok(Math.abs(pixels[offset]! - 170) <= 2);
+    assert.ok(Math.abs(pixels[offset + 1]! - 120) <= 2);
+    assert.ok(Math.abs(pixels[offset + 2]! - 80) <= 2);
+    assert.equal(pixels[offset + 3], (offset / 4) % 256);
+  }
+});
+
+test('HEIC colour conversion rejects invalid ICC data instead of assuming sRGB', async () => {
+  const content = await readFile(new URL('../src/fixtures/phone-p3.heic', import.meta.url));
+  const pixels = new Uint8ClampedArray([162, 122, 86, 255]);
+  await assert.rejects(normaliseHeicColour(content, Buffer.from('not an ICC profile'), pixels),
+    /Invalid HEIC ICC profile/);
+  assert.deepEqual(Array.from(pixels), [162, 122, 86, 255]);
+});
+
+test('HEIC colour conversion ignores colour properties not associated with the primary image', async () => {
+  const content = Buffer.from(await readFile(new URL('../src/fixtures/phone-p3-nclx.heic', import.meta.url)));
+  const nclx = content.indexOf('nclx');
+  const ipma = content.indexOf('ipma');
+  assert.ok(nclx >= 0 && ipma >= 0);
+  assert.equal(content[ipma + 15]! & 0x7f, 1);
+  content[ipma + 15] = 0;
+  content.writeUInt16BE(16, nclx + 6);
+  const pixels = new Uint8ClampedArray([162, 122, 86, 255]);
+  await normaliseHeicColour(content, undefined, pixels);
+  assert.deepEqual(Array.from(pixels), [162, 122, 86, 255]);
+});
+
+test('unsupported HEIC transfer functions are rejected explicitly rather than labelled sRGB', async () => {
+  const original = await readFile(new URL('../src/fixtures/phone-p3-nclx.heic', import.meta.url));
+  const content = Buffer.from(original);
+  const nclx = content.indexOf('nclx');
+  assert.ok(nclx >= 0);
+  content.writeUInt16BE(16, nclx + 6);
+  for (const { run } of entryPoints) {
+    await assert.rejects(run(content), error =>
+      error instanceof InvalidImage && error.message === 'invalid_decode'
+      && error.cause instanceof Error && /Unsupported HEIF NCLX profile/.test(error.cause.message));
+  }
 });
 
 test('HEIF and AVIF sequence brands are rejected even without a reported frame count', async () => {
