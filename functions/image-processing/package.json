@@ -2,22 +2,28 @@
   "name": "shareplate-image-processing",
   "private": true,
   "type": "module",
-  "main": "dist/conversion.js",
+  "main": "dist/function.js",
   "engines": {
     "node": ">=24 <25"
   },
   "scripts": {
-    "build": "tsc",
-    "test": "npm run build && node --test dist/*.test.js"
+    "build": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync(new URL('./dist', import.meta.url), { recursive: true, force: true });\" && tsc",
+    "test": "npm run build && node --test dist/conversion.test.js dist/worker.test.js dist/adapters.test.js",
+    "test:integration": "npm run build && node --test dist/integration.test.js"
   },
   "dependencies": {
+    "@azure/functions": "4.17.0",
+    "@azure/identity": "4.14.1",
+    "@azure/storage-blob": "12.34.0",
     "heic-decode": "2.1.0",
     "lcms-wasm": "1.0.3",
+    "pg": "8.23.1",
     "sharp": "0.35.5"
   },
   "devDependencies": {
     "@types/heic-decode": "2.0.0",
     "@types/node": "24.11.0",
+    "@types/pg": "8.23.1",
     "typescript": "5.9.3"
   }
 }
