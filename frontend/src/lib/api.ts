@@ -1,5 +1,8 @@
 import { env } from '@/lib/env';
 import { acquireApiAccessToken } from '@/auth/accessToken';
+import { ApiError, isAbortError } from '@/lib/apiError';
+import { safeTraceId } from '@/lib/telemetryPolicy';
+import { normalizeRoute } from '@/lib/telemetryRoutes';
 
 const apiBaseUrl = env.apiBaseUrl;
 
@@ -30,6 +33,13 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 				...(init?.headers ?? {}),
 			},
 			...init,
+		}).catch((error: unknown) => {
+			if (isAbortError(error)) throw error;
+			throw new ApiError(error instanceof Error ? error.message : 'Network request failed.', {
+				status: null,
+				route: normalizeRoute(normalizedPath),
+				method: init?.method ?? 'GET',
+			});
 		});
 	};
 
@@ -41,7 +51,24 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
 	if (!response.ok) {
 		const body = await response.text();
-		throw new Error(body || `Request failed with status ${response.status}`);
+		throw new ApiError(body || `Request failed with status ${response.status}`, {
+			status: response.status,
+			route: normalizeRoute(normalizedPath),
+			method: init?.method ?? 'GET',
+			traceId: readTraceId(body),
+		});
+	}
+
+	function readTraceId(body: string): string | undefined {
+		try {
+			const value: unknown = JSON.parse(body);
+			return value !== null && typeof value === 'object' && 'traceId' in value
+				? safeTraceId(value.traceId)
+				: undefined;
+		} catch (error) {
+			if (!(error instanceof SyntaxError)) throw error;
+			return undefined;
+		}
 	}
 
 	if (response.status === 204) {

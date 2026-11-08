@@ -21,6 +21,11 @@ three places so hand-off is seamless:
   minimum and use the existing error screen.
 - `redirect.html` uses it too, without React or the router.
 
+Knip declares `public/splash.css` as an entry point because it is loaded directly
+by the HTML pages, before React starts. Its Vite integration discovers script
+entries but not these stylesheet links; the stylesheet is not excluded from
+dependency analysis.
+
 `public/splash-theme.js` applies the saved theme (`shareplate.user.settings`, or
 the system preference) before first paint. The router mounts only after the
 splash, so signed-in users land directly on the opened URL (`/` → `/plans`) and

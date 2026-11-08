@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { parseTelemetryConfig } from '@/lib/telemetryConfig';
 
 const apiBaseUrlSchema = z
 	.string()
@@ -51,6 +52,7 @@ if (!parseResult.success) {
 }
 
 export const env = {
+	telemetry: parseTelemetryConfig(import.meta.env, import.meta.env.PROD),
 	apiBaseUrl: parseResult.data.VITE_API_BASE_URL.replace(/\/$/u, ''),
 	entraClientId: parseResult.data.VITE_ENTRA_CLIENT_ID,
 	entraAuthority: parseResult.data.VITE_ENTRA_AUTHORITY,

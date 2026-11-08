@@ -4,8 +4,9 @@ export function registerServiceWorker() {
 	}
 
 	window.addEventListener('load', () => {
-		navigator.serviceWorker.register('/sw.js').catch(() => {
-			// Keep the app functional even if registration fails.
-		});
+		navigator.serviceWorker
+			.register('/sw.js')
+			.catch((error: unknown) => reportFailure(error, 'pwa.registration.failed', true));
 	});
 }
+import { reportFailure } from '@/lib/telemetry';

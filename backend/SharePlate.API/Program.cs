@@ -7,6 +7,7 @@ using Microsoft.OpenApi.Models;
 using SharePlate.API.Endpoints;
 using SharePlate.API.Filters;
 using SharePlate.API.Security;
+using SharePlate.API.Telemetry;
 using SharePlate.Core.Constants.Auth;
 using SharePlate.Core.Repositories;
 using SharePlate.Core.Services;
@@ -15,6 +16,7 @@ using SharePlate.Infrastructure.Extensions;
 using SharePlate.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddAppTelemetry();
 
 const string FrontendCorsPolicy = "FrontendCors";
 
@@ -127,17 +129,27 @@ builder.Services.AddScoped<IUnitRepository, UnitRepository>();
 
 
 var app = builder.Build();
+var startupLogger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("SharePlate.API.Startup");
 
-await using (var scope = app.Services.CreateAsyncScope())
+try
 {
+    await using var scope = app.Services.CreateAsyncScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
 
     var storage = scope.ServiceProvider.GetRequiredService<IStorageService>();
     await storage.EnsureImageContainerAsync();
 }
+catch (Exception exception)
+{
+    startupLogger.LogFailure(exception, new EventId(1002, "startup.failed"));
+    await app.DisposeAsync();
+    throw;
+}
+startupLogger.LogInformation(new EventId(1003, "startup.completed"), "Startup completed.");
 
 // Configure the HTTP request pipeline.
+app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

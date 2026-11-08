@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { useI18n } from '@/i18n/I18nContext';
 import type { Language } from '@/settings/UserSettingsContext';
 import { apiFetch } from '@/lib/api';
+import { reportFailure } from '@/lib/telemetry';
 import type { RecipeDetail } from '@/pages/tabs/home/types';
 import type { PlanDetails } from '@/pages/tabs/plan/types';
 import {
@@ -15,6 +16,8 @@ import {
 } from '@/pages/tabs/plan/remindersExport';
 
 export type ExportPhase = 'idle' | 'preparing' | 'reviewing' | 'openingShortcut' | 'error';
+
+class PlanExportValidationError extends Error {}
 
 function supportsAppleShortcutsBridge(): boolean {
 	if (typeof navigator === 'undefined') {
@@ -41,18 +44,20 @@ async function buildPlanDraftItems(
 	language: Language,
 ): Promise<EditableReminderItem[]> {
 	const recipeIds = extractRecipeIdsFromPlan(plan);
-	if (recipeIds.length === 0) throw new Error('No recipes found in this plan.');
+	if (recipeIds.length === 0) throw new PlanExportValidationError('No recipes found in this plan.');
 	const settledRecipes = await Promise.allSettled(
 		recipeIds.map((recipeId) => apiFetch<RecipeDetail>(`/recipes/${recipeId}`)),
 	);
-	if (settledRecipes.some((r) => r.status === 'rejected')) {
-		throw new Error('Could not fetch all recipe ingredients.');
+	const rejected = settledRecipes.find((r) => r.status === 'rejected');
+	if (rejected) {
+		throw new Error('Could not fetch all recipe ingredients.', { cause: rejected.reason });
 	}
 	const recipes = settledRecipes
 		.filter((r): r is PromiseFulfilledResult<RecipeDetail> => r.status === 'fulfilled')
 		.map((r) => r.value);
 	const payload = buildPlanReminderExportPayload(plan, recipes, language);
-	if (!payload.text.trim()) throw new Error('No ingredients found for this plan.');
+	if (!payload.text.trim())
+		throw new PlanExportValidationError('No ingredients found for this plan.');
 	return toEditableReminderItems(payload.ingredients, language);
 }
 
@@ -77,6 +82,8 @@ export function usePlanExport() {
 				}));
 				setExportPhaseByPlanId((current) => ({ ...current, [plan.id]: 'reviewing' }));
 			} catch (error) {
+				if (!(error instanceof PlanExportValidationError))
+					reportFailure(error, 'plan.export.failed');
 				setExportErrorByPlanId((current) => ({
 					...current,
 					[plan.id]: toErrorMessage(error, 'Could not prepare your shopping list.'),
@@ -127,6 +134,7 @@ export function usePlanExport() {
 			try {
 				window.open(buildShortcutUrl(buildEditableReminderText(items, language)), '_self');
 			} catch (error) {
+				reportFailure(error, 'plan.shortcut.failed');
 				setExportErrorByPlanId((current) => ({
 					...current,
 					[planId]: toErrorMessage(

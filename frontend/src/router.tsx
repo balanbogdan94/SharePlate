@@ -16,6 +16,8 @@ import { PlanTabPage } from '@/pages/tabs/PlanTabPage';
 import { HouseTabPage } from '@/pages/tabs/HouseTabPage';
 import { SettingsTabPage } from '@/pages/tabs/SettingsTabPage';
 import { ProfilePage } from '@/pages/ProfilePage';
+import { CrashFallback } from '@/components/layout/AppErrorBoundary';
+import { reportFailure } from '@/lib/telemetry';
 
 type RouterContext = {
 	auth: AuthContextValue;
@@ -148,6 +150,8 @@ const routeTree = rootRoute.addChildren([
 
 export const router = createRouter({
 	routeTree,
+	defaultErrorComponent: CrashFallback,
+	defaultOnCatch: (error) => reportFailure(error, 'router.failed'),
 	context: {
 		auth: undefined!,
 	},

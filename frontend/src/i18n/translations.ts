@@ -2,6 +2,8 @@ import type { Language } from '@/settings/UserSettingsContext';
 
 export const translations = {
 	en: {
+		'error.unexpected': 'Something went wrong. Reload SharePlate to try again.',
+		'error.reload': 'Reload',
 		'ingredientEntry.title': 'Add ingredients',
 		'ingredientEntry.name': 'Ingredient',
 		'ingredientEntry.nameLabel': 'Ingredient name',
@@ -212,6 +214,8 @@ export const translations = {
 		'plan.error.deleteRecipe': 'Could not remove the planned recipe.',
 	},
 	ro: {
+		'error.unexpected': 'A aparut o eroare. Reincarca SharePlate pentru a incerca din nou.',
+		'error.reload': 'Reincarca',
 		'ingredientEntry.title': 'Adaugă ingrediente',
 		'ingredientEntry.name': 'Ingredient',
 		'ingredientEntry.nameLabel': 'Numele ingredientului',
