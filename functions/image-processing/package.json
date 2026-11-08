@@ -1,0 +1,23 @@
+{
+  "name": "shareplate-image-processing",
+  "private": true,
+  "type": "module",
+  "main": "dist/conversion.js",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --test dist/*.test.js"
+  },
+  "dependencies": {
+    "heic-decode": "2.1.0",
+    "lcms-wasm": "1.0.3",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "@types/heic-decode": "2.0.0",
+    "@types/node": "24.11.0",
+    "typescript": "5.9.3"
+  }
+}
