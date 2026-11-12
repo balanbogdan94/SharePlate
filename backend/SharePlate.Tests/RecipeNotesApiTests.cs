@@ -345,7 +345,7 @@ internal sealed class CountingStorage : IStorageService
         Calls++;
         return Task.CompletedTask;
     }
-    public Task<string> UploadImageAsync(Stream content, string fileName, string contentType, CancellationToken ct = default)
+    public Task<string> UploadImageAsync(ImageKind kind, Stream content, string fileName, string contentType, CancellationToken ct = default)
     {
         Calls++;
         return Task.FromResult("https://images.example/upload.jpg");

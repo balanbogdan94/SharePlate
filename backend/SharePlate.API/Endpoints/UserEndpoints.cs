@@ -49,7 +49,7 @@ public static class UserEndpoints
                 if (!IsValidImage(req.Photo))
                     return Results.BadRequest("Image must be jpeg, png, or webp and under 5 MB.");
                 await storage.DeleteImageAsync(user.ProfilePictureUrl, ct);
-                var url = await storage.UploadImageAsync(req.Photo.OpenReadStream(), req.Photo.FileName, req.Photo.ContentType, ct);
+                var url = await storage.UploadImageAsync(ImageKind.Profile, req.Photo.OpenReadStream(), req.Photo.FileName, req.Photo.ContentType, ct);
                 user.UpdateProfilePictureUrl(url);
             }
             else

@@ -27,15 +27,7 @@ resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2026-04-01'
   }
 }
 
-resource rawRecipeImages 'Microsoft.Storage/storageAccounts/blobServices/containers@2026-04-01' = {
-  name: 'recipe-images-raw'
-  parent: blobService
-  properties: {
-    publicAccess: 'None'
-  }
-}
-
-resource processedRecipeImages 'Microsoft.Storage/storageAccounts/blobServices/containers@2026-04-01' = {
+resource recipeImages 'Microsoft.Storage/storageAccounts/blobServices/containers@2026-04-01' = {
   name: 'recipe-images'
   parent: blobService
   properties: {
@@ -43,7 +35,7 @@ resource processedRecipeImages 'Microsoft.Storage/storageAccounts/blobServices/c
   }
 }
 
-resource userImages 'Microsoft.Storage/storageAccounts/blobServices/containers@2026-04-01' = {
+resource profileImages 'Microsoft.Storage/storageAccounts/blobServices/containers@2026-04-01' = {
   name: 'user-images'
   parent: blobService
   properties: {
