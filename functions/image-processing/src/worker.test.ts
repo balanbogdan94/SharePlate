@@ -9,7 +9,7 @@ import {
 } from './worker.js';
 
 async function fixture(kind: ImageKind = 'recipe', width = 1600, height = 900, extension = '.png') {
-	const containerUrl = 'https://images.blob.core.windows.net/recipe-images';
+	const containerUrl = `https://images.blob.core.windows.net/${kind === 'recipe' ? 'recipe-images' : 'user-images'}`;
 	const name = `${randomUUID()}${extension}`;
 	const sourceUrl = `${containerUrl}/${name}`;
 	const original = await sharp({ create: { width, height, channels: 3, background: '#587aa1' } }).png().toBuffer();
@@ -27,11 +27,11 @@ async function fixture(kind: ImageKind = 'recipe', width = 1600, height = 900, e
 		},
 	};
 	const database = {
-		async find(source: string, recipe: string, avatar: string): Promise<References> {
+		async find(_kind: ImageKind, source: string, output: string): Promise<References> {
 			state.reads++;
 			return {
 				targets: !state.deleted && state.currentUrl === source ? [target] : [],
-				completed: !state.deleted && [recipe, avatar].includes(state.currentUrl),
+				completed: !state.deleted && state.currentUrl === output,
 			};
 		},
 		async replace(_target: typeof target, source: string, output: string): Promise<boolean> {
@@ -40,15 +40,15 @@ async function fixture(kind: ImageKind = 'recipe', width = 1600, height = 900, e
 			return true;
 		},
 	};
-	const dependencies = { blobs, database, wait: async (delay: number) => { waits.push(delay); } };
+	const dependencies = { blobs: { [kind]: blobs, [kind === 'recipe' ? 'avatar' : 'recipe']: { ...blobs, containerUrl: 'https://images.blob.core.windows.net/unused' } } as Record<ImageKind, typeof blobs>, database, wait: async (delay: number) => { waits.push(delay); } };
 	const event = { eventType: 'Microsoft.Storage.BlobCreated', data: { url: sourceUrl } };
-	return { dependencies, event, state, waits, outputs, original, name, sourceUrl, target };
+	return { blobs, dependencies, event, state, waits, outputs, original, name, sourceUrl, target };
 }
 
 test('recipe: one WebP up to 1280px; original remains visible until upload succeeds', async () => {
 	const f = await fixture();
-	const upload = f.dependencies.blobs.upload;
-	f.dependencies.blobs.upload = async (name, content) => {
+	const upload = f.blobs.upload;
+	f.blobs.upload = async (name, content) => {
 		assert.equal(f.state.currentUrl, f.sourceUrl);
 		await upload(name, content);
 	};
@@ -60,7 +60,7 @@ test('recipe: one WebP up to 1280px; original remains visible until upload succe
 	assert.equal(metadata.format, 'webp');
 	assert.equal(metadata.width, 1280);
 	assert.equal(metadata.height, 720);
-	assert.equal(f.state.currentUrl, f.dependencies.blobs.url(outputName(f.sourceUrl, 'recipe')));
+	assert.equal(f.state.currentUrl, f.blobs.url(outputName(f.sourceUrl, 'recipe')));
 });
 
 test('recipe and avatar do not upscale; avatar is square', async () => {
@@ -84,7 +84,7 @@ test('GUID originals without a filename extension are optimized for recipes and 
 		assert.deepEqual(await processImageEvent(f.event, f.dependencies), { status: 'updated', updated: 1 });
 		assert.equal(f.state.reads, 1);
 		assert.equal(f.state.uploads, 1);
-		assert.equal(f.state.currentUrl, f.dependencies.blobs.url(outputName(f.sourceUrl, kind)));
+		assert.equal(f.state.currentUrl, f.blobs.url(outputName(f.sourceUrl, kind)));
 		const metadata = await sharp(f.outputs.get(outputName(f.sourceUrl, kind))!).metadata();
 		assert.equal(metadata.format, 'webp');
 		assert.equal(metadata.width, kind === 'recipe' ? 1280 : 192);
@@ -130,15 +130,15 @@ test('concurrent duplicates converge on a single output URL', async () => {
 	]);
 	assert.equal(outcomes.filter((outcome) => outcome.status === 'updated').length, 1);
 	assert.equal(f.outputs.size, 1);
-	assert.equal(f.state.currentUrl, f.dependencies.blobs.url(outputName(f.sourceUrl, 'recipe')));
+	assert.equal(f.state.currentUrl, f.blobs.url(outputName(f.sourceUrl, 'recipe')));
 });
 
 test('A -> B and deletion during conversion cannot overwrite or resurrect the record', async () => {
 	for (const scenario of ['replacement', 'deletion'] as const) {
 		const f = await fixture();
-		const nextUrl = f.dependencies.blobs.url(`${randomUUID()}.png`);
-		const upload = f.dependencies.blobs.upload;
-		f.dependencies.blobs.upload = async (name, content) => {
+		const nextUrl = f.blobs.url(`${randomUUID()}.png`);
+		const upload = f.blobs.upload;
+		f.blobs.upload = async (name, content) => {
 			await upload(name, content);
 			if (scenario === 'replacement') f.state.currentUrl = nextUrl;
 			else f.state.deleted = true;
@@ -167,11 +167,11 @@ test('DB read, download, upload and invalid decode errors never change the URL',
 		if (failure === 'read')
 			f.dependencies.database.find = async () => { throw new Error('read_failed'); };
 		if (failure === 'download')
-			f.dependencies.blobs.download = async () => { throw new Error('download_failed'); };
+			f.blobs.download = async () => { throw new Error('download_failed'); };
 		if (failure === 'upload')
-			f.dependencies.blobs.upload = async () => { throw new Error('upload_failed'); };
+			f.blobs.upload = async () => { throw new Error('upload_failed'); };
 		if (failure === 'decode')
-			f.dependencies.blobs.download = async () => Buffer.from('not an image');
+			f.blobs.download = async () => Buffer.from('not an image');
 		await assert.rejects(processImageEvent(f.event, f.dependencies));
 		assert.equal(f.state.currentUrl, f.sourceUrl);
 		assert.equal(f.outputs.size, 0);
@@ -180,7 +180,7 @@ test('DB read, download, upload and invalid decode errors never change the URL',
 
 test('output events and unrelated event types cannot cause a conversion loop', async () => {
 	const f = await fixture();
-	const outputEvent = { ...f.event, data: { url: f.dependencies.blobs.url(outputName(f.sourceUrl, 'recipe')) } };
+	const outputEvent = { ...f.event, data: { url: f.blobs.url(outputName(f.sourceUrl, 'recipe')) } };
 	assert.deepEqual(await processImageEvent(outputEvent, f.dependencies), { status: 'ignored', reason: 'worker_output' });
 	assert.deepEqual(await processImageEvent({ eventType: 'Microsoft.Storage.BlobDeleted' }, f.dependencies),
 		{ status: 'ignored', reason: 'event_type' });
@@ -208,17 +208,15 @@ test('only root-level originals in the configured account/container are accepted
 	assert.equal(f.state.reads, 0);
 });
 
-test('one source referenced as both recipe and avatar fails explicitly before upload', async () => {
-	const f = await fixture();
-	f.dependencies.database.find = async () => ({
-		targets: [f.target, { kind: 'avatar', id: randomUUID() }], completed: false,
-	});
-	await assert.rejects(processImageEvent(f.event, f.dependencies), { message: 'ambiguous_image_reference' });
+test('unknown container fails explicitly before download', async () => {
+	const f = await fixture('avatar');
+	await assert.rejects(processImageEvent({ ...f.event, data: { url: f.sourceUrl.replace('/user-images/', '/other/') } }, f.dependencies),
+		{ message: 'unexpected_blob_location' });
 	assert.equal(f.state.downloads, 0);
 });
 
 test('invalid image validation errors keep the PR1 error type', async () => {
 	const f = await fixture();
-	f.dependencies.blobs.download = async () => Buffer.alloc(0);
+	f.blobs.download = async () => Buffer.alloc(0);
 	await assert.rejects(processImageEvent(f.event, f.dependencies), InvalidImage);
 });

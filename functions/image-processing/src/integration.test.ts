@@ -78,9 +78,12 @@ test('isolated PostgreSQL + Azurite, using all existing EF migrations', { timeou
 	});
 	admin = new Pool(databaseConfig(settings));
 	const db = admin;
-	const container = BlobServiceClient.fromConnectionString(storageConnectionString).getContainerClient(settings.container);
+	const service = BlobServiceClient.fromConnectionString(storageConnectionString);
+	const container = service.getContainerClient(settings.recipeContainer);
+	const profileContainer = service.getContainerClient(settings.profileContainer);
 	await ready(() => db.query('SELECT 1'));
 	await ready(() => container.createIfNotExists());
+	await ready(() => profileContainer.createIfNotExists());
 
 	const sqlPath = join(directory, 'schema.sql');
 	execFileSync('dotnet', ['ef', 'migrations', 'script',
@@ -93,7 +96,7 @@ test('isolated PostgreSQL + Azurite, using all existing EF migrations', { timeou
 			ConnectionStrings__DefaultConnection: `Host=127.0.0.1;Port=${pgPort};Database=pr2test;Username=pr2test;Password=${password}`,
 			AzureStorage__AccountUri: '',
 			AzureStorage__ConnectionString: storageConnectionString,
-			AzureStorage__ImageContainerName: settings.container,
+			AzureStorage__ImageContainerName: settings.recipeContainer,
 		},
 	});
 	const migrationSql = (await readFile(sqlPath, 'utf8')).replace(/^\uFEFF/, '');
@@ -108,15 +111,16 @@ test('isolated PostgreSQL + Azurite, using all existing EF migrations', { timeou
 	await db.query('GRANT UPDATE ("ImageUrl", "UpdatedAt") ON "Recipes" TO pr2worker');
 	await db.query('GRANT UPDATE ("ProfilePictureUrl", "UpdatedAt") ON "Users" TO pr2worker');
 	workerPool = new Pool({ ...databaseConfig(settings), user: 'pr2worker', password: workerPassword });
-	const dependencies: WorkerDependencies = { blobs: new AzureImages(container), database: new PostgresImages(workerPool) };
+	const dependencies: WorkerDependencies = { blobs: { recipe: new AzureImages(container), avatar: new AzureImages(profileContainer) }, database: new PostgresImages(workerPool) };
 	const original = await sharp({
 		create: { width: 1600, height: 900, channels: 3, background: '#587aa1' },
 	}).png().toBuffer();
 
 	async function fixture(kind: ImageKind = 'recipe', bytes = original, extension = '.png') {
+		const home = kind === 'recipe' ? container : profileContainer;
 		const name = `${randomUUID()}${extension}`;
-		const sourceUrl = container.getBlobClient(name).url;
-		await container.getBlockBlobClient(name).uploadData(bytes, { blobHTTPHeaders: { blobContentType: 'image/png' } });
+		const sourceUrl = home.getBlobClient(name).url;
+		await home.getBlockBlobClient(name).uploadData(bytes, { blobHTTPHeaders: { blobContentType: 'image/png' } });
 		const userId = randomUUID();
 		const id = kind === 'recipe' ? randomUUID() : userId;
 		await db.query(
@@ -136,41 +140,42 @@ test('isolated PostgreSQL + Azurite, using all existing EF migrations', { timeou
 			: 'SELECT "ProfilePictureUrl" AS url,"UpdatedAt" AS updated FROM "Users" WHERE "Id"=$1';
 		return {
 			name, sourceUrl, id, kind, event, output,
-			outputUrl: container.getBlobClient(output).url,
+			outputUrl: home.getBlobClient(output).url,
+			home,
 			async row() { return (await db.query<{ url: string; updated: Date }>(sql, [id])).rows[0]; },
 		};
 	}
 
-	await t.test('recipe and avatar share the configured container; one correctly sized WebP each', async () => {
+	await t.test('recipe and avatar use their own containers; one correctly sized WebP each', async () => {
 		for (const kind of ['recipe', 'avatar'] as const) {
 			const f = await fixture(kind);
 			assert.deepEqual(await processImageEvent(f.event, dependencies), { status: 'updated', updated: 1 });
 			const row = await f.row();
 			assert.equal(row?.url, f.outputUrl);
 			assert.ok(row.updated > new Date('2020-01-01'));
-			const blob = container.getBlobClient(f.output);
+			const blob = f.home.getBlobClient(f.output);
 			assert.equal((await blob.getProperties()).contentType, 'image/webp');
 			const metadata = await sharp(await blob.downloadToBuffer()).metadata();
 			assert.equal(metadata.format, 'webp');
 			assert.equal(metadata.width, kind === 'recipe' ? 1280 : 192);
 			assert.equal(metadata.height, kind === 'recipe' ? 720 : 192);
-			assert.equal(await container.getBlobClient(f.name).exists(), true);
+			assert.equal(await f.home.getBlobClient(f.name).exists(), true);
 			const names = [];
-			for await (const item of container.listBlobsFlat({ prefix: f.output.slice(0, -5) })) names.push(item.name);
+			for await (const item of f.home.listBlobsFlat({ prefix: f.output.slice(0, -5) })) names.push(item.name);
 			assert.deepEqual(names, [f.output]);
 			assert.deepEqual(await processImageEvent(f.event, dependencies), { status: 'duplicate' });
 		}
 	});
 
-	await t.test('extensionless GUID originals are optimized in the shared container', async () => {
+	await t.test('extensionless GUID originals are optimized in their own container', async () => {
 		for (const kind of ['recipe', 'avatar'] as const) {
 			const f = await fixture(kind, original, '');
 			assert.deepEqual(await processImageEvent(f.event, dependencies), { status: 'updated', updated: 1 });
 			assert.equal((await f.row())?.url, f.outputUrl);
-			const metadata = await sharp(await container.getBlobClient(f.output).downloadToBuffer()).metadata();
+			const metadata = await sharp(await f.home.getBlobClient(f.output).downloadToBuffer()).metadata();
 			assert.equal(metadata.format, 'webp');
 			assert.equal(metadata.width, kind === 'recipe' ? 1280 : 192);
-			assert.equal(await container.getBlobClient(f.name).exists(), true);
+			assert.equal(await f.home.getBlobClient(f.name).exists(), true);
 		}
 	});
 
@@ -201,7 +206,7 @@ test('isolated PostgreSQL + Azurite, using all existing EF migrations', { timeou
 			for (const scenario of ['replacement', 'deletion'] as const) {
 				const f = await fixture(kind);
 				const nextUrl = container.getBlobClient(`${randomUUID()}.png`).url;
-				const realBlobs = dependencies.blobs;
+				const realBlobs = dependencies.blobs[kind];
 				const racingBlobs = {
 					containerUrl: realBlobs.containerUrl,
 					url: (name: string) => realBlobs.url(name),
@@ -215,11 +220,11 @@ test('isolated PostgreSQL + Azurite, using all existing EF migrations', { timeou
 							: 'UPDATE "Users" SET "ProfilePictureUrl"=$1 WHERE "Id"=$2', [nextUrl, f.id]);
 					},
 				};
-				assert.deepEqual(await processImageEvent(f.event, { ...dependencies, blobs: racingBlobs }),
+				assert.deepEqual(await processImageEvent(f.event, { ...dependencies, blobs: { ...dependencies.blobs, [kind]: racingBlobs } }),
 					{ status: 'obsolete', updated: 0 });
 				assert.equal((await f.row())?.url, scenario === 'deletion' ? undefined : nextUrl);
-				assert.equal(await container.getBlobClient(f.name).exists(), true);
-				assert.equal(await container.getBlobClient(f.output).exists(), true);
+				assert.equal(await f.home.getBlobClient(f.name).exists(), true);
+				assert.equal(await f.home.getBlobClient(f.output).exists(), true);
 			}
 		}
 	});
@@ -287,7 +292,7 @@ test('isolated PostgreSQL + Azurite, using all existing EF migrations', { timeou
 		const unsafeUrl = `https://example.invalid/image' ; DROP TABLE "Users"; --`;
 		await db.query('UPDATE "Recipes" SET "ImageUrl"=$1 WHERE "Id"=$2', [unsafeUrl, f.id]);
 		const database = dependencies.database;
-		const references = await database.find(unsafeUrl, 'unused-recipe', 'unused-avatar');
+		const references = await database.find('recipe', unsafeUrl, 'unused-output');
 		assert.deepEqual(references.targets, [{ kind: 'recipe', id: f.id }]);
 		assert.equal(await database.replace(references.targets[0]!, unsafeUrl, f.outputUrl), true);
 		assert.equal(await database.replace(references.targets[0]!, unsafeUrl, 'stale-url'), false);

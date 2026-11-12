@@ -71,9 +71,9 @@ events with `data.url`; CloudEvents schema is not configured by this code.
 
 1. Accept only GUID names with an optional extension, root-level originals in the configured
    account/container. Reject URLs with credentials, query strings, or fragments.
-2. Find the exact URL in `"Recipes"."ImageUrl"` and
-   `"Users"."ProfilePictureUrl"`. Both kinds currently share the API's container,
-   default `recipe-images`; there is no assumption of a `user-images` container.
+2. The container decides the kind: `recipe-images` looks up
+   `"Recipes"."ImageUrl"`, `user-images` looks up `"Users"."ProfilePictureUrl"`.
+   Outputs are written to the original's container.
 3. If BlobCreated arrives before the API saves the URL, retry the DB lookup after
    250/1000/2000 ms. After four unsuccessful reads, fail explicitly.
 4. Convert using PR1 and upload a root-level `image/webp` blob named
@@ -98,9 +98,7 @@ SQL failure after upload. Root-level results remain compatible with the current
 API deletion logic. A completed duplicate is recognized through the current
 optimized URL without downloading/converting again.
 
-If a single original is referenced as both a recipe and an avatar, processing
-fails explicitly rather than choosing an incorrect crop. Multiple references
-of the same kind share one output and are each updated conditionally.
+Multiple references of the same kind share one output and are each updated conditionally.
 
 ### Failure and operational retry
 
@@ -125,25 +123,24 @@ All values are environment settings. Do not commit credentials or
 | Setting | Purpose |
 | --- | --- |
 | `IMAGE_STORAGE_ACCOUNT_URL` | Production HTTPS Blob service URL, without SAS/container path |
-| `IMAGE_CONTAINER_NAME` | Same container as the API; default `recipe-images` |
-| `PGHOST`, `PGDATABASE`, `PGUSER` | PostgreSQL host/database and worker's managed identity role |
-| `PGPORT` | Optional, default `5432` |
+| `IMAGE_RECIPE_CONTAINER_NAME` | Recipe container, same as the API; default `recipe-images` |
+| `IMAGE_PROFILE_CONTAINER_NAME` | Profile container, same as the API; default `user-images` |
+| `DATABASE_CONNECTION_STRING` | Production: Key Vault reference to the API's Npgsql-format `PostgresConnectionString` secret |
+| `PGHOST`, `PGDATABASE`, `PGUSER`, `PGPORT` | Local mode only |
 | `AZURE_CLIENT_ID` | Optional client ID for a user-assigned managed identity |
 | `IMAGE_WORKER_LOCAL=true` | Explicit local-only mode; rejected on Azure App Service/Functions |
 | `IMAGE_STORAGE_CONNECTION_STRING` | Local Azurite connection string, with an explicit loopback HTTP `BlobEndpoint` |
 | `PGPASSWORD` | Local PostgreSQL password; not used for production authentication |
 
-Production uses `ManagedIdentityCredential` for Blob Storage and a fresh Entra
-token when PostgreSQL opens a connection, with TLS certificate verification
-enabled. There is no production password fallback or disabled-TLS option.
-The PostgreSQL token scope is
-`https://ossrdbms-aad.database.windows.net/.default`.
+Production uses `ManagedIdentityCredential` for Blob Storage and the Key Vault
+connection string (Host/Port/Database/Username/Password) for PostgreSQL, with TLS
+certificate verification enabled (the string's `Trust Server Certificate` is
+ignored). Entra token authentication is a possible later hardening.
 
 PR3 must provide Function host settings/storage, the Event Grid subscription,
 network access and identity grants. The worker needs Blob read/write access to
-the existing container and DB `SELECT` on `"Recipes"`/`"Users"` plus column-level
-`UPDATE` on `"ImageUrl"`/`"ProfilePictureUrl"` and `"UpdatedAt"` respectively.
-Identity principal creation and these grants are Portal/deployment work, not
+both containers, and `Key Vault Secrets User` to resolve the connection string
+reference. Role assignments and network access are Portal/deployment work, not
 performed here. Keep the original upload's immutable GUID naming; overwriting
 an original in place is not supported.
 

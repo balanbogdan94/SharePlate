@@ -7,4 +7,5 @@ public sealed class AzureStorageOptions
     public string ConnectionString { get; init; } = string.Empty;
     public string AccountUri { get; init; } = string.Empty;
     public string ImageContainerName { get; init; } = "recipe-images";
+    public string ProfileImageContainerName { get; init; } = "user-images";
 }

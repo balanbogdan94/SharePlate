@@ -4,7 +4,7 @@ import { app, InvocationContext, type EventGridFunctionOptions } from '@azure/fu
 import { databaseConfig, PostgresImages, readSettings } from './adapters.js';
 
 const azure = {
-	PGHOST: 'test.postgres.database.azure.com', PGDATABASE: 'shareplate', PGUSER: 'worker-identity',
+	DATABASE_CONNECTION_STRING: 'Host=test.postgres.database.azure.com;Port=5432;Database=shareplate;Username=admin;Password=kv-secret;Ssl Mode=Require;Trust Server Certificate=true',
 	IMAGE_STORAGE_ACCOUNT_URL: 'https://test.blob.core.windows.net',
 };
 const local = {
@@ -13,18 +13,21 @@ const local = {
 	IMAGE_STORAGE_CONNECTION_STRING: 'BlobEndpoint=http://127.0.0.1:10000/test;AccountName=test;AccountKey=unused',
 };
 
-test('production uses verified TLS and a managed identity token callback, not an env password', () => {
+test('production reads the Key Vault Npgsql connection string and verifies TLS', () => {
 	const settings = readSettings({ ...azure, PGPASSWORD: 'must-not-be-used', PGSSLMODE: 'disable' });
 	const config = databaseConfig(settings);
-	assert.equal(settings.container, 'recipe-images');
+	assert.equal(settings.recipeContainer, 'recipe-images');
+	assert.equal(settings.profileContainer, 'user-images');
 	assert.deepEqual(config.ssl, { rejectUnauthorized: true });
-	assert.equal(typeof config.password, 'function');
-	assert.equal(config.connectionString, undefined);
+	assert.equal(config.host, 'test.postgres.database.azure.com');
+	assert.equal(config.user, 'admin');
+	assert.equal(config.password, 'kv-secret');
+	assert.throws(() => readSettings({ ...azure, DATABASE_CONNECTION_STRING: 'Host=x' }), { message: 'invalid_database_connection_string' });
 });
 
 test('local mode is explicit and restricted to loopback storage/database', () => {
 	assert.equal(databaseConfig(readSettings(local)).ssl, false);
-	assert.throws(() => readSettings({ ...local, PGHOST: azure.PGHOST }), { message: 'local_database_must_be_loopback' });
+	assert.throws(() => readSettings({ ...local, PGHOST: 'test.postgres.database.azure.com' }), { message: 'local_database_must_be_loopback' });
 	assert.throws(() => readSettings({ ...local, IMAGE_STORAGE_CONNECTION_STRING: 'BlobEndpoint=https://test.blob.core.windows.net' }),
 		{ message: 'local_storage_must_be_loopback' });
 	assert.throws(() => readSettings({ ...local, WEBSITE_INSTANCE_ID: 'azure' }), { message: 'local_mode_not_allowed_in_azure' });
@@ -37,11 +40,13 @@ test('invalid settings fail explicitly without embedding env values in error mes
 		'https://test.blob.core.windows.net?sig=secret', 'https://test.blob.core.windows.net/container', 'invalid']) {
 		assert.throws(() => readSettings({ ...azure, IMAGE_STORAGE_ACCOUNT_URL: url }), { message: 'invalid_storage_account_url' });
 	}
-	for (const port of ['0', '65536', 'NaN', '5432.5', '']) {
-		assert.throws(() => readSettings({ ...azure, PGPORT: port }), { message: 'invalid_database_port' });
+	for (const port of ['0', '65536', 'NaN', '5432.5']) {
+		assert.throws(() => readSettings({ ...azure, DATABASE_CONNECTION_STRING: azure.DATABASE_CONNECTION_STRING.replace('Port=5432', `Port=${port}`) }),
+			{ message: 'invalid_database_port' });
 	}
-	assert.throws(() => readSettings({ ...azure, PGUSER: '' }), { message: 'missing_setting_PGUSER' });
-	assert.throws(() => readSettings({ ...azure, IMAGE_CONTAINER_NAME: 'user/images' }), { message: 'invalid_image_container' });
+	assert.throws(() => readSettings({ ...azure, DATABASE_CONNECTION_STRING: '' }), { message: 'missing_setting_DATABASE_CONNECTION_STRING' });
+	assert.throws(() => readSettings({ ...azure, IMAGE_RECIPE_CONTAINER_NAME: 'user/images' }), { message: 'invalid_image_container' });
+	assert.throws(() => readSettings({ ...azure, IMAGE_PROFILE_CONTAINER_NAME: 'recipe-images' }), { message: 'image_containers_must_differ' });
 });
 
 test('Function registers Event Grid, logs/rethrows failures without raw SDK/DB details', async (t) => {

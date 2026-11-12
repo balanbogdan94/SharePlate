@@ -144,7 +144,7 @@ public static class RecipeEndpoints
             {
                 if (!IsValidImage(req.Image))
                     return Results.BadRequest("Image must be jpeg, png, or webp and under 5 MB.");
-                imageUrl = await storage.UploadImageAsync(req.Image.OpenReadStream(), req.Image.FileName, req.Image.ContentType, ct);
+                imageUrl = await storage.UploadImageAsync(ImageKind.Recipe, req.Image.OpenReadStream(), req.Image.FileName, req.Image.ContentType, ct);
             }
 
             var recipe = Recipe.Create(req.Title, notes, actorUserId, imageUrl);
@@ -201,7 +201,7 @@ public static class RecipeEndpoints
                 if (!IsValidImage(req.Image))
                     return Results.BadRequest("Image must be jpeg, png, or webp and under 5 MB.");
                 await storage.DeleteImageAsync(recipe.ImageUrl, ct);
-                var newUrl = await storage.UploadImageAsync(req.Image.OpenReadStream(), req.Image.FileName, req.Image.ContentType, ct);
+                var newUrl = await storage.UploadImageAsync(ImageKind.Recipe, req.Image.OpenReadStream(), req.Image.FileName, req.Image.ContentType, ct);
                 recipe.UpdateImageUrl(newUrl);
             }
 
